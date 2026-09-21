@@ -588,7 +588,12 @@ ai-blueprint.dev.
 ## Naming
 
 - **Metodología:** Falcux AI-First (antes «AI-First Blueprint» — se renombra por
-  colisión, ver Posicionamiento)
+  colisión, ver Posicionamiento). **Aplicado al paquete el 2026-09-21** (CHG-003)
+  y al sitio a partir de esa fecha, por decisión de Charlie: el manual, el
+  glosario y el volcado para LLMs arrastraban el nombre viejo en unas veinte
+  menciones, contadas por el repo del sitio. Al buscar, buscar las **tres**
+  variantes: acá circulaban «Blueprint AI-First», «AI-First Blueprint» y la
+  vigente a la vez.
 - **Paquete npm:** `@falcux/ai-first` → `npx @falcux/ai-first`
 - **Comando:** `/ai-first`
 - **Packs verticales futuros:** `@falcux/compliance-pack`, `@falcux/fintech-pack`
@@ -920,7 +925,24 @@ día que sale a npm: el tarball se construye en el publish, así que esa fecha
 nunca entra en él. Corregido en `dev`: la entrada se fecha en el commit del
 bump, y `version-bump` lo enseña.
 
-**Queda una decisión de Charlie:** si sale una `0.4.1` sólo por esto. A favor, el
-precedente de la `0.2.1`, que salió exactamente por un defecto de prosa ya
-distribuido. En contra, que no afecta a ningún comportamiento y que el próximo
-bump lo arrastra igual. Lo publicado es inmutable en cualquier caso.
+**Resuelto: no sale una `0.4.1` por esto.** Charlie lo decidió el mismo día. El
+defecto vive en un archivo que casi nadie abre dentro del tarball y no afecta a
+ningún comportamiento, mientras que el de la `0.2.1` estaba en el README, que es
+lo primero que ve quien llega a npm. Y cada publicación a mano es donde han
+salido los errores de las tres últimas versiones. La corrección viaja con el
+próximo bump; hasta entonces, el tarball de la `0.4.0` sigue diciendo «sin
+publicar».
+
+### El renombre se completa en los dos repos (2026-09-21)
+
+Charlie resolvió la decisión de producto que el sitio dejó anotada: la
+metodología se llama **Falcux AI-First** también en el manual. Acá ya se aplicó
+en CHG-003; el sitio corrige sus menciones por su lado y avisará cuando llegue a
+su `prod`.
+
+Con eso deja de haber dos nombres vivos. Lo que queda es de ellos, y se les
+advirtió de dos cosas que acá no se corrigieron y que allá pueden aplicar: las
+citas literales de documentos que existieron con el nombre viejo, que se anotan
+en vez de corregirse, y la línea que registra el propio renombre. También que si
+su volcado para modelos se genera de las páginas, lo generen después del cambio
+y no antes: es el mismo desfase que produjo CHG-004.

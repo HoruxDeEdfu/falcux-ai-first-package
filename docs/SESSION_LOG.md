@@ -108,7 +108,19 @@ se puede cumplir: el tarball se construye en el publish con lo que ya hay en
 disco. Ahora la entrada se fecha en el commit del bump y `version-bump` lo
 enseña en su Paso 5. Tercera vez que muerde el mismo patrón, después de la
 `0.1.2` y la `0.2.1`: prosa que afirma un estado que cambia más tarde que ella.
-Queda para Charlie decidir si amerita una `0.4.1`.
+
+**Charlie decidió que no sale una `0.4.1` por esto.** El defecto vive en un
+archivo que casi nadie abre dentro del tarball y no afecta a ningún
+comportamiento; el de la `0.2.1` estaba en el README, que es lo primero que se
+ve en npm. La corrección viaja con el próximo bump.
+
+### El renombre se completa en los dos repos
+Charlie resolvió la decisión de producto que el sitio había dejado anotada: la
+metodología se llama **Falcux AI-First** también en el manual. Se le informó a
+`update_package` para que corrija sus menciones, con tres advertencias que salen
+de haberlo hecho acá: buscar las tres variantes y no una, no corregir las citas
+literales de documentos históricos ni la línea que registra el renombre, y
+generar el volcado para modelos después del cambio y no antes.
 
 ### Validación
 - typecheck → PASS (lo corre `pnpm test` antes de la suite)
