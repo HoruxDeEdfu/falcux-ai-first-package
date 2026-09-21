@@ -129,6 +129,15 @@ for PKG in $(find . -name package.json -not -path "*/node_modules/*"); do
 done
 ```
 
+**Y en el mismo commit, fecha la entrada del CHANGELOG.** Si el proyecto
+mantiene uno, la entrada de esta versión deja de estar «sin publicar» y gana la
+fecha de hoy, junto al número que acabas de subir.
+
+Fecharla después, cuando el paquete ya salió, llega tarde siempre: el tarball se
+construye con lo que hay en disco en ese momento, así que la única fecha que
+alcanza a viajar dentro del artefacto es la del bump. Si el publish se retrasa a
+otro día, se corrige al publicar, que entonces sí es antes de empaquetar.
+
 ### Paso 6 — Reportar
 
 ```
@@ -169,6 +178,10 @@ Un número escrito a mano en el README es un segundo manifiesto que nadie
 bumpea: se queda en la versión del día que alguien lo escribió, y el lector no
 tiene cómo saberlo. El README dice **estado** —qué está publicado y qué no—;
 qué cambió en cada versión va al `CHANGELOG.md`, que es su documento.
+
+El CHANGELOG sí lleva fechas, y ésas se escriben en el commit del bump, por lo
+del Paso 5: ningún texto que describa el publish puede escribirse después del
+publish y seguir llegando al paquete publicado.
 
 Así el bump se refleja solo, sin un segundo lugar que actualizar y olvidar.
 

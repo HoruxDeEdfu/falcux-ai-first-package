@@ -910,3 +910,17 @@ Verificado, no asumido:
 
 Es la séptima versión publicada a mano. El pendiente 4 —trusted publishing y el
 workflow disparado por push a `prod`— sigue sin escribirse.
+
+### El CHANGELOG de la `0.4.0` salió diciendo que no estaba publicada (2026-09-21, CHG-004)
+
+Lo encontró la sesión del sitio al verificar el aviso de la versión: el tarball
+en npm y el `CHANGELOG.md` de `prod` dicen «[0.4.0] — sin publicar». La causa era
+una regla de la cabecera imposible de cumplir, que pedía fechar cada versión el
+día que sale a npm: el tarball se construye en el publish, así que esa fecha
+nunca entra en él. Corregido en `dev`: la entrada se fecha en el commit del
+bump, y `version-bump` lo enseña.
+
+**Queda una decisión de Charlie:** si sale una `0.4.1` sólo por esto. A favor, el
+precedente de la `0.2.1`, que salió exactamente por un defecto de prosa ya
+distribuido. En contra, que no afecta a ningún comportamiento y que el próximo
+bump lo arrastra igual. Lo publicado es inmutable en cualquier caso.

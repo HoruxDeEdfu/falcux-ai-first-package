@@ -5,8 +5,12 @@ de cada decisión está en `docs/ADR.md`, y la cronología de cómo se trabajó,
 `docs/SESSION_LOG.md`.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y
-el versionado es [SemVer](https://semver.org/lang/es/). Cada versión lleva la
-fecha en que **salió a npm**, no la del commit.
+el versionado es [SemVer](https://semver.org/lang/es/).
+
+**Cada entrada se fecha en el mismo commit que sube el número del manifiesto**,
+que es el último momento en que el texto alcanza a viajar en el tarball. Si el
+publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
+etiquetada que nunca llegó al registro se marca «sin publicar».
 
 ## [0.4.0] — 2026-09-21
 

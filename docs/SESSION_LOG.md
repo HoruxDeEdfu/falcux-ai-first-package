@@ -101,6 +101,15 @@ renombre. El detector cobró P1 mientras el CHG estuvo abierto, porque el árbol
 traía además todo el feature sin commitear: el check 3 tenía razón, y se apagó
 al cerrar el cambio.
 
+### CHG-004: el CHANGELOG salió diciendo que la versión no estaba publicada
+Lo encontró la sesión del sitio al verificar el aviso, leyendo el tarball. La
+cabecera del CHANGELOG pedía fechar cada versión el día que sale a npm, y eso no
+se puede cumplir: el tarball se construye en el publish con lo que ya hay en
+disco. Ahora la entrada se fecha en el commit del bump y `version-bump` lo
+enseña en su Paso 5. Tercera vez que muerde el mismo patrón, después de la
+`0.1.2` y la `0.2.1`: prosa que afirma un estado que cambia más tarde que ella.
+Queda para Charlie decidir si amerita una `0.4.1`.
+
 ### Validación
 - typecheck → PASS (lo corre `pnpm test` antes de la suite)
 - lint      → no ejecutado (no hay script)

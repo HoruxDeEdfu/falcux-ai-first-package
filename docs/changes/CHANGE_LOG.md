@@ -105,3 +105,42 @@ lo conserva, porque su trabajo es nombrarlo.
    AI-First» de las cuatro anteriores sin que nadie lo notara al escribirla. Lo
    que se copia entre archivos hermanos hay que verificarlo contra la fuente, no
    contra el hermano.
+
+## CHG-004 — La entrada del CHANGELOG se fecha en el commit del bump, no después del publish
+
+- **Fecha:** 2026-09-21 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo completo por contar tres archivos, sin schema ni
+  decisión de ADR
+- **Archivos:** `CHANGELOG.md`, `skills/version-bump/SKILL.md`, `docs/HANDOFF.md`
+
+**Resumen.** La cabecera del CHANGELOG pedía fechar cada versión «el día que
+salió a npm, no el del commit». Es imposible de cumplir: el tarball se construye
+en el publish con lo que ya hay en disco, así que la fecha del publish nunca
+llega dentro del artefacto que se publica. En la `0.4.0` se perdió esa carrera y
+el paquete en npm dice que la `0.4.0` no está publicada. Ahora la entrada se
+fecha en el mismo commit que sube el número del manifiesto, y `version-bump` lo
+enseña en su Paso 5, que es donde se aplica el bump.
+
+**Quién lo encontró.** La sesión del sitio, al verificar el aviso de la versión.
+No el detector, ni esta sesión, ni el publish.
+
+**Lo que no se tocó.** La entrada de la `0.4.0` ya publicada: lo distribuido es
+inmutable, y en `dev` la fecha ya es correcta desde `eee35c3`. Llegará al
+registro con la versión siguiente. Si sale una `0.4.1` sólo por esto es decisión
+de Charlie, con la `0.2.1` como precedente a favor y el hecho de que no afecta a
+ningún comportamiento como argumento en contra.
+
+**Lecciones.**
+
+1. **Ningún texto que describa el publish puede escribirse después del publish.**
+   Es la tercera vez que este patrón muerde: la `0.1.2` con la instalación, la
+   `0.2.1` con el número del README y ahora el CHANGELOG. La forma de la regla
+   es siempre la misma: prosa que afirma un estado que cambia más tarde que
+   ella. Lo que quede dentro del tarball tiene que ser cierto en el momento de
+   empaquetar.
+2. **Una regla que nadie puede cumplir se rompe sola y en silencio.** La
+   cabecera lo exigía por escrito y se incumplió en su primera aplicación, sin
+   que nada avisara.
+3. **El verificador de fuera encuentra lo que el de dentro no busca.** El aviso
+   al sitio se manda para que actualicen su inventario; de paso leyeron el
+   tarball y hallaron esto. Vale la pena que el aviso siga siendo detallado.
