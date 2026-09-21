@@ -59,9 +59,13 @@ web salió al segundo intento.
   estrenar también el workflow de publish, si llega antes.
 
 ### Pendiente para la siguiente sesión
-- [ ] Publicar la `0.3.0` desde `prod` y poner el tag `v0.3.0` sobre el commit
-      del bump; avisar al sitio (`update_package`) una vez, desde esta línea
-      de trabajo, que es la que hizo el bump.
+- [x] ~~Publicar la `0.3.0` y avisar al sitio~~. Publicada por Charlie el
+      mismo día a las 19:18 UTC desde `prod` en `13c3f1f`; aviso enviado una
+      vez a `update_package`. El primer intento salió como `0.2.1` porque
+      `prod` se había avanzado antes del commit del bump: npm lo rechazó
+      («cannot publish over previously published versions») y no subió nada.
+- [ ] El tag `v0.3.0` sobre `13c3f1f`: al escribir esto no estaba en `origin`.
+      Lo pone Charlie.
 - [x] ~~El tag `v0.2.1` sobre `469b27b`~~. Puesto y en `origin` el mismo día,
       a pedido de Charlie, en `301ab84`.
 - [x] ~~Mandar al sitio el aviso de la `0.2.1`~~. Enviado el mismo día a la

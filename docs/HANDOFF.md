@@ -501,6 +501,28 @@ real de la 0.2.0» una captura anterior al publish —el código no cambió entr
 la `0.2.0` y la `0.2.1`, lo comprobó corriendo las dos—, y el CLI no tenía
 `--version`. Lo segundo entró el mismo día (`docs/specs/version-flag.md`).
 
+### La `0.3.0` sale a npm (2026-09-21)
+
+Séptima versión y segunda MINOR: `ai-first --version` y `-v`, que imprimen la
+versión del `package.json` del paquete leída en ejecución
+(`docs/specs/version-flag.md`). Lo pidió Charlie tras el hallazgo de la sesión
+del sitio del mismo día. Publicada desde `prod` en `13c3f1f`, el commit del
+bump, a las 19:18 UTC; `latest` apunta a `0.3.0`, el shasum del registro
+(`211eab8a…`) es el del publish, y `npx @falcux/ai-first@0.3.0 --version`
+desde una carpeta vacía responde `0.3.0`. El aviso al sitio salió una vez, a
+`update_package`, desde la línea de trabajo que hizo el bump.
+
+**Cómo salió, para la próxima.** El primer intento se hizo con `prod` un
+commit por detrás de `dev`: tenía el `--version` pero no el bump, así que el
+tarball salió rotulado `0.2.1` con código nuevo adentro, y npm lo rechazó con
+«You cannot publish over the previously published versions». No subió nada;
+es el rechazo correcto. La lección es de orden: **el `--ff-only` a `prod` va
+después del commit del bump, y antes de publicar se mira que el `version` que
+imprime el tarball sea el nuevo.** El workflow de publish (pendiente 4)
+compara justamente eso, y por eso sigue siendo la salida de fondo: tres falsos
+fallos conocidos ya —el 409, el 404 por token caducado y este rechazo por
+versión repetida— y todos por publicar a mano.
+
 ### CHG-001: `init` salta lo que existe y sigue (2026-09-18, ADR-017)
 
 El primer cambio del repo que pasa entero por `protocolo-cambios`, y el
