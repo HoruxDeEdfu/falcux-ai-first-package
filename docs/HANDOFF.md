@@ -466,9 +466,37 @@ npm, tabla por estado— y deja la regla en `skills/version-bump/SKILL.md`. Ese
 README sale con la `0.2.1`, que quedó lista en `dev` con el bump hecho y sin
 publicar; mientras tanto la página de npm lo muestra viejo.
 
-**Pendiente con el sitio:** avisarle de la `0.2.0`, como en cada publish,
-aunque ninguna ruta cambió. Y el workflow de publish (pendiente 4) sigue sin
-existir: esta versión también salió a mano.
+**El aviso al sitio de la `0.2.0` llegó**, y llegó dos veces: por eso la regla
+acordada con su sesión el 2026-09-18 es que lo manda **una sola vez la sesión
+que hizo el `version-bump`** de esa versión, en su cierre. El workflow de
+publish (pendiente 4) sigue sin existir: esta versión también salió a mano.
+
+### La `0.2.1` sale a npm (2026-09-21)
+
+Sexta versión, PATCH: el README con badge en vez de número (CHG-002). Charlie
+la publicó desde `prod`, que estaba en `469b27b` a la par con `dev`, y `latest`
+apunta a `0.2.1` desde las 16:36 UTC. El shasum del registro (`1b227dde…`) es
+el que imprimió el propio publish; el README publicado ya abre con el badge, y
+`npx @falcux/ai-first@0.2.1 --help` desde una carpeta vacía responde con salida
+cero. Para el adoptante no cambia nada más: `dist/`, skills y templates son los
+de la `0.2.0`.
+
+**Cómo salió, para la próxima.** El primer `pnpm publish` listó el tarball
+completo y murió con `404 Not Found - PUT .../@falcux%2fai-first`, diciendo que
+la `0.2.1` «is not in this registry». Ese 404 no habla del paquete: npm lo
+devuelve en el PUT de un paquete con scope cuando no reconoce al usuario, para
+no revelar si el paquete existe. La prueba está en `npm whoami`, que daba 401:
+el token guardado en `~/.npmrc` había caducado. **Ante un 404 en el PUT, correr
+`npm whoami` antes que nada**; si da 401, `npm login` por la vía web y repetir.
+Salió al segundo intento con el aviso «Your package is being processed», y
+`dist-tags` tardó unos minutos en mostrar la versión nueva, como avisa el
+propio npm. Junto al 409 de la `0.1.3`, son los dos falsos fallos conocidos del
+publish a mano; el workflow con trusted publishing (pendiente 4) evita los dos,
+porque no hay token que caducar ni consola que pida OTP.
+
+**Pendiente:** el tag `v0.2.1` sobre `469b27b`, que lo pone Charlie, y el
+aviso al sitio de la `0.2.1` —versión, hora, y que sólo cambia el README—, que
+esta sesión redactó y Charlie manda.
 
 ### CHG-001: `init` salta lo que existe y sigue (2026-09-18, ADR-017)
 

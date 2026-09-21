@@ -10,6 +10,47 @@
 
 ---
 
+## 2026-09-21 (sesión 6) — Sale la `0.2.1`, y la sesión de npm en la máquina estaba caducada
+
+### Resumen
+Sesión de estado y publish, sin cambios de código. Charlie publicó la `0.2.1`
+desde `prod` (`469b27b`, la misma punta que `dev`). El primer intento murió con
+un 404 en el PUT que no era del paquete sino de la autenticación: el token de
+`~/.npmrc` había caducado y `npm whoami` daba 401. Con `npm login` por la vía
+web salió al segundo intento.
+
+### El publish (`docs/HANDOFF.md`)
+- `@falcux/ai-first@0.2.1` en npm a las 16:36 UTC; `latest` apunta a ella.
+  El shasum del registro (`1b227dde…`) es el mismo que imprimió el publish.
+- El README publicado ya lleva el badge y no el número: es lo que CHG-002
+  arregló y lo único que cambia para el adoptante respecto a la `0.2.0`.
+- `npx @falcux/ai-first@0.2.1 --help` desde una carpeta vacía responde con
+  salida cero.
+- Handoff: sección «La `0.2.1` sale a npm», con el 404 explicado para la
+  próxima, junto al 409 de la `0.1.3`. El aviso de la `0.2.0` ya había llegado
+  al sitio (dos veces); queda anotado.
+
+### Validación
+- typecheck → PASS (lo corre `pnpm test` antes de la suite)
+- lint      → no ejecutado (no hay script)
+- tests     → PASS por exit code, 67/67, sobre `469b27b` antes del publish
+- audit:self → 0 / 100
+
+### Pendiente para la siguiente sesión
+- [ ] El tag `v0.2.1` sobre `469b27b`: al cerrar esta entrada no existía en
+      `origin`. Lo pone Charlie.
+- [ ] Mandar al sitio el aviso de la `0.2.1`: versión, hora y que sólo cambia
+      el README. Lo manda Charlie; el texto quedó redactado en esta sesión.
+- [ ] El workflow de publish (pendiente 4 del handoff). Ya son seis versiones
+      a mano, y ésta costó un login: con trusted publishing no habría token
+      que caducar.
+- [ ] npm avisa que `publish-branch` de `.npmrc` es una clave que no conoce y
+      que dejará de tolerarla en su próxima mayor. La lee pnpm, que es quien
+      la respeta; conviene vigilar si al subir de npm el aviso pasa a error.
+- [ ] Los de la sesión 5 siguen en pie: el CHANGELOG del paquete, los
+      hallazgos del detector, las divergencias de `protocolo-cierre`, la
+      entrevista de `init` y los hooks.
+
 ## 2026-09-18 (sesión 5) — CHG-002: la versión sale del README; se registra la `0.2.0`
 
 ### Resumen
