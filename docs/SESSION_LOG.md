@@ -114,12 +114,16 @@ al cerrar el cambio.
   repos que auditan en 0 / 100.
 
 ### Pendiente para la siguiente sesión
-- [ ] **Avisar al sitio**, en un solo mensaje y cuando esto llegue a `prod`. No
-      se movió ninguna ruta, así que sus enlaces siguen sirviendo, pero: su
-      catálogo dice diez skills y son once; su capítulo «Gobierno del contexto»
-      gana un protocolo anterior a los tres que describe; y cinco `SKILL.md`
-      cambiaron el nombre de la metodología (CHG-003), así que conviene que
-      revise si su propia prosa arrastra «Blueprint AI-First».
+- [x] ~~**Avisar al sitio**~~. Enviado el mismo día a la sesión
+      `update_package`, una vez y con las tres cosas juntas: once skills en vez
+      de diez, el capítulo «Gobierno del contexto» que gana un protocolo
+      anterior a los tres que describe, y el nombre de la metodología en cinco
+      `SKILL.md` (CHG-003), por si su prosa arrastra el viejo. Ninguna ruta se
+      movió, así que no les bloquea nada.
+- [x] ~~**Publicar la `0.4.0`**~~. Charlie avanzó `prod` a `2b914b1` y publicó
+      el mismo día a las 20:55 UTC. Verificado contra el registro: `latest` en
+      `0.4.0`, shasum coincidente y `npx` sobre una carpeta vacía deja un repo
+      que audita en 0 / 100. Detalle en `docs/HANDOFF.md`.
 - [ ] **Distribuir las skills con las marcas ya puestas**, con su lista genérica
       dentro, para que la entrevista la sustituya en vez de duplicarla. Hoy se
       resuelve con una línea de cierre en el bloque. Tocaría las once skills,

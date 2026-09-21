@@ -887,3 +887,26 @@ sexto, no un ajuste del cuarto: entra como feature, con su spec, o no entra.
 que nada publicado se rompe. Pero tres de las cinco skills tocadas son las que
 asumen el capítulo «Gobierno del contexto», y conviene que el sitio revise si su
 propia prosa arrastra el nombre viejo.
+
+### La `0.4.0` sale a npm (2026-09-21)
+
+Charlie avanzó `prod` y publicó el mismo día, un par de horas después del
+cierre. `prod` quedó en `2b914b1`, el commit del bump y el mismo que `dev`: sin
+la desincronización que hizo fallar el primer intento de la `0.3.0`.
+
+Verificado, no asumido:
+
+- `@falcux/ai-first@0.4.0` en npm a las 20:55 UTC, y `latest` apunta a ella. El
+  `npm view` de esta máquina siguió diciendo `0.3.0` un rato por su caché; lo
+  que manda es lo que devuelve el registro.
+- El tarball bajado del registro tiene el shasum que el registro declara,
+  `c41437ce…`, y trae lo nuevo: la carpeta de `protocolo-arranque` con su
+  `SKILL.md` y sus referencias, los dos módulos compilados de la entrevista y
+  el `CHANGELOG.md`.
+- `npx @falcux/ai-first@0.4.0 init --sin-entrevista` desde una **carpeta vacía
+  sin `.git`** la inicializa, la configura entera y el `audit` que sigue da
+  0 / 100. Es el caso que estrena esta versión (ADR-021), probado contra lo
+  publicado y no contra el árbol local.
+
+Es la séptima versión publicada a mano. El pendiente 4 —trusted publishing y el
+workflow disparado por push a `prod`— sigue sin escribirse.

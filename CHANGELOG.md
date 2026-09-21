@@ -8,7 +8,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y
 el versionado es [SemVer](https://semver.org/lang/es/). Cada versión lleva la
 fecha en que **salió a npm**, no la del commit.
 
-## [0.4.0] — sin publicar
+## [0.4.0] — 2026-09-21
 
 ### Agregado
 
