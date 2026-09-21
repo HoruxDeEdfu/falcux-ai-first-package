@@ -52,7 +52,16 @@ web salió al segundo intento.
 - audit:self → 0 / 100 con el árbol limpio; 20 (1 P1, `src/cli.ts` sin fila
   de ADR) con el `--version` sin commit, que es lo esperado
 
+### Versión
+- 0.2.1 → 0.3.0, MINOR confirmado por Charlie: `--version` es una opción
+  nueva del CLI, compatible. Único manifiesto, `package.json`. Tag y publish
+  son suyos; la `0.3.0` estrena el `--version` y es la candidata para
+  estrenar también el workflow de publish, si llega antes.
+
 ### Pendiente para la siguiente sesión
+- [ ] Publicar la `0.3.0` desde `prod` y poner el tag `v0.3.0` sobre el commit
+      del bump; avisar al sitio (`update_package`) una vez, desde esta línea
+      de trabajo, que es la que hizo el bump.
 - [x] ~~El tag `v0.2.1` sobre `469b27b`~~. Puesto y en `origin` el mismo día,
       a pedido de Charlie, en `301ab84`.
 - [x] ~~Mandar al sitio el aviso de la `0.2.1`~~. Enviado el mismo día a la
@@ -65,8 +74,6 @@ web salió al segundo intento.
 - [ ] npm avisa que `publish-branch` de `.npmrc` es una clave que no conoce y
       que dejará de tolerarla en su próxima mayor. La lee pnpm, que es quien
       la respeta; conviene vigilar si al subir de npm el aviso pasa a error.
-- [ ] Decidir el bump por el `--version` con `version-bump`: es feature, así
-      que por la regla toca MINOR (`0.3.0`). Lo confirma Charlie.
 - [ ] Los de la sesión 5 siguen en pie: el CHANGELOG del paquete, los
       hallazgos del detector, las divergencias de `protocolo-cierre`, la
       entrevista de `init` y los hooks.
