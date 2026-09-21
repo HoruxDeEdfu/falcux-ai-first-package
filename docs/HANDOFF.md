@@ -946,3 +946,33 @@ citas literales de documentos que existieron con el nombre viejo, que se anotan
 en vez de corregirse, y la línea que registra el propio renombre. También que si
 su volcado para modelos se genera de las páginas, lo generen después del cambio
 y no antes: es el mismo desfase que produjo CHG-004.
+
+### El renombre queda en el `dev` del sitio (2026-09-21)
+
+El sitio lo aplicó el mismo día, con su fila ADR-015: una veintena de menciones
+en diez capítulos y apéndices, el `projectName` del volcado para modelos
+cambiado **antes** de regenerarlo, y la entrada del glosario mudada de la B a la
+F. Publicar a `prod` es el merge de Charlie; avisarán cuando esté.
+
+Dos cosas que hicieron bien y conviene no deshacer: la entrada del glosario
+conserva el nombre viejo diciendo que lo fue hasta hoy, que es para lo que sirve
+un glosario; y las referencias históricas a la marca anterior, como el lockup y
+la paleta de su ADR-004, se quedan, por la misma razón que acá se queda la
+transcripción del prompt.
+
+**Encontraron una cuarta variante que este repo no había buscado:** «Blueprint»
+a secas, sin el resto del nombre. Apareció una vez allá. Acá se verificó después
+del aviso y no queda ninguna: la palabra sólo sobrevive en menciones legítimas.
+
+**Qué menciones de «blueprint» son correctas acá, para que nadie las «corrija»:**
+
+| Dónde | Por qué se queda |
+|---|---|
+| `blueprint-ai-first-templates`, `blueprint-ai-first-package`, `docs-ai-first-blueprint`, `blueprint-ai-first-mintlify` | Nombres de repositorios, vivos o dados de baja. Son identificadores, no la marca |
+| `ai-blueprint.dev` | Otro proyecto, el de la sección «Posicionamiento» |
+| La transcripción del prompt en `docs/specs/arranque-de-proyecto.md` | Cita literal de una fuente histórica, con su nota al lado |
+| La línea de «Naming» y el resumen de CHG-003 | Registran el renombre; nombrar el nombre viejo es su trabajo |
+| El registro de sesión, el de cambios y el CHANGELOG | Cronología: cuentan qué decía antes, en pasado |
+
+La regla, en una línea: **el nombre viejo sólo puede aparecer en pasado o como
+identificador, nunca nombrando la metodología en presente.**
