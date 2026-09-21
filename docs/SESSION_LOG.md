@@ -30,23 +30,43 @@ web salió al segundo intento.
   próxima, junto al 409 de la `0.1.3`. El aviso de la `0.2.0` ya había llegado
   al sitio (dos veces); queda anotado.
 
+### `--version` (`src/cli.ts`, `test/cli.test.ts`, `docs/specs/version-flag.md`, `README.md`)
+- Hallazgo de la sesión del sitio al verificar la `0.2.1`: `--version` moría
+  con `ERR_PARSE_ARGS_UNKNOWN_OPTION`. Charlie pidió agregarlo; pasó por
+  `protocolo-features` con spec corta en `docs/specs/`.
+- `--version` y `-v` imprimen la versión del `package.json` del paquete,
+  leída en ejecución desde el módulo como `init` resuelve `skills/`; ganan a
+  cualquier comando y salen con 0. `--help` la lista.
+- Primera prueba que ejecuta el binario compilado de punta a punta: 67 → 70.
+- `src/cli.ts` es superficie de decisión y no hubo decisión: el commit lleva
+  `<!-- ai-first: sin-decision -->`. En modo árbol `audit:self` da el P1
+  hasta el commit, como está previsto.
+- El sitio también reportó que su panel mostraba una captura anterior al
+  publish como «salida real de la 0.2.0»; ya lo corrigió por su lado. Quedó
+  anotado en el handoff.
+
 ### Validación
 - typecheck → PASS (lo corre `pnpm test` antes de la suite)
 - lint      → no ejecutado (no hay script)
-- tests     → PASS por exit code, 67/67, sobre `469b27b` antes del publish
-- audit:self → 0 / 100
+- tests     → PASS por exit code, 70/70
+- audit:self → 0 / 100 con el árbol limpio; 20 (1 P1, `src/cli.ts` sin fila
+  de ADR) con el `--version` sin commit, que es lo esperado
 
 ### Pendiente para la siguiente sesión
-- [ ] El tag `v0.2.1` sobre `469b27b`: al cerrar esta entrada no existía en
-      `origin`. Lo pone Charlie.
-- [ ] Mandar al sitio el aviso de la `0.2.1`: versión, hora y que sólo cambia
-      el README. Lo manda Charlie; el texto quedó redactado en esta sesión.
+- [x] ~~El tag `v0.2.1` sobre `469b27b`~~. Puesto y en `origin` el mismo día,
+      a pedido de Charlie, en `301ab84`.
+- [x] ~~Mandar al sitio el aviso de la `0.2.1`~~. Enviado el mismo día a la
+      sesión del sitio, `update_package`, una vez. La sesión `init-completo`,
+      que hizo el bump, lo tenía como pendiente; se le avisó para que no lo
+      duplicara, y confirmó que no salió otro.
 - [ ] El workflow de publish (pendiente 4 del handoff). Ya son seis versiones
       a mano, y ésta costó un login: con trusted publishing no habría token
       que caducar.
 - [ ] npm avisa que `publish-branch` de `.npmrc` es una clave que no conoce y
       que dejará de tolerarla en su próxima mayor. La lee pnpm, que es quien
       la respeta; conviene vigilar si al subir de npm el aviso pasa a error.
+- [ ] Decidir el bump por el `--version` con `version-bump`: es feature, así
+      que por la regla toca MINOR (`0.3.0`). Lo confirma Charlie.
 - [ ] Los de la sesión 5 siguen en pie: el CHANGELOG del paquete, los
       hallazgos del detector, las divergencias de `protocolo-cierre`, la
       entrevista de `init` y los hooks.

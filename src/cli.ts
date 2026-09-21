@@ -12,7 +12,9 @@
 //      una flag inválida, una skill que el paquete no trae, un bloque roto en AGENTS.md
 
 import { parseArgs } from 'node:util';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ErrorAiFirst } from './ai-first-md.js';
 import { auditar } from './audit.js';
 import { iniciar, type ItemInstalado } from './init.js';
@@ -52,11 +54,23 @@ Opciones de audit:
   --json           Salida en JSON en vez del reporte legible.
   --raiz <dir>     Raíz del repositorio. Por defecto, el directorio actual.
   -h, --help       Esta ayuda.
+  -v, --version    La versión instalada del paquete.
 
 Puntaje: entropía = min(100, 40·P0 + 20·P1 + 8·P2). Más alto es peor.
 `;
 
 const NO_ESCRITOS = new Set(['sync', 'adr', 'handoff']);
+
+/**
+ * La versión del package.json del paquete instalado, leída en ejecución desde
+ * el módulo (dist/src/cli.js → ../../package.json), igual que init resuelve
+ * skills/. Así no hay constante que sincronizar en cada version-bump.
+ */
+export function versionDelPaquete(): string {
+  const ruta = fileURLToPath(new URL('../../package.json', import.meta.url));
+  const { version } = JSON.parse(readFileSync(ruta, 'utf8')) as { version: string };
+  return version;
+}
 
 function lineaDeItem(item: ItemInstalado): string {
   const estado = item.estado.padEnd(8);
@@ -78,8 +92,14 @@ async function main(argv: string[]): Promise<number> {
       enlazar: { type: 'boolean', default: false },
       skills: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
+      version: { type: 'boolean', short: 'v', default: false },
     },
   });
+
+  if (values.version) {
+    process.stdout.write(`${versionDelPaquete()}\n`);
+    return 0;
+  }
 
   const comando = positionals[0];
 

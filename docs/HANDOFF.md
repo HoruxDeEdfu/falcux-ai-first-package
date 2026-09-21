@@ -494,9 +494,12 @@ propio npm. Junto al 409 de la `0.1.3`, son los dos falsos fallos conocidos del
 publish a mano; el workflow con trusted publishing (pendiente 4) evita los dos,
 porque no hay token que caducar ni consola que pida OTP.
 
-**Pendiente:** el tag `v0.2.1` sobre `469b27b`, que lo pone Charlie, y el
-aviso al sitio de la `0.2.1` —versión, hora, y que sólo cambia el README—, que
-esta sesión redactó y Charlie manda.
+**Cerrado el mismo día:** el tag `v0.2.1` sobre `469b27b` está en `origin`, y
+el aviso al sitio salió una vez, a su sesión `update_package`. El sitio lo
+verificó por su lado y devolvió dos hallazgos: su panel mostraba como «salida
+real de la 0.2.0» una captura anterior al publish —el código no cambió entre
+la `0.2.0` y la `0.2.1`, lo comprobó corriendo las dos—, y el CLI no tenía
+`--version`. Lo segundo entró el mismo día (`docs/specs/version-flag.md`).
 
 ### CHG-001: `init` salta lo que existe y sigue (2026-09-18, ADR-017)
 

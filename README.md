@@ -71,6 +71,7 @@ ai-first audit --base origin/main   # CI: el rango que la rama trae
 ai-first audit --estricto           # corta también por P1 y P2
 ai-first audit --registrar          # escribe el resultado en AI-FIRST.md
 ai-first audit --json
+ai-first --version                  # la versión instalada
 ```
 
 ## Desarrollo
