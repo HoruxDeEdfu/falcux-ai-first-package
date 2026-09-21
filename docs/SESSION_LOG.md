@@ -10,6 +10,132 @@
 
 ---
 
+## 2026-09-21 (sesión 7) — El arranque de un proyecto entra al paquete: el hueco 2, cerrado
+
+### Resumen
+El paquete cubría desde que el repo existía y estaba documentado; la mitad de
+arriba del ciclo —definir el producto, decidir el stack, escribir PRD,
+arquitectura y specs— vivía en las instrucciones de un proyecto de Claude
+Desktop que entregaba un `.zip` para pegar a mano. Esta sesión la migra entera,
+sin romper la regla de que el paquete corre sin modelo ni red. Pasó por
+`protocolo-features` con la spec `docs/specs/arranque-de-proyecto.md` como
+contrato, escrita en la misma sesión.
+
+### La frontera (ADR-019)
+- **El comando prepara el terreno y verifica; la skill define y escribe.** El
+  modelo que ejecuta la skill es el que el adoptante ya tiene abierto, así que el
+  paquete entrega el procedimiento y nunca la inferencia. Fue lo que permitió
+  migrar el flujo sin meterle una llave de API al detector.
+- `skills/protocolo-arranque/` es la undécima skill: dos fases, como el prompt de
+  origen —descubrimiento con benchmark, cuestionamiento sin límite y postura
+  propositiva; luego los artefactos desde los templates del paquete, en el repo
+  y no en un adjunto—. Su `references/artefactos-por-perfil.md` dice qué sale
+  para cada perfil.
+- Los ocho `templates/` dejan de ser «manuales»: ésta es la skill que los
+  consume. El README y la ayuda de `init` decían lo contrario.
+
+### La entrevista (`src/entrevista.ts`, `src/adaptacion.ts`, `src/cli.ts`)
+- Once preguntas con valor por defecto: nombre, fase, perfil, comandos de
+  verificación, tipos y lint, agentes en paralelo, manifiesto de versión,
+  secuencia de implementación y una confirmación por zona sugerida.
+- Las preguntas son **datos**, no llamadas a la terminal: `entrevistar` recibe
+  cómo leer, así que la suite la corre entera sin TTY.
+- Un proyecto sin documentación se entrevista solo; uno que ya la trae recibe la
+  oferta y por defecto la salta. Es el caso de Charlie, que llega con su `docs/`
+  ya escrita. `--entrevista` fuerza, `--sin-entrevista` calla, y sin terminal
+  interactiva no se pregunta nunca.
+- El escaneo aprendió a deducir tres cosas más —comando de tipos, de lint y el
+  archivo de la versión— porque una pregunta sin valor por defecto se contesta
+  mal.
+
+### Las marcas como manifiesto (ADR-020)
+- `ponerBloqueAgents` se generalizó a `ponerBloqueMarcado`, con un encabezado
+  bajo el cual insertar la primera vez. La adaptación de cada skill va entre
+  `<!-- ai-first:inicio -->` y `<!-- ai-first:fin -->`, dentro de su sección
+  «Adaptación a tu proyecto».
+- **El bloqueador no era tal.** La spec del `init` completo dejó fuera la
+  entrevista porque «reescribir una skill obliga a saber qué escribió la
+  herramienta», y eso pedía `.ai-first/manifest.json`. Las marcas ya respondían
+  esa pregunta desde ADR-018; generalizarlas costó una función.
+- **Una skill enlazada no se adapta nunca**, y se reporta como sugerida:
+  escribir ahí cambiaría `skills/`, que es la fuente publicada y la que el sitio
+  sirve por raw link. Verificado con una prueba que compara la fuente antes y
+  después.
+
+### `git init` (ADR-021)
+- Una carpeta sin `.git` se inicializa y el comando sigue, en vez de salir con 2.
+  Una carpeta que no existe sigue siendo error de uso. Supera esa regla de
+  ADR-003; la prueba vieja se reemplazó por dos.
+
+### El perfil, en el contrato (`src/ai-first-md.ts`)
+- `perfil: { producto, repositorio }`, opcional y dentro del formato 1. Un valor
+  desconocido es error de formato: adivinarlo mal es peor que no tenerlo.
+- Decide qué skills se instalan —una API deja de recibir las tres de UX— y qué
+  artefactos pide el arranque.
+
+### El CHANGELOG (`CHANGELOG.md`)
+- Pendiente arrastrado desde la sesión 5. Reconstruido desde los ocho tags y las
+  fechas reales de npm. Deja constancia de que la `0.1.4` tiene tag y no llegó
+  al registro: la `0.2.0` salió el mismo día y la incluye.
+
+### Dos hallazgos de la prueba a mano
+- **Ctrl+D o la entrada agotada a media entrevista** mataban el comando con un
+  stack trace de Node. Ahora sale un mensaje de una línea que dice qué quedó
+  escrito. Se vio corriendo el binario bajo un pseudo-terminal; ninguna prueba
+  lo habría cazado.
+- El bloque escrito dejaba debajo la lista genérica de la skill, que ya
+  respondía. No se puede borrar —está fuera de las marcas—, así que el bloque
+  cierra diciendo qué relación tienen.
+
+### CHG-003: el nombre de la metodología estaba a medias
+Charlie leyó la skill nueva y vio que citaba «Blueprint AI-First». El renombre a
+**Falcux AI-First** estaba decidido y registrado en la sección «Naming» del
+handoff desde antes del primer publish, pero nunca se aplicó a lo que se
+distribuye: nueve menciones del nombre viejo en ocho archivos, cinco de ellos
+`SKILL.md` publicados. Fue por `protocolo-cambios`, flujo completo, y se cerró
+el mismo día; el resumen está en `docs/changes/CHANGE_LOG.md`.
+
+Dos cosas no se tocaron a propósito: la transcripción del prompt de origen en la
+spec, que es cita literal y ganó una nota, y la línea del handoff que registra el
+renombre. El detector cobró P1 mientras el CHG estuvo abierto, porque el árbol
+traía además todo el feature sin commitear: el check 3 tenía razón, y se apagó
+al cerrar el cambio.
+
+### Validación
+- typecheck → PASS (lo corre `pnpm test` antes de la suite)
+- lint      → no ejecutado (no hay script)
+- tests     → PASS por exit code, 91/91 (70 → 91)
+- audit:self → 0 / 100. En el camino dio 20 por el P1 de dos superficies de
+  decisión sin ADR, que es lo previsto, y 8 por un P2 real: el ADR mencionaba
+  entre acentos graves un archivo que sólo existía como alternativa descartada.
+  El detector cazó su propia regla.
+- A mano: `init --enlazar` sobre este repo sigue reportando todo saltado sin
+  cambiar un byte; y la entrevista completa sobre dos carpetas vacías deja
+  repos que auditan en 0 / 100.
+
+### Pendiente para la siguiente sesión
+- [ ] **Avisar al sitio**, en un solo mensaje y cuando esto llegue a `prod`. No
+      se movió ninguna ruta, así que sus enlaces siguen sirviendo, pero: su
+      catálogo dice diez skills y son once; su capítulo «Gobierno del contexto»
+      gana un protocolo anterior a los tres que describe; y cinco `SKILL.md`
+      cambiaron el nombre de la metodología (CHG-003), así que conviene que
+      revise si su propia prosa arrastra «Blueprint AI-First».
+- [ ] **Distribuir las skills con las marcas ya puestas**, con su lista genérica
+      dentro, para que la entrevista la sustituya en vez de duplicarla. Hoy se
+      resuelve con una línea de cierre en el bloque. Tocaría las once skills,
+      tres de ellas con aviso al sitio.
+- [ ] **El criterio 7 de la spec**: lo que `protocolo-arranque` produce se
+      verifica contra un proyecto real la primera vez que se use. Es una skill,
+      no código, y ninguna prueba la cubre.
+- [ ] **El detector no vigila nombres propios.** CHG-003 sobrevivió a todos los
+      `audit:self` en 0 porque el check 4 comprueba que las rutas existan, no
+      que los términos sean los vigentes. Vigilarlo pediría una lista de
+      términos en el contrato: es un feature, no un cambio.
+- [ ] El workflow de publish (pendiente 4 del handoff). Van siete versiones a
+      mano.
+- [ ] Los hooks (hueco 5), único que queda del mapa de cinco.
+- [ ] `publish-branch` de `.npmrc`: npm avisa que dejará de tolerar la clave.
+
 ## 2026-09-21 (sesión 6) — Sale la `0.2.1`, y la sesión de npm en la máquina estaba caducada
 
 ### Resumen

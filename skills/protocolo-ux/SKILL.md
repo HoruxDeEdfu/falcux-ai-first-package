@@ -131,4 +131,4 @@ Antes de dar por terminada cualquier interfaz:
 3. Documenta las excepciones reales de tu producto — y solo esas.
 4. Complementa con un skill `ux-patterns` propio que traduzca estas reglas a los componentes concretos de tu stack.
 
-Capítulo de referencia: Blueprint AI-First — Parte III, «Protocolo UX».
+Capítulo de referencia: Falcux AI-First — Parte III, «Protocolo UX».

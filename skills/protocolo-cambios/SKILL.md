@@ -187,4 +187,4 @@ Un archivo en `docs/changes/pending/` sin actividad por 2+ semanas: revisarlo y 
 2. Si ya usas un tracker (Jira, Linear), el documento puede vivir ahí; lo que no es negociable es el par estado actual / estado deseado.
 3. Ajusta el umbral de "flujo corto" a tu proyecto: 1-2 archivos es un buen punto de partida.
 
-Capítulo de referencia: Blueprint AI-First — Parte III, «Protocolo de gestión de cambios».
+Capítulo de referencia: Falcux AI-First — Parte III, «Protocolo de gestión de cambios».

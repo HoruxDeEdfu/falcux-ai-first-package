@@ -22,6 +22,23 @@ export interface Alcance {
   tolerancia?: number;
 }
 
+/** Qué clase de producto es y en qué forma de repositorio vive. */
+export const PRODUCTOS = ['saas', 'landing', 'api', 'cli', 'movil'] as const;
+export const REPOSITORIOS = ['unico', 'monorepo', 'multiple'] as const;
+
+export type Producto = (typeof PRODUCTOS)[number];
+export type Repositorio = (typeof REPOSITORIOS)[number];
+
+/**
+ * El perfil decide qué artefactos tiene sentido escribir y qué skills instalar.
+ * Lo declara la entrevista de `init` y lo lee `protocolo-arranque`. Opcional:
+ * un AI-FIRST.md sin perfil se comporta como siempre.
+ */
+export interface Perfil {
+  producto: Producto;
+  repositorio: Repositorio;
+}
+
 /**
  * Cada valor es una ruta relativa a la raíz. Las claves conocidas están
  * nombradas; cualquier otra clave es un documento más que el check de
@@ -51,6 +68,7 @@ export interface AiFirst {
   fase?: string;
   actualizado?: string;
   verificacion?: string;
+  perfil?: Perfil;
   zonas_prohibidas: ZonaProhibida[];
   superficies_de_decision: string[];
   alcance: Alcance;
@@ -116,6 +134,25 @@ function alcance(v: unknown): Alcance {
   return salida;
 }
 
+/**
+ * El perfil, o `undefined` si no está declarado. Un valor fuera de la lista es
+ * error de formato y no un valor por defecto: el perfil decide qué se escribe,
+ * y adivinarlo mal es peor que no tenerlo.
+ */
+function perfil(v: unknown): Perfil | undefined {
+  if (v === undefined || v === null) return undefined;
+  if (!esObjeto(v)) throw new ErrorAiFirst('«perfil» debe ser un mapa con «producto» y «repositorio».');
+  const producto = v['producto'];
+  const repositorio = v['repositorio'];
+  if (typeof producto !== 'string' || !(PRODUCTOS as readonly string[]).includes(producto)) {
+    throw new ErrorAiFirst(`«perfil.producto» debe ser uno de: ${PRODUCTOS.join(', ')}.`);
+  }
+  if (typeof repositorio !== 'string' || !(REPOSITORIOS as readonly string[]).includes(repositorio)) {
+    throw new ErrorAiFirst(`«perfil.repositorio» debe ser uno de: ${REPOSITORIOS.join(', ')}.`);
+  }
+  return { producto: producto as Producto, repositorio: repositorio as Repositorio };
+}
+
 function auditoria(v: unknown): Auditoria | undefined {
   if (!esObjeto(v)) return undefined;
   const h = esObjeto(v['hallazgos']) ? v['hallazgos'] : {};
@@ -150,6 +187,8 @@ export function interpretar(texto: string): AiFirst {
     salida.actualizado = String(datos['actualizado']);
   }
   if (typeof datos['verificacion'] === 'string') salida.verificacion = datos['verificacion'];
+  const perf = perfil(datos['perfil']);
+  if (perf) salida.perfil = perf;
   const aud = auditoria(datos['auditoria']);
   if (aud) salida.auditoria = aud;
   return salida;

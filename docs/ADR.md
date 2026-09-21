@@ -837,3 +837,142 @@ de `AGENTS.md` ganó las marcas a mano, una sola vez: la prosa propia del repo
 quedó fuera y lo genérico adentro. Lo que queda para otra spec es la entrevista
 (hueco 2), que escribirá dentro de las mismas marcas cuando exista el
 manifiesto.
+
+---
+
+## ADR-019 — El arranque de un proyecto entra al paquete: el comando prepara y verifica, una skill define y escribe
+
+- **Fecha:** 2026-09-21
+- **Estado:** aceptada. Cierra el hueco 2 del mapa, que ADR-018 dejó fuera del
+  `init` completo, y lo hace sin el manifiesto que se creía necesario.
+
+**Contexto.** El ciclo que la metodología vende empieza antes del repo: definir
+de qué trata el proyecto, decidir el stack, escribir el PRD, la arquitectura y
+las specs. Esa mitad vivía fuera del paquete, en las instrucciones de un
+proyecto de Claude Desktop que producían los artefactos en un `.zip` para
+pegarlos a mano en el repo recién creado. El prompt está transcrito en
+`docs/specs/arranque-de-proyecto.md`.
+
+Tres costos. Se desincroniza: el prompt pedía visitar el sitio de la metodología
+en cada corrida «porque suele haber actualizaciones», cuando las skills y los
+templates que la definen viajan dentro del paquete. No se versiona: unas
+instrucciones de Desktop no tienen tag, ni ADR, ni prueba. Y obliga al trasvase
+manual que ADR-014 demostró que se hace mal. Un cuarto, más callado: los ocho
+`templates/` no los consumía nadie, y son exactamente los artefactos de esa fase.
+
+La tensión que había que resolver: un PRD lo escribe un modelo, y el paquete
+corre sin modelo, sin llave y sin red, que es lo que sostiene el argumento de
+venta del detector.
+
+**Decisión.**
+
+1. *La frontera.* **El comando prepara el terreno y verifica; la skill define y
+   escribe.** El modelo que ejecuta la skill es el que el adoptante ya tiene
+   abierto, así que el paquete entrega el procedimiento y nunca la inferencia.
+   Ninguna llamada a un modelo entra al código, ni en `init` ni en `audit`.
+2. *La skill `protocolo-arranque`*, la undécima. Dos fases, como el prompt de
+   origen: descubrimiento con benchmark, cuestionamiento sin límite y postura
+   propositiva; y generación de artefactos desde los templates del paquete,
+   **en el repo y en su ruta definitiva**. Se instala sólo cuando se entrevista:
+   se usa una vez, al principio.
+3. *El perfil*, dos ejes en el frontmatter de `AI-FIRST.md` —`producto` y
+   `repositorio`—, opcional y dentro del formato 1. Decide qué skills se
+   instalan y qué artefactos pide el arranque. Un valor desconocido es error de
+   formato: adivinarlo mal es peor que no tenerlo.
+4. *La entrevista de `init`.* Un proyecto sin documentación se entrevista; uno
+   que ya la trae recibe la oferta y por defecto se salta. Sin terminal
+   interactiva no se entrevista nunca. Es el caso de quien llega con su PRD y
+   sus specs ya escritas: las skills se instalan igual, y preguntarle de nuevo
+   lo que ya decidió es hacerle perder el tiempo.
+
+**Alternativas.** *Que el CLI llamara a la API de Claude*: rompe la regla que
+sostiene el detector y obliga al adoptante a tener una llave para configurar un
+repo. *Dejar el arranque fuera, como está*: es lo que causó los cuatro costos.
+*Un comando `ai-first arranque` que imprimiera el prompt para pegarlo*: un paso
+manual más, y el prompt sin acceso al repo no puede leer lo que ya hay.
+*Generar skills nuevas por proyecto*, como pedía el prompt de origen: ya hay
+diez; lo que faltaba era adaptarlas.
+
+**Consecuencias.** El paquete pasa de diez a once skills. No se mueve ninguna
+ruta, así que los enlaces publicados del sitio siguen sirviendo, pero su
+catálogo dice diez: hay que avisarle. `templates/` deja de ser «manual» y gana
+su consumidor; la ayuda de `init` ya no dice lo contrario. Un proyecto sin
+interfaz deja de recibir skills de UX que no aplican, y una landing deja de
+recibir `information-architecture`. La instalación por defecto ya no es fija:
+con entrevista la decide el perfil, sin entrevista siguen siendo las cinco.
+
+---
+
+## ADR-020 — Las marcas son el manifiesto también dentro de cada `SKILL.md`, y una skill enlazada no se adapta nunca
+
+- **Fecha:** 2026-09-21
+- **Estado:** aceptada. Extiende el punto 4 de ADR-018 de `AGENTS.md` a
+  cualquier archivo que la herramienta mantenga. Supera lo que ADR-003 y la
+  spec del `init` completo daban por hecho: que reescribir una skill instalada
+  exigía `.ai-first/manifest.json`.
+
+**Contexto.** La entrevista tiene que escribir lo que responde el adoptante
+dentro de la sección «Adaptación a tu proyecto» de cada skill instalada. Hasta
+hoy se creía que eso obligaba a construir el manifiesto con huellas, para
+distinguir un archivo intacto de uno que el equipo editó. Pero el problema ya
+estaba resuelto un nivel más abajo: en `AGENTS.md`, las marcas dicen qué
+escribió la herramienta y qué escribió el humano, sin huella ninguna.
+
+**Decisión.**
+
+1. *El mismo mecanismo, generalizado.* `ponerBloqueMarcado` reemplaza sólo lo
+   que hay entre `<!-- ai-first:inicio -->` y `<!-- ai-first:fin -->`, en
+   `AGENTS.md` y en cada `SKILL.md`. Lo único que cambia es dónde entra la
+   primera vez: en una skill, bajo su encabezado de adaptación; en el resto, al
+   final. Una marca sin pareja no escribe nada y se reporta, como ya era.
+2. *`.ai-first/manifest.json` no se construye.* Sigue haciendo falta el día que
+   exista un comando `update` que actualice archivos sin marcas.
+3. *Una skill instalada como enlace no se adapta nunca.* Se reporta como
+   sugerida, con la razón. Escribir ahí modificaría la carpeta `skills/` del
+   paquete, que es la fuente de verdad publicada (ADR-006) y la que el sitio
+   sirve por raw link.
+
+**Alternativas.** *Construir el manifiesto con huellas*: mucho más trabajo para
+resolver lo que las marcas ya resuelven, y un segundo lugar donde se registra la
+verdad sobre los mismos archivos. *Escribir la adaptación en un
+archivo de adaptación aparte, fuera de las skills*: el agente tendría que leer dos archivos para saber
+cómo trabajar, y la adaptación perdería el contexto de la skill que adapta.
+*Adaptar también las enlazadas y confiar en que nadie corra la entrevista en el
+repo del paquete*: el cambio viajaría al siguiente que instalara el paquete.
+
+**Consecuencias.** El hueco 2 se cierra sin el bloqueador que lo detenía. Quien
+usa `--enlazar` —este repo, y quien vendoriza en un monorepo— recibe las skills
+sin adaptar y el reporte se lo dice: es el precio correcto de compartir la
+fuente. Cuando exista `update`, el manifiesto vuelve a la mesa sólo para los
+archivos que no tengan marcas.
+
+---
+
+## ADR-021 — `init` sobre una carpeta que no es repositorio la inicializa, en vez de tratarlo como error de uso
+
+- **Fecha:** 2026-09-21
+- **Estado:** aceptada. Supera la regla de ADR-003 por la que no ser repo git
+  era error de uso con salida 2.
+
+**Contexto.** «Un proyecto que todavía no ha sido creado» era el caso que la
+entrevista tenía que cubrir, y el comando lo rechazaba: en una carpeta sin
+`.git`, `init` salía con 2 y pedía correr `git init` a mano. El adoptante tenía
+que recordar un comando previo para poder correr el comando que configura el
+repo.
+
+**Decisión.** Si la carpeta existe y no es repositorio, `init` corre `git init`
+y sigue; el reporte lo dice como un ítem escrito más. Si la carpeta no existe,
+sigue siendo error de uso. No se crean commits ni se toca la configuración del
+usuario: `git init` y nada más.
+
+**Alternativas.** *Preguntar antes de inicializar*: un paso más en el caso más
+común, y la respuesta obvia. *Seguir exigiendo repo git y mejorar el mensaje*:
+deja el primer paso manual, que es justo lo que este comando existe para
+eliminar. *Crear también el primer commit*: el commit es del adoptante, y qué
+entra en él es una decisión suya.
+
+**Consecuencias.** `mkdir proyecto && cd proyecto && npx @falcux/ai-first init`
+basta para tener un repo gobernado. La prueba que verificaba el error de uso se
+reemplazó por una que verifica la inicialización, y otra que comprueba que una
+carpeta inexistente sigue fallando. Es lo único que `git init` escribe en el
+repo del adoptante sin que lo haya pedido explícitamente, y por eso se reporta.

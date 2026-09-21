@@ -2,9 +2,10 @@
 
 [![npm](https://img.shields.io/npm/v/@falcux/ai-first)](https://www.npmjs.com/package/@falcux/ai-first)
 
-El material de la metodología [Blueprint AI-First](https://ai-first.falcux.com),
-listo para llevar a un proyecto: 8 templates de documentos, 10 skills ejecutables
-y el detector de entropía documental.
+El material de la metodología [Falcux AI-First](https://ai-first.falcux.com),
+listo para llevar a un proyecto: 8 templates de documentos, 11 skills ejecutables
+y el detector de entropía documental. Cubre el ciclo entero: desde una idea sin
+escribir hasta un repo gobernado que se audita solo.
 
 > **Publicado en npm desde el 2026-09-17** con `npx @falcux/ai-first`; la
 > versión vigente la dice el badge, no esta prosa. El alias sin scope
@@ -16,14 +17,35 @@ y el detector de entropía documental.
 | | Dónde | Estado |
 |---|---|---|
 | 8 templates de documentos (AGENTS.md, PRD, guía de diseño, arquitectura, documentos vivos) | `templates/` | publicados; viajan en el tarball |
-| 10 skills para agentes de código (Claude Code, Codex, Cursor, OpenCode, Kimi Code) | `skills/` | publicadas; `init` las instala — [cómo](skills/README.md) |
+| 11 skills para agentes de código (Claude Code, Codex, Cursor, OpenCode, Kimi Code) | `skills/` | publicadas; `init` las instala — [cómo](skills/README.md) |
 | Detector de entropía (`ai-first audit`) | `src/` | publicado |
 | `ai-first init`: escribe `AI-FIRST.md` y el ADR, instala las skills, crea `docs/` y mantiene su bloque en `AGENTS.md` | `src/init.ts` | publicado |
-| La entrevista de `init` (adaptar cada skill), `sync`, `adr`, `handoff` | — | mapeados en la especificación, sin escribir |
+| La entrevista de `init`: adapta cada skill instalada a tu proyecto | `src/entrevista.ts` | escrito, sin publicar |
+| `sync`, `adr`, `handoff` | — | mapeados en la especificación, sin escribir |
 
 Las skills viven acá y sólo acá desde el 2026-09-17; el sitio enlaza a las
 de `prod`. Antes eran una copia que el repo del sitio sobreescribía. Eran 8;
-`information-architecture` y `test-fix` entraron ese mismo día (ADR-010).
+`information-architecture` y `test-fix` entraron ese mismo día (ADR-010), y
+`protocolo-arranque` el 2026-09-21 (ADR-019).
+
+## Cómo se empieza
+
+```bash
+mkdir mi-proyecto && cd mi-proyecto
+npx @falcux/ai-first init
+```
+
+En una carpeta que todavía no es repositorio, `init` la inicializa y sigue. Si
+el proyecto no tiene documentación, **entrevista**: pregunta la fase, qué clase
+de producto es, con qué comando se verifica y en qué orden se implementa una
+feature, y escribe las respuestas en `AI-FIRST.md` y dentro de cada skill
+instalada. Si ya llegas con tu PRD y tus specs escritas, lo dice y te ofrece
+saltarla.
+
+Para definir el producto —PRD, arquitectura, specs, decisión de stack— el
+paquete instala la skill `protocolo-arranque` y la conduce tu propio agente. El
+comando nunca llama a un modelo ni a la red: entrega el procedimiento, no la
+inferencia.
 
 ## El detector
 
@@ -47,7 +69,8 @@ carpeta de cambios que los protocolos asumen; las cinco skills sin interfaz en
 diez, `--enlazar` para enlaces en vez de copias); y un bloque delimitado en
 `AGENTS.md` que dice dónde escribe cada skill. Nunca sobreescribe: lo que ya
 existe lo reporta como saltado y sigue, y fuera de sus marcas en `AGENTS.md` no
-toca nada. Los templates siguen siendo manuales: están en `templates/`. El
+toca nada. Los templates de `templates/` los consume `protocolo-arranque`, que
+escribe cada artefacto a partir del suyo. El
 formato de `AI-FIRST.md` y el de las cinco verificaciones están en
 [`docs/SPEC-PAQUETE.md`](docs/SPEC-PAQUETE.md).
 
@@ -74,6 +97,15 @@ ai-first audit --json
 ai-first --version                  # la versión instalada
 ```
 
+```bash
+ai-first init --entrevista          # entrevista aunque el proyecto ya esté documentado
+ai-first init --sin-entrevista      # no pregunta nunca
+ai-first init --skills todas        # las once, en vez de las que el perfil pida
+ai-first init --enlazar             # enlaces simbólicos en vez de copias
+```
+
+Qué cambió en cada versión: [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Desarrollo
 
 Node 22 y pnpm 10, fijados. `pnpm test` compila y corre la suite sobre repos
@@ -82,4 +114,4 @@ git desechables. No hay más dependencias de ejecución que `yaml`.
 ## Licencia
 
 Apache 2.0. Licenciar el material no concede derechos sobre las marcas «Falcux»
-ni «Blueprint AI-First».
+y «Falcux AI-First».

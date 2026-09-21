@@ -1,6 +1,6 @@
 # Falcux AI-First — el paquete
 
-Repo de `@falcux/ai-first`: los 8 templates, las 10 skills y el
+Repo de `@falcux/ai-first`: los 8 templates, las 11 skills y el
 código del detector de entropía documental. El sitio de la metodología vive en
 otro repo, `falcux-ai-first-docs-web`; este repo, `falcux-ai-first-package`,
 **entrega**; aquél **documenta**.
@@ -15,20 +15,23 @@ descartó (ADR-011).
 
 ```
 src/cli.ts                 Entrada de `ai-first`. Dos comandos: init y audit.
-src/init.ts                init mínimo: escanea y escribe AI-FIRST.md + ADR.md.
+src/init.ts                Configura el repo: escanea, escribe, instala skills y las adapta.
+src/entrevista.ts          Las preguntas de init, como datos. El perfil decide qué se instala.
+src/adaptacion.ts          Qué respuesta va a qué skill, dentro de sus marcas.
 src/audit.ts               Orquesta las cinco verificaciones y el puntaje.
 src/verificaciones/        Un archivo por check, en el orden de la spec.
 src/ai-first-md.ts         El lector del contrato. Único sitio que interpreta el frontmatter.
 src/puntaje.ts             40·P0 + 20·P1 + 8·P2. Calibrado contra la portada del sitio.
 src/git.ts  src/glob.ts  src/markdown.ts   Lo único que se le pregunta a git, a los patrones y al Markdown.
 test/                      node:test sobre repos git desechables. Sin mocks.
-skills/                    Las 10 skills. Acá es su único hogar desde ADR-006. El sitio enlaza a las de `prod`.
+skills/                    Las 11 skills. Acá es su único hogar desde ADR-006. El sitio enlaza a las de `prod`.
 templates/                 Los 8 templates. Acá es su único hogar. El sitio enlaza a los de `prod`.
 .agents/skills/            Las skills de ESTE repo (hoy, `criterio`). `.claude/skills` es un enlace a ella (ADR-008).
 docs/SPEC-PAQUETE.md       El contrato: formato de AI-FIRST.md, los 5 checks, el puntaje.
 docs/ADR.md                Por qué se decidió cada cosa. Se agrega, no se edita.
 docs/HANDOFF.md            Estado, pendientes y los bloqueadores que comparte con el sitio.
 docs/SESSION_LOG.md        La cronología: una entrada por sesión. La escribe `protocolo-cierre`.
+CHANGELOG.md               Qué cambió en cada versión publicada, para quien instala.
 ```
 
 ## Tech stack
@@ -107,7 +110,7 @@ Las versiones publicadas llevan tag `vX.Y.Z` sobre el commit que las publicó;
 
 ### Las skills
 
-- `skills/` es la **fuente de verdad** de las 10 skills desde el 2026-09-17
+- `skills/` es la **fuente de verdad** de las 11 skills desde el 2026-09-17
   (ADR-006). Hasta entonces era una copia que el sitio sobreescribía con
   `rsync --delete`; ese workflow ya no existe y nada regenera la carpeta. Se
   edita acá, y sólo acá.
@@ -197,5 +200,11 @@ tildes**; el resto, con ellas.
 - **No pongas entre acentos graves una ruta de otro repo** en `docs/HANDOFF.md`
   ni en `docs/ADR.md`: el check 4 la busca acá y la cobra como P2 en cuanto
   exista la primera carpeta del camino. Las rutas ajenas van en prosa pelada.
-- **No añadas un modelo, una API ni una llamada de red** al detector.
+- **No hagas que la entrevista adapte una skill enlazada.** Con `--enlazar`, lo
+  que hay en `.agents/skills/` apunta a `skills/`: escribir ahí cambia la fuente
+  publicada y el cambio viaja al siguiente que instale el paquete. Se reporta
+  como sugerida y se deja (ADR-020).
+- **No añadas un modelo, una API ni una llamada de red** al detector, ni al
+  `init`. Lo generativo lo conduce una skill, que ejecuta el agente del
+  adoptante; el paquete entrega el procedimiento, no la inferencia (ADR-019).
 - **No metas contenido del sitio acá.** El sitio documenta; este repo entrega.

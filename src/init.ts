@@ -19,9 +19,11 @@
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { NOMBRE_ARCHIVO, interpretar, ErrorAiFirst } from './ai-first-md.js';
-import { esRepoGit, listarArchivos } from './git.js';
+import { NOMBRE_ARCHIVO, interpretar, ErrorAiFirst, type Perfil } from './ai-first-md.js';
+import { esRepoGit, inicializarRepo, listarArchivos } from './git.js';
 import { coincide } from './glob.js';
+import { bloqueDeSkill, ENCABEZADO_ADAPTACION } from './adaptacion.js';
+import { perfilDe, skillsDelPerfil, SKILL_ARRANQUE, type Respuestas } from './entrevista.js';
 
 export interface Sugerencia {
   ruta: string;
@@ -31,6 +33,12 @@ export interface Sugerencia {
 export interface Escaneo {
   proyecto: string;
   verificacion?: string;
+  /** Comando de tipos, si el manifiesto declara uno. Lo usa la adaptación de test-fix. */
+  typecheck?: string;
+  /** Comando de lint, si lo hay. */
+  lint?: string;
+  /** El archivo que lleva el número de versión. Lo usa la adaptación de version-bump. */
+  manifiesto?: string;
   zonas: Sugerencia[];
   superficies: string[];
   artefactos: Record<string, string>;
@@ -92,6 +100,8 @@ export function escanear(raiz: string): Escaneo {
 
   let proyecto = basename(raiz);
   let verificacion: string | undefined;
+  let typecheck: string | undefined;
+  let lint: string | undefined;
   if (archivos.has('package.json')) {
     try {
       const pkg = JSON.parse(readFileSync(join(raiz, 'package.json'), 'utf8')) as {
@@ -100,12 +110,20 @@ export function escanear(raiz: string): Escaneo {
       };
       if (pkg.name) proyecto = pkg.name.replace(/^@[^/]+\//, '');
       const gestor = gestorDePaquetes(archivos);
-      const pasos = ['build', 'test'].filter((s) => pkg.scripts?.[s]).map((s) => `${gestor} ${s === 'test' && gestor === 'npm' ? 'test' : `run ${s}`}`);
+      const comando = (s: string) => `${gestor} ${s === 'test' && gestor === 'npm' ? 'test' : `run ${s}`}`;
+      const pasos = ['build', 'test'].filter((s) => pkg.scripts?.[s]).map(comando);
       if (pasos.length > 0) verificacion = pasos.join(' && ');
+      // `typecheck` es el nombre más común; `tsc` aparece en proyectos viejos.
+      const nombreTipos = ['typecheck', 'type-check', 'tsc'].find((s) => pkg.scripts?.[s]);
+      if (nombreTipos) typecheck = comando(nombreTipos);
+      if (pkg.scripts?.['lint']) lint = comando('lint');
     } catch {
       // Un package.json roto no detiene el init: simplemente no se deduce nada de él.
     }
   }
+
+  // El archivo que lleva la versión, en el orden en que se reconoce el ecosistema.
+  const manifiesto = ['package.json', 'pyproject.toml', 'Cargo.toml', 'go.mod', 'composer.json', 'pubspec.yaml'].find((m) => archivos.has(m));
 
   const zonas = ZONAS_CANDIDATAS.filter((z) => (z.ruta.endsWith('/') ? existeDir(z.ruta) : archivos.has(z.ruta)));
   zonas.push({ ruta: '.env*', razon: 'credenciales' });
@@ -135,6 +153,9 @@ export function escanear(raiz: string): Escaneo {
 
   const salida: Escaneo = { proyecto, zonas, superficies, artefactos, rutaAdr, adrExiste: adrExistente !== undefined };
   if (verificacion) salida.verificacion = verificacion;
+  if (typecheck) salida.typecheck = typecheck;
+  if (lint) salida.lint = lint;
+  if (manifiesto) salida.manifiesto = manifiesto;
   if (componentesDir) salida.componentesDir = componentesDir;
   return salida;
 }
@@ -146,15 +167,33 @@ const q = (s: string) => JSON.stringify(s);
 /** La carpeta del cambio en curso: lo que `init` crea y lo que `alcance.spec` apunta. */
 export const CARPETA_PENDING = 'docs/changes/pending/';
 
-export function generarAiFirst(e: Escaneo, hoy: string): string {
+export interface ExtraAiFirst {
+  /** La fase que respondió la entrevista. Sin ella, el valor queda comentado como hoy. */
+  fase?: string;
+  /** El perfil, si se entrevistó. Ausente, la clave no se escribe. */
+  perfil?: Perfil;
+}
+
+export function generarAiFirst(e: Escaneo, hoy: string, extra: ExtraAiFirst = {}): string {
   const l: string[] = [];
   l.push('---');
   l.push('# Versión del FORMATO de este archivo, no del proyecto.');
   l.push('formato: 1');
   l.push(`proyecto: ${q(e.proyecto)}`);
-  l.push('fase: exploracion              # exploracion | mvp | produccion');
+  // El comentario queda en la misma columna sea cual sea la fase: un archivo
+  // que se lee en un diff no debería moverse de sitio por el valor elegido.
+  const fase = extra.fase ?? 'exploracion';
+  l.push(`fase: ${fase.padEnd(15)}# exploracion | mvp | produccion`);
   l.push(`actualizado: ${hoy}`);
   l.push('');
+  if (extra.perfil) {
+    l.push('# Qué clase de producto es y en qué forma de repositorio vive. Decide qué skills');
+    l.push('# se instalan y qué artefactos pide la fase de definición.');
+    l.push('perfil:');
+    l.push(`  producto: ${extra.perfil.producto}`);
+    l.push(`  repositorio: ${extra.perfil.repositorio}`);
+    l.push('');
+  }
   l.push('# El comando que decide si el proyecto está sano. Lo corre el humano, no el');
   l.push('# detector: audit mide documentación, no compila nada.');
   l.push(e.verificacion ? `verificacion: ${q(e.verificacion)}` : '# verificacion: pnpm build && pnpm test');
@@ -313,9 +352,17 @@ function esEnlace(ruta: string): boolean {
   }
 }
 
-/** Resuelve `--skills`: `todas`, una lista con comas, o nada (las cinco por defecto). */
-export function elegirSkills(seleccion: string[] | 'todas' | undefined, disponibles: string[]): string[] {
-  if (seleccion === undefined) return SKILLS_POR_DEFECTO.filter((s) => disponibles.includes(s));
+/**
+ * Resuelve `--skills`: `todas`, una lista con comas, o nada. Sin selección se
+ * instala `porDefecto`, que son las cinco de siempre salvo que la entrevista
+ * haya fijado un perfil, en cuyo caso el perfil manda.
+ */
+export function elegirSkills(
+  seleccion: string[] | 'todas' | undefined,
+  disponibles: string[],
+  porDefecto: string[] = SKILLS_POR_DEFECTO,
+): string[] {
+  if (seleccion === undefined) return porDefecto.filter((s) => disponibles.includes(s));
   if (seleccion === 'todas') return disponibles;
   const nombres = [...new Set(seleccion.map((s) => s.trim()).filter(Boolean))];
   if (nombres.length === 0) throw new ErrorAiFirst('--skills necesita al menos un nombre, o «todas».');
@@ -338,6 +385,7 @@ export const MARCA_FIN = '<!-- ai-first:fin -->';
 // Cuándo se invoca cada skill, en una línea. Es referencia, no regla: la regla
 // vive en cada SKILL.md. El orden es el del flujo de trabajo.
 const CUANDO_SE_INVOCA: Record<string, string> = {
+  'protocolo-arranque': 'Al principio: hay una idea o un requerimiento y todavía no hay PRD ni arquitectura',
   'protocolo-features': 'Comando, módulo o feature nuevo, antes de escribir código',
   'protocolo-cambios': 'Algo que ya funciona tiene que cambiar, incluidos los documentos de gobierno; con su CHG aunque sea flujo corto',
   'test-fix': 'Después de implementar, o cuando la suite falla',
@@ -403,28 +451,66 @@ export function generarBloqueAgents(d: DatosBloque): string {
   return l.join('\n');
 }
 
+export interface OpcionesBloque {
+  /** Cómo nombrar el archivo en un mensaje de error. */
+  archivo: string;
+  /**
+   * Encabezado tras el cual insertar el bloque la primera vez. Sin él, o si no
+   * aparece, el bloque va al final. Lo usan los SKILL.md, donde la adaptación
+   * pertenece a su sección y no al pie del archivo.
+   */
+  trasEncabezado?: string;
+}
+
 /**
- * Devuelve el AGENTS.md con el bloque puesto: creado si no existía, añadido al
- * final si no tenía marcas, o con el interior de las marcas reemplazado. Fuera
- * de las marcas no cambia una letra. Con una sola marca, o con las marcas al
- * revés, lanza: un bloque roto se arregla a mano (regla 6 de la spec).
+ * Devuelve el texto con el bloque puesto: añadido si no había marcas, o con el
+ * interior de las marcas reemplazado. **Fuera de las marcas no cambia una
+ * letra.** Con una sola marca, o con las marcas al revés, lanza: un bloque roto
+ * se arregla a mano (regla 6 de la spec del init completo).
+ *
+ * Es el mismo mecanismo en AGENTS.md y en un SKILL.md adaptado; lo único que
+ * cambia es dónde entra la primera vez. Las marcas son el manifiesto: dicen qué
+ * escribió la herramienta y qué escribió el humano, y por eso no hace falta
+ * `.ai-first/manifest.json` para reescribir sin pisar nada.
+ */
+export function ponerBloqueMarcado(texto: string, bloque: string, opciones: OpcionesBloque): string {
+  const conMarcas = `${MARCA_INICIO}\n${bloque}\n${MARCA_FIN}`;
+  const i = texto.indexOf(MARCA_INICIO);
+  const f = texto.indexOf(MARCA_FIN);
+
+  if (i !== -1 && f !== -1) {
+    if (f < i) throw new ErrorAiFirst(`${opciones.archivo} tiene ${MARCA_FIN} antes de ${MARCA_INICIO}. Arréglalo a mano y vuelve a correr init.`);
+    return texto.slice(0, i) + conMarcas + texto.slice(f + MARCA_FIN.length);
+  }
+  if (i !== -1 || f !== -1) {
+    throw new ErrorAiFirst(
+      `${opciones.archivo} tiene la marca ${i === -1 ? MARCA_FIN : MARCA_INICIO} sin su pareja. Arréglalo a mano y vuelve a correr init.`,
+    );
+  }
+
+  // Sin marcas: se inserta tras el encabezado pedido, o al final.
+  if (opciones.trasEncabezado !== undefined) {
+    const pos = texto.indexOf(opciones.trasEncabezado);
+    if (pos !== -1) {
+      const finLinea = texto.indexOf('\n', pos + opciones.trasEncabezado.length);
+      const corte = finLinea === -1 ? texto.length : finLinea + 1;
+      return `${texto.slice(0, corte)}\n${conMarcas}\n${texto.slice(corte)}`;
+    }
+  }
+  const separador = texto === '' ? '' : texto.endsWith('\n') ? '\n' : '\n\n';
+  return `${texto}${separador}${conMarcas}\n`;
+}
+
+/**
+ * El bloque de AGENTS.md. Si el archivo no existe, lo crea con una cabecera
+ * mínima y el puntero al template; si existe, delega en `ponerBloqueMarcado`.
  */
 export function ponerBloqueAgents(texto: string | undefined, bloque: string, punteroAlTemplate: string): string {
   const conMarcas = `${MARCA_INICIO}\n${bloque}\n${MARCA_FIN}`;
   if (texto === undefined) {
     return `# AGENTS.md\n\n> Contexto para cualquier agente. Para completarlo, parte de ${punteroAlTemplate}.\n\n${conMarcas}\n`;
   }
-  const i = texto.indexOf(MARCA_INICIO);
-  const f = texto.indexOf(MARCA_FIN);
-  if (i === -1 && f === -1) {
-    const separador = texto === '' ? '' : texto.endsWith('\n') ? '\n' : '\n\n';
-    return `${texto}${separador}${conMarcas}\n`;
-  }
-  if (i === -1 || f === -1) {
-    throw new ErrorAiFirst(`AGENTS.md tiene la marca ${i === -1 ? MARCA_FIN : MARCA_INICIO} sin su pareja. Arréglalo a mano y vuelve a correr init.`);
-  }
-  if (f < i) throw new ErrorAiFirst(`AGENTS.md tiene ${MARCA_FIN} antes de ${MARCA_INICIO}. Arréglalo a mano y vuelve a correr init.`);
-  return texto.slice(0, i) + conMarcas + texto.slice(f + MARCA_FIN.length);
+  return ponerBloqueMarcado(texto, bloque, { archivo: 'AGENTS.md' });
 }
 
 // ---------------------------------------------------------------------------
@@ -440,6 +526,48 @@ export interface ItemInstalado {
   razon?: string;
 }
 
+/**
+ * ¿Este proyecto ya está documentado? Tres señales, cualquiera basta: el
+ * contrato, el archivo de agentes, o algo escrito bajo `docs/`. Es la pregunta
+ * que decide si la entrevista arranca sola o se ofrece: quien llega con su PRD
+ * y sus specs ya escritas no necesita que una herramienta se los vuelva a
+ * preguntar.
+ *
+ * Se mira el listado de git, no el disco: `docs/` llena de artefactos generados
+ * e ignorados no es documentación del proyecto.
+ */
+export function proyectoDocumentado(raiz: string): string[] {
+  const archivos = listarArchivos(raiz);
+  const señales: string[] = [];
+  if (archivos.includes(NOMBRE_ARCHIVO)) señales.push(NOMBRE_ARCHIVO);
+  if (archivos.includes('AGENTS.md')) señales.push('AGENTS.md');
+  // Lo que init mismo escribe no cuenta: si contara, la segunda corrida creería
+  // que el proyecto llegó documentado.
+  const propios = new Set(['docs/ADR.md', 'docs/SESSION_LOG.md', 'docs/changes/CHANGE_LOG.md']);
+  const enDocs = archivos.filter((a) => a.startsWith('docs/') && a.endsWith('.md') && !propios.has(a));
+  señales.push(...enDocs.slice(0, 3));
+  return señales;
+}
+
+/**
+ * El escaneo con lo que la entrevista respondió encima. Lo deducido sólo se
+ * pisa cuando hay respuesta: una respuesta vacía a «¿comando de lint?» significa
+ * que no hay, y eso también es información.
+ */
+export function aplicarRespuestas(e: Escaneo, r: Respuestas): Escaneo {
+  const salida: Escaneo = { ...e, zonas: e.zonas.filter((z) => r[`zona:${z.ruta}`] !== 'no') };
+  if (r['proyecto']) salida.proyecto = r['proyecto'];
+  if (r['verificacion']) salida.verificacion = r['verificacion'];
+  else delete salida.verificacion;
+  if (r['typecheck']) salida.typecheck = r['typecheck'];
+  else delete salida.typecheck;
+  if (r['lint']) salida.lint = r['lint'];
+  else delete salida.lint;
+  if (r['manifiesto']) salida.manifiesto = r['manifiesto'];
+  else delete salida.manifiesto;
+  return salida;
+}
+
 export interface OpcionesInit {
   raiz: string;
   hoy?: string;
@@ -449,6 +577,13 @@ export interface OpcionesInit {
   skills?: string[] | 'todas';
   /** De dónde salen las skills. Por defecto, la carpeta del paquete. */
   origenSkills?: string;
+  /**
+   * Cómo entrevistar, si toca. `iniciar` no lee la terminal ni decide si hay
+   * que preguntar: llama a esto con lo que encontró y recibe respuestas, o
+   * `undefined` si no hubo entrevista. El CLI pasa la terminal; la suite, una
+   * función que devuelve respuestas fijas.
+   */
+  entrevistar?: (escaneo: Escaneo, documentado: string[]) => Promise<Respuestas | undefined>;
 }
 
 export interface ResultadoInit {
@@ -464,26 +599,44 @@ export interface ResultadoInit {
 
 export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
   const { raiz, enlazar = false } = opciones;
-  if (!esRepoGit(raiz)) throw new ErrorAiFirst(`${raiz} no es un repositorio git.`);
+
+  // Una carpeta sin `.git` es un proyecto que todavía no existe, no un error de
+  // uso: se inicializa y se sigue. Antes esto salía con 2 y obligaba a correr
+  // `git init` a mano para poder correr el comando que configura el repo.
+  const repoNuevo = !esRepoGit(raiz);
+  if (repoNuevo) {
+    if (!existsSync(raiz)) throw new ErrorAiFirst(`${raiz} no existe.`);
+    inicializarRepo(raiz);
+  }
 
   const hoy = opciones.hoy ?? new Date().toISOString().slice(0, 10);
   const origenSkills = opciones.origenSkills ?? carpetaSkillsDelPaquete();
   const disponibles = skillsDelPaquete(origenSkills);
 
-  // Todo lo que puede fallar por uso, antes de escribir nada: un nombre de
-  // skill que no existe y un bloque roto en AGENTS.md. Así un error deja el
-  // repo como estaba.
-  const elegidas = elegirSkills(opciones.skills, disponibles);
+  // Todo lo que puede fallar por uso, **antes de entrevistar**: un nombre de
+  // skill que no existe y un bloque roto en AGENTS.md. Descubrirlo después de
+  // doce preguntas sería tirar el trabajo del adoptante a la basura.
+  if (opciones.skills !== undefined) elegirSkills(opciones.skills, disponibles);
   const rutaAgents = join(raiz, 'AGENTS.md');
   const agentsAntes = existsSync(rutaAgents) ? readFileSync(rutaAgents, 'utf8') : undefined;
   ponerBloqueAgents(agentsAntes, '', '');
 
-  const escaneo = escanear(raiz);
+  const escaneoCrudo = escanear(raiz);
+  const respuestas = opciones.entrevistar ? await opciones.entrevistar(escaneoCrudo, proyectoDocumentado(raiz)) : undefined;
+  const escaneo = respuestas ? aplicarRespuestas(escaneoCrudo, respuestas) : escaneoCrudo;
+
+  // Con perfil, el perfil decide qué se instala; sin él, las cinco de siempre.
+  // `protocolo-arranque` entra sólo cuando se entrevistó: es la skill que se usa
+  // una vez, al principio, y en un repo ya definido sobra.
+  const perfil = respuestas ? perfilDe(respuestas) : undefined;
+  const porDefecto = perfil ? [...skillsDelPerfil(perfil), SKILL_ARRANQUE] : SKILLS_POR_DEFECTO;
+  const elegidas = elegirSkills(opciones.skills, disponibles, porDefecto);
   // AGENTS.md va a existir al terminar esta corrida, igual que el ADR: se
   // declara. El registro de sesión y el de cambios no entran: son cronología
   // que nombra lo ya retirado y el check 4 lo cobraría para siempre (ADR-015).
   escaneo.artefactos['agents'] ??= 'AGENTS.md';
   const items: ItemInstalado[] = [];
+  if (repoNuevo) items.push({ ruta: '.git/', estado: 'escrito', razon: 'la carpeta no era un repositorio' });
 
   const escribirSiFalta = (ruta: string, contenido: string) => {
     const absoluta = join(raiz, ruta);
@@ -503,7 +656,10 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
     items.push({ ruta: NOMBRE_ARCHIVO, estado: 'saltado' });
     items.push(sugerirAlcance(readFileSync(rutaAiFirst, 'utf8')));
   } else {
-    const aiFirst = generarAiFirst(escaneo, hoy);
+    const extra: ExtraAiFirst = {};
+    if (respuestas?.['fase']) extra.fase = respuestas['fase'];
+    if (perfil) extra.perfil = perfil;
+    const aiFirst = generarAiFirst(escaneo, hoy, extra);
     interpretar(aiFirst); // Lo que init escribe tiene que poder leerlo audit. Si no, es un bug de init.
     escribirSiFalta(NOMBRE_ARCHIVO, aiFirst);
   }
@@ -538,6 +694,14 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
       cpSync(fuente, destino, { recursive: true, filter: (src) => basename(src) !== '.DS_Store' });
     }
     items.push({ ruta, estado: 'escrito' });
+  }
+
+  // 4b. La adaptación: lo que la entrevista respondió, dentro de las marcas de
+  // cada skill instalada. Sin entrevista no se toca ninguna.
+  if (respuestas) {
+    for (const nombre of elegidas) {
+      items.push(adaptarSkill(carpetaSkills, nombre, respuestas, escaneo));
+    }
   }
 
   // 5. El enlace para Claude Code, sólo si no hay nada en su sitio (ADR-008).
@@ -582,6 +746,38 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
     saltados: items.filter((i) => i.estado === 'saltado').map((i) => i.ruta),
     sugeridos: items.filter((i) => i.estado === 'sugerido').map((i) => i.ruta),
   };
+}
+
+/**
+ * Escribe la adaptación de una skill entre sus marcas. Tres casos en los que no
+ * se toca, y los tres se reportan:
+ *
+ *   - **La skill es un enlace.** Escribir ahí modificaría la carpeta `skills/`
+ *     del paquete, que es la fuente de verdad publicada y la que el sitio sirve
+ *     por raw link. Una corrida de `init --enlazar --entrevista` sobre el repo
+ *     del paquete adaptaría el paquete a sí mismo, y el cambio viajaría al
+ *     siguiente que lo instalara.
+ *   - **No hay SKILL.md** donde debería: no es una skill, no se inventa una.
+ *   - **La entrevista no aporta nada** para esa skill.
+ */
+function adaptarSkill(carpetaSkills: string, nombre: string, respuestas: Respuestas, escaneo: Escaneo): ItemInstalado {
+  const ruta = `${CARPETA_SKILLS}/${nombre}/SKILL.md`;
+  const carpeta = join(carpetaSkills, nombre);
+
+  if (esEnlace(carpeta)) {
+    return { ruta, estado: 'sugerido', razon: 'es un enlace a la carpeta del paquete; adaptarla cambiaría la fuente, no tu copia' };
+  }
+  const archivo = join(carpeta, 'SKILL.md');
+  if (!existsSync(archivo)) return { ruta, estado: 'saltado', razon: 'no tiene SKILL.md' };
+
+  const bloque = bloqueDeSkill(nombre, respuestas, escaneo);
+  if (bloque === undefined) return { ruta, estado: 'saltado', razon: 'la entrevista no aporta nada para esta skill' };
+
+  const antes = readFileSync(archivo, 'utf8');
+  const despues = ponerBloqueMarcado(antes, bloque, { archivo: ruta, trasEncabezado: ENCABEZADO_ADAPTACION });
+  if (antes === despues) return { ruta, estado: 'saltado', razon: 'la adaptación ya está al día' };
+  writeFileSync(archivo, despues, 'utf8');
+  return { ruta, estado: 'escrito' };
 }
 
 /**

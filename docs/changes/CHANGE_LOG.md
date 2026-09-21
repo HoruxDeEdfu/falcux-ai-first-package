@@ -4,8 +4,8 @@
 > archivos, resumen y lecciones. El documento CHG-XXX vive en `pending/` mientras
 > el cambio está en curso y se elimina al cerrarlo; acá queda su resumen.
 >
-> No confundir con el `CHANGELOG.md` de la raíz, que —cuando exista— dirá qué
-> cambió en cada versión publicada del paquete, para quien lo instala.
+> No confundir con el `CHANGELOG.md` de la raíz, que dice qué cambió en cada
+> versión publicada del paquete, para quien lo instala. Existe desde la 0.4.0.
 
 ---
 
@@ -62,3 +62,46 @@ desactualiza; la solución no es acordarse, es no copiarlo. Y el shasum del
 tarball publicado con `pnpm publish` no coincide con el de `npm pack` local
 aunque el contenido sea idéntico: pnpm normaliza el `package.json`. Se compara
 desempaquetando, no por shasum.
+
+## CHG-003 — El nombre de la metodología queda en «Falcux AI-First» en todo el paquete
+
+- **Fecha:** 2026-09-21 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo completo por contar ocho archivos, sin schema ni
+  decisión de ADR: la decisión ya estaba tomada y esto la aplica
+- **Archivos:** los cinco `SKILL.md` que citan el manual —`protocolo-features`,
+  `protocolo-cambios`, `protocolo-cierre`, `protocolo-ux`, `protocolo-arranque`—,
+  `skills/README.md`, `README.md`, `docs/HANDOFF.md` y
+  `docs/specs/arranque-de-proyecto.md`
+
+**Resumen.** El renombre a «Falcux AI-First» estaba decidido y registrado en la
+sección «Naming» del handoff desde antes del primer publish, pero nunca se
+aplicó a los archivos que se distribuyen. El paquete publicado en npm enseñaba
+el nombre que el propio proyecto había abandonado, y tres variantes circulaban a
+la vez: nueve menciones de «Blueprint AI-First», cuatro de «Falcux AI-First» y
+tres de «AI-First Blueprint». Lo encontró Charlie leyendo la skill
+`protocolo-arranque` recién escrita, que heredó la fórmula de las otras cuatro.
+
+Ahora las cinco skills cierran con «Capítulo de referencia: Falcux AI-First», y
+los dos README y la cláusula de marcas dicen lo mismo. Ninguna ruta se movió, así
+que ningún enlace publicado se rompe.
+
+**Lo que a propósito no cambió.** La transcripción del prompt de origen en
+`docs/specs/arranque-de-proyecto.md` conserva «AI-First Blueprint» porque es una
+cita literal de un documento que existió con ese nombre; ganó una nota que
+aclara cuál es el vigente. La línea del handoff que registra el renombre también
+lo conserva, porque su trabajo es nombrarlo.
+
+**Lecciones.**
+
+1. **El detector no vigila nombres propios.** El check 4 comprueba que las rutas
+   mencionadas existan, no que los términos sean los vigentes, así que un
+   renombre a medias sobrevive a un `audit:self` en 0. Vigilarlo pediría una
+   lista de términos vigentes en el contrato de `AI-FIRST.md`: es un feature, no
+   un cambio, y queda anotado en el handoff.
+2. **Una decisión registrada no es una decisión aplicada.** El handoff decía el
+   nombre correcto desde el principio; nadie volvió a leerlo al escribir las
+   skills. Un renombre necesita su propio recuento a cero, no sólo su fila.
+3. **La fórmula copiada propaga el error.** La skill nueva heredó «Blueprint
+   AI-First» de las cuatro anteriores sin que nadie lo notara al escribirla. Lo
+   que se copia entre archivos hermanos hay que verificarlo contra la fuente, no
+   contra el hermano.

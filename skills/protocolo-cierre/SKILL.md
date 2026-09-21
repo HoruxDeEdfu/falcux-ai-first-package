@@ -172,4 +172,4 @@ Cuando todo esté verde → Fase C: commit de código + docs juntos.
 2. El árbol de enrutamiento de aprendizajes es lo más valioso de este skill: define los destinos **antes** de necesitarlos, o todo termina en el AGENTS.md.
 3. Si no versionas, elimina el Paso 6.
 
-Capítulo de referencia: Blueprint AI-First — Parte III, «Protocolo de cierre de sesión».
+Capítulo de referencia: Falcux AI-First — Parte III, «Protocolo de cierre de sesión».

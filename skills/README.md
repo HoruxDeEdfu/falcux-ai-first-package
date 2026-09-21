@@ -1,6 +1,6 @@
 # Paquete de inicio — Skills
 
-Las skills de Blueprint AI-First, listas para instalar en un proyecto con
+Las skills de Falcux AI-First, listas para instalar en un proyecto con
 `npx @falcux/ai-first init`.
 
 Un **protocolo** es un documento que explica un procedimiento; una **skill** es ese mismo procedimiento en un formato que la AI carga sola cuando corresponde. Este paquete contiene ambas cosas: los cuatro protocolos de la Parte III convertidos a skills, más seis skills que nacieron en proyectos reales y resultaron ser transferibles.
@@ -84,9 +84,13 @@ El enlace viaja bien en git (se versiona como enlace, no como copia). Si tu equi
 
 Luego **adapta cada skill a tu proyecto**. Todas traen una sección «Adaptación a tu proyecto» al final que indica exactamente qué cambiar. Una skill copiada sin adaptar es peor que no tenerla: ocupa presupuesto de carga y da instrucciones que no aplican.
 
+**Eso lo hace la entrevista de `init`**, y sólo hay que hacerlo a mano en lo que la entrevista no cubre. Pregunta la fase, qué clase de producto es, con qué comando se verifica, en qué orden se implementa una feature y qué archivo lleva la versión, y escribe las respuestas dentro de cada skill instalada, entre `<!-- ai-first:inicio -->` y `<!-- ai-first:fin -->`. Fuera de esas marcas no toca una letra, así que lo que agregues sobrevive a la siguiente corrida. Un proyecto que ya llega documentado recibe la oferta y por defecto la salta; sin terminal interactiva no se entrevista nunca.
+
+**Una skill instalada con `--enlazar` no se adapta**, y el reporte lo dice: escribir ahí cambiaría la carpeta `skills/` del paquete en vez de tu copia.
+
 ## Si un nombre ya está ocupado
 
-Seis de las diez llevan nombres de oficio —`i18n`, `test-fix`, `version-bump`,
+Seis de las once llevan nombres de oficio —`i18n`, `test-fix`, `version-bump`,
 `ux-writer`, `ux-audit`, `information-architecture`— y tu proyecto puede tener ya
 una skill con alguno. El estándar *Agent Skills* no tiene namespacing: el
 directorio es plano y el nombre es la clave. Cada herramienta resuelve el empate
@@ -122,6 +126,7 @@ que deja escrita la equivalencia en tu `AGENTS.md` mientras las dos convivan.
 
 | Skill | Qué automatiza | Se activa |
 |-------|----------------|-----------|
+| `protocolo-arranque` | Descubrimiento con benchmark y cuestionamiento exhaustivo, decisión de stack al ADR, y los artefactos de inicio desde los templates del paquete | Al principio del proyecto, cuando hay una idea y todavía no hay PRD |
 | `protocolo-features` | Pre-implementación en 7 pasos, secuencia por capas, checklists | Antes de un feature nuevo |
 | `protocolo-cambios` | Clasificación, documento de cambio, análisis de impacto | Al modificar algo que ya funciona |
 | `protocolo-cierre` | Fase A: log de sesión, docs, enrutamiento de aprendizajes | Al terminar una sesión |
@@ -156,10 +161,13 @@ registro de decisiones que arranca en el mes seis nace con seis meses de huecos.
 
 ## Orden de adopción sugerido
 
-No instales las diez el primer día. La progresión que funciona:
+No instales las once el primer día. La progresión que funciona:
 
 0. **Declara tus Zonas Prohibidas y abre un `docs/ADR.md` vacío.** No es una skill, son
    diez minutos, y es lo que hace que los cuatro protocolos tengan dónde escribir.
+   Si el proyecto todavía no existe, esto lo hace `init` y el resto lo conduce
+   **`protocolo-arranque`**, que corre una sola vez y deja el PRD, la
+   arquitectura y las primeras specs.
 1. **`protocolo-ux`** — es la que más errores evita y no depende de nada más. **`information-architecture`** va con ella en cuanto el producto tenga más de un módulo: decide la estructura sobre la que `protocolo-ux` define el comportamiento.
 2. **`protocolo-features`** y **`protocolo-cambios`** — cuando el proyecto tenga features que mantener. **`test-fix`** entra con ellas: es el paso de verificación que las dos invocan.
 3. **`protocolo-cierre`** — cuando las sesiones empiecen a perder contexto entre una y otra.
@@ -169,16 +177,16 @@ No instales las diez el primer día. La progresión que funciona:
 ## Dependencias entre skills
 
 ```
-information-architecture ──> protocolo-ux ──> ux-audit
-                              ▲
-protocolo-features ──┬────────┘
-                     ├──> ux-writer ────> i18n
-                     └──> test-fix
-protocolo-cambios ───┘
-protocolo-cierre ────────> version-bump
+protocolo-arranque ──> information-architecture ──> protocolo-ux ──> ux-audit
+        │                                            ▲
+        └──────────> protocolo-features ──┬──────────┘
+                                          ├──> ux-writer ────> i18n
+                                          └──> test-fix
+                     protocolo-cambios ───┘
+                     protocolo-cierre ────────> version-bump
 ```
 
-Las flechas indican «invoca» o «asume cargada», no un orden de instalación obligatorio: cada skill funciona por separado.
+Las flechas indican «invoca» o «asume cargada», no un orden de instalación obligatorio: cada skill funciona por separado. La única que se corre **una sola vez** es `protocolo-arranque`: produce la spec que `protocolo-features` da por hecha en su Paso 1.
 
 ## Nota sobre portabilidad
 

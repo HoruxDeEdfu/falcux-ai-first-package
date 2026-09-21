@@ -41,6 +41,16 @@ export function esRepoGit(raiz: string): boolean {
   return gitOpcional(raiz, ['rev-parse', '--is-inside-work-tree'])?.trim() === 'true';
 }
 
+/**
+ * Convierte una carpeta en repositorio git. Es lo único que el paquete le pide
+ * a git que cambie, y sólo cuando no hay `.git`: un proyecto que todavía no
+ * existe se arranca acá, no en otro comando que el adoptante tiene que
+ * recordar. No crea commits ni toca la configuración del usuario.
+ */
+export function inicializarRepo(raiz: string): void {
+  git(raiz, ['init', '-q']);
+}
+
 export function tieneHead(raiz: string): boolean {
   return gitOpcional(raiz, ['rev-parse', '--verify', '--quiet', 'HEAD']) !== undefined;
 }

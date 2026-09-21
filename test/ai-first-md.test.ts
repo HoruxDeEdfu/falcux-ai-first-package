@@ -119,3 +119,18 @@ test('registrarAuditoria agrega el bloque si no existía', async () => {
     repo.limpiar();
   }
 });
+
+test('el perfil se interpreta cuando está declarado, y es opcional', () => {
+  const con = interpretar(aiFirstMd('perfil:\n  producto: saas\n  repositorio: monorepo'));
+  assert.deepEqual(con.perfil, { producto: 'saas', repositorio: 'monorepo' });
+
+  // Sin perfil no hay valor por defecto: el contrato sigue siendo válido.
+  assert.equal(interpretar(aiFirstMd()).perfil, undefined);
+});
+
+test('un perfil incompleto o con un valor desconocido es error de formato', () => {
+  // Adivinar el perfil es peor que no tenerlo: decide qué artefactos se escriben.
+  assert.throws(() => interpretar(aiFirstMd('perfil:\n  producto: videojuego\n  repositorio: unico')), ErrorAiFirst);
+  assert.throws(() => interpretar(aiFirstMd('perfil:\n  producto: saas')), ErrorAiFirst);
+  assert.throws(() => interpretar(aiFirstMd('perfil: saas')), ErrorAiFirst);
+});

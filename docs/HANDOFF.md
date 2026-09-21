@@ -21,7 +21,7 @@ nadie los reutilice.
 | Comando | Estado |
 |---|---|
 | `ai-first audit` | Los cinco checks de la spec, el puntaje y los exit codes. Dos modos: árbol de trabajo (hook local) y `--base <ref>` (CI). |
-| `ai-first init` | Completo desde el 2026-09-18 (ADR-018): escribe `AI-FIRST.md` y `docs/ADR.md`, instala las skills en `.agents/skills/` con el enlace `.claude/skills`, crea `docs/SESSION_LOG.md` y `docs/changes/`, y mantiene su bloque con marcas en `AGENTS.md`. Nunca sobreescribe (ADR-003); lo que ya existe lo salta, lo reporta y sigue (ADR-017). Sin escribir: la entrevista que adapta cada skill (hueco 2). |
+| `ai-first init` | Completo desde el 2026-09-18 (ADR-018): escribe `AI-FIRST.md` y `docs/ADR.md`, instala las skills en `.agents/skills/` con el enlace `.claude/skills`, crea `docs/SESSION_LOG.md` y `docs/changes/`, y mantiene su bloque con marcas en `AGENTS.md`. Nunca sobreescribe (ADR-003); lo que ya existe lo salta, lo reporta y sigue (ADR-017). Desde el 2026-09-21 (ADR-019) **entrevista** y adapta cada skill instalada, e inicializa la carpeta si todavía no es repositorio (ADR-021). |
 | `sync`, `adr`, `handoff` | Mapeados abajo, sin escribir. El CLI lo dice con exit 2. |
 
 **Lo que la spec dejó abierto y cómo se resolvió** — si la spec cambia, alinear
@@ -625,9 +625,15 @@ arquitectura detectada (ej. Next.js + Supabase simple vs. hexagonal).
    de `AGENTS.md`. Sin entrevista todavía (ese es el hueco 2), y los templates
    siguen siendo manuales; los adaptadores por herramienta no hicieron falta,
    porque «.agents/skills/» las sirve a todas (ADR-008).
-2. **Adaptación manual de cada skill** → el comando `init` entrevista el proyecto
-   (stack, comandos de verificación, arquitectura, agentes paralelos sí/no) y reescribe
-   solo las secciones «Adaptación a tu proyecto». Elimina el warning actual.
+2. ~~**Adaptación manual de cada skill**~~ → **cerrado el 2026-09-21**
+   (ADR-019, ADR-020). `init` entrevista cuando el proyecto no está documentado
+   —fase, perfil, comandos, secuencia, agentes paralelos, manifiesto— y escribe
+   las respuestas en `AI-FIRST.md` y dentro de las marcas de la sección
+   «Adaptación a tu proyecto» de cada skill instalada. No hizo falta el
+   manifiesto con huellas que se creía bloqueante: las marcas ya lo resolvían.
+   Con la entrevista llegó también `protocolo-arranque`, la undécima skill, que
+   cubre lo que antes se hacía en un proyecto de chat aparte: descubrimiento,
+   decisión de stack y los artefactos de inicio desde los templates.
 3. **Nada ejecutable** → ningún skill declara `allowed-tools` ni trae scripts. Construir
    el **detector de entropía** en código puro (git + fs + regex, sin modelo ni API key).
    Checks iniciales:
@@ -764,8 +770,8 @@ Se eligió licencia única y permisiva para todo —código, skills y manual jun
 porque es lo que hacen los referentes del sector: ai-blueprint.dev usa MIT e
 impeccable usa Apache 2.0, y ninguno separa el contenido del código. Entre las dos,
 Apache 2.0 por su cláusula 6: deja escrito que licenciar el material no concede
-derechos sobre las marcas «Falcux» ni «Blueprint AI-First», que es el activo del
-modelo —el blueprint atrae, falcux.com vende—.
+derechos sobre las marcas «Falcux» y «Falcux AI-First», que son el activo del
+modelo —el manual atrae, falcux.com vende—.
 
 Replicado también en `blueprint-ai-first-templates` (commit `7c84650`, ya en su
 `main` público): es de donde la gente clona las skills y no declaraba licencia,
@@ -817,3 +823,67 @@ redirige: `git remote set-url origin` cuando se abra ese repo.
 
 ---
 
+
+### El arranque entra al paquete (2026-09-21, ADR-019, ADR-020, ADR-021)
+
+El hueco 2 se cierra, y de paso el ciclo que la metodología vende deja de estar
+cortado por la mitad. Hasta hoy el paquete cubría desde que el repo existía y
+estaba documentado; la fase de antes —definir el producto, decidir el stack,
+escribir PRD, arquitectura y specs— vivía en las instrucciones de un proyecto de
+Claude Desktop que entregaba un `.zip` para pegar a mano. Ese prompt está
+transcrito en la spec `docs/specs/arranque-de-proyecto.md`, para que se vea qué
+se migró y qué se descartó.
+
+**La frontera que lo hizo posible sin romper la regla del detector**: el comando
+prepara el terreno y verifica; la skill define y escribe. El modelo que ejecuta
+la skill es el que el adoptante ya tiene abierto, así que el paquete sigue
+corriendo sin modelo, sin llave y sin red.
+
+**Lo que cambia para quien instala:**
+
+- `npx @falcux/ai-first init` en una carpeta vacía la inicializa como repo,
+  entrevista y deja el proyecto gobernado en un comando.
+- La entrevista escribe en `AI-FIRST.md` y dentro de las marcas de cada skill
+  instalada. Un proyecto que ya llega con su documentación recibe la oferta y por
+  defecto la salta, que es el caso de quien viene de definir en otro sitio.
+- El paquete pasa de diez a once skills. `protocolo-arranque` se instala sólo
+  cuando se entrevista.
+- La instalación por defecto depende del perfil: un producto sin interfaz deja
+  de recibir skills de UX que no aplican.
+
+**El bloqueador que no era.** La spec del `init` completo dejó fuera la
+entrevista porque «reescribir una skill instalada obliga a saber qué escribió la
+herramienta y qué editó el humano, y eso pide el manifiesto». Las marcas de
+`AGENTS.md` ya respondían esa pregunta: generalizarlas a cualquier archivo
+costó una función y dejó `.ai-first/manifest.json` para el día que exista un
+comando `update`.
+
+**Aviso al sitio, pendiente.** No se movió ninguna ruta, así que los enlaces
+publicados siguen sirviendo. Pero el catálogo del sitio dice diez skills y son
+once, y su capítulo «Gobierno del contexto» gana un protocolo anterior a los
+tres que ya describe. Hay que avisarle cuando esto llegue a `prod`.
+
+**Qué queda del mapa de huecos.** Sólo el 5: los hooks de PostToolUse y Stop.
+El workflow de publish (pendiente 4) sigue en pie y ya son siete versiones a
+mano.
+
+### El nombre de la metodología estaba a medias (2026-09-21, CHG-003)
+
+«Falcux AI-First» está declarado arriba, en «Naming», desde antes del primer
+publish. Nunca se aplicó a lo que se distribuye: cinco `SKILL.md` publicados,
+los dos README y la cláusula de marcas seguían diciendo «Blueprint AI-First».
+Nueve menciones del nombre viejo contra cuatro del nuevo, y una tercera variante
+en circulación. Corregido y cerrado el mismo día; el detalle está en
+`docs/changes/CHANGE_LOG.md`.
+
+**Qué deja abierto.** El detector no lo habría encontrado nunca: el check 4
+verifica que las rutas mencionadas existan, no que los nombres propios sean los
+vigentes, así que un renombre a medias convive con un `audit:self` en 0.
+Vigilarlo pediría declarar en `AI-FIRST.md` una lista de términos vigentes con
+los que quedaron obsoletos, y emitir P2 al encontrar uno viejo. Es un check
+sexto, no un ajuste del cuarto: entra como feature, con su spec, o no entra.
+
+**Aviso al sitio, junto con el de la skill nueva.** Ninguna ruta se movió, así
+que nada publicado se rompe. Pero tres de las cinco skills tocadas son las que
+asumen el capítulo «Gobierno del contexto», y conviene que el sitio revise si su
+propia prosa arrastra el nombre viejo.

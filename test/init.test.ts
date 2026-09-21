@@ -1,11 +1,22 @@
 import assert from 'node:assert/strict';
-import { existsSync, lstatSync, readFileSync, readlinkSync, realpathSync } from 'node:fs';
+import { existsSync, lstatSync, mkdtempSync, readFileSync, readlinkSync, realpathSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { interpretar } from '../src/ai-first-md.js';
 import { auditar } from '../src/audit.js';
 import { listarArchivos } from '../src/git.js';
-import { MARCA_FIN, MARCA_INICIO, SKILLS_POR_DEFECTO, carpetaSkillsDelPaquete, iniciar, skillsDelPaquete } from '../src/init.js';
+import {
+  MARCA_FIN,
+  MARCA_INICIO,
+  SKILLS_POR_DEFECTO,
+  carpetaSkillsDelPaquete,
+  iniciar,
+  proyectoDocumentado,
+  skillsDelPaquete,
+  type Escaneo,
+} from '../src/init.js';
+import { entrevistar } from '../src/entrevista.js';
 import { crearRepo, type Repo } from './ayuda.js';
 
 /** Lo que init deja además de AI-FIRST.md y el ADR, en el orden en que lo escribe. */
@@ -200,8 +211,25 @@ test('init con yarn deduce la verificación con yarn', () =>
     assert.equal(escaneo.verificacion, 'yarn run test');
   }));
 
-test('init fuera de un repo git es error de uso', async () => {
-  await assert.rejects(iniciar({ raiz: '/' }), /no es un repositorio git/);
+test('init sobre una carpeta que todavía no es repo la inicializa y sigue', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'ai-first-vacia-'));
+  try {
+    assert.ok(!existsSync(join(carpeta, '.git')));
+    const { items } = await iniciar({ raiz: carpeta });
+    assert.equal(items.find((i) => i.ruta === '.git/')?.estado, 'escrito');
+    assert.ok(existsSync(join(carpeta, '.git')), 'un proyecto que no existe se arranca acá, no en otro comando');
+    assert.ok(existsSync(join(carpeta, 'AI-FIRST.md')), 'y el resto del init corre igual');
+
+    // La segunda corrida ya encuentra el repo y no reporta haberlo creado.
+    const segunda = await iniciar({ raiz: carpeta });
+    assert.equal(segunda.items.find((i) => i.ruta === '.git/'), undefined);
+  } finally {
+    rmSync(carpeta, { recursive: true, force: true });
+  }
+});
+
+test('init sobre una carpeta que no existe sigue siendo error de uso', async () => {
+  await assert.rejects(iniciar({ raiz: join(tmpdir(), 'ai-first-no-existe-jamas') }), /no existe/);
 });
 
 test('init sobre un repo ya configurado salta todo, y la segunda corrida no cambia nada: criterio 1', () =>
@@ -278,7 +306,7 @@ test('init --skills elige: todas, una lista, y una inventada es error de uso ant
     repo.commit('inicio');
     const { items } = await iniciar({ raiz: repo.raiz, skills: 'todas' });
     const skills = items.filter((i) => i.ruta.startsWith('.agents/skills/'));
-    assert.equal(skills.length, 10);
+    assert.equal(skills.length, skillsDelPaquete().length);
     assert.deepEqual(skills.map((i) => i.ruta.split('/').pop()).sort(), skillsDelPaquete());
     assert.ok(skills.every((i) => i.estado === 'escrito'));
   });
@@ -342,4 +370,116 @@ test('init no sugiere alcance.spec cuando el AI-FIRST.md existente ya lo declara
     const { sugeridos, items } = await iniciar({ raiz: repo.raiz });
     assert.deepEqual(sugeridos, []);
     assert.equal(items.find((i) => i.ruta === 'AI-FIRST.md (alcance.spec)')?.razon, 'ya declarado');
+  }));
+
+// ---------------------------------------------------------------------------
+// La entrevista
+// ---------------------------------------------------------------------------
+
+/** Un entrevistador que contesta por clave; lo que no esté, con Enter. */
+function respondiendo(valores: Record<string, string>) {
+  return (escaneo: Escaneo) => entrevistar(escaneo, async (p) => valores[p.clave] ?? '');
+}
+
+test('con entrevista, init escribe el perfil, instala lo que el perfil pide y adapta cada skill: criterio 1', () =>
+  conRepo(async (repo) => {
+    repo.escribir('package.json', JSON.stringify({ name: 'tienda', scripts: { test: 'vitest', lint: 'eslint .' } }));
+    repo.commit('inicio');
+
+    const { items } = await iniciar({
+      raiz: repo.raiz,
+      hoy: '2026-09-21',
+      entrevistar: respondiendo({ fase: 'mvp', producto: 'landing', repositorio: 'unico', secuencia: 'contenido' }),
+    });
+
+    const a = interpretar(readFileSync(join(repo.raiz, 'AI-FIRST.md'), 'utf8'));
+    assert.deepEqual(a.perfil, { producto: 'landing', repositorio: 'unico' });
+    assert.equal(a.fase, 'mvp');
+    assert.equal(a.verificacion, 'npm test', 'lo deducido, confirmado con Enter');
+
+    // Una landing tiene interfaz: entran las de UX, y la de arranque por haber entrevistado.
+    assert.ok(existsSync(join(repo.raiz, '.agents/skills/ux-writer')));
+    assert.ok(existsSync(join(repo.raiz, '.agents/skills/protocolo-arranque')));
+    assert.ok(!existsSync(join(repo.raiz, '.agents/skills/information-architecture')), 'una landing no navega por módulos');
+
+    const features = readFileSync(join(repo.raiz, '.agents/skills/protocolo-features/SKILL.md'), 'utf8');
+    assert.ok(features.includes(MARCA_INICIO) && features.includes(MARCA_FIN));
+    assert.match(features, /## Adaptación a tu proyecto\n\n<!-- ai-first:inicio -->/, 'el bloque entra bajo su encabezado');
+    assert.match(features, /contenido y copia/, 'la secuencia elegida');
+    assert.match(features, /npm run lint/);
+    assert.match(features, /Ajusta la secuencia de implementación/, 'lo que la skill ya decía sigue fuera de las marcas');
+
+    // La que no aplica a este perfil se salta y lo dice.
+    assert.equal(items.find((i) => i.ruta === '.agents/skills/version-bump/SKILL.md')?.estado, 'escrito');
+
+    const informe = await auditar({ raiz: repo.raiz });
+    assert.equal(informe.entropia, 0, JSON.stringify(informe.resultados, null, 2));
+  }));
+
+test('un proyecto ya documentado se detecta, y sin entrevista nada se adapta: criterio 2', () =>
+  conRepo(async (repo) => {
+    repo.escribir('AGENTS.md', '# Reglas propias\n');
+    repo.escribir('docs/PRD.md', '# Producto');
+    repo.escribir('docs/specs/checkout.md', '# Checkout');
+    repo.commit('inicio');
+
+    const señales = proyectoDocumentado(repo.raiz);
+    assert.ok(señales.includes('AGENTS.md'));
+    assert.ok(señales.includes('docs/PRD.md'));
+
+    // Sin entrevistador, init se comporta como siempre: instala y no adapta.
+    const { items } = await iniciar({ raiz: repo.raiz });
+    assert.ok(!items.some((i) => i.ruta.endsWith('/SKILL.md')), 'ninguna skill se toca');
+    const features = readFileSync(join(repo.raiz, '.agents/skills/protocolo-features/SKILL.md'), 'utf8');
+    assert.ok(!features.includes(MARCA_INICIO));
+    assert.ok(!existsSync(join(repo.raiz, '.agents/skills/protocolo-arranque')), 'sin entrevista no entra');
+  }));
+
+test('lo que init escribe no cuenta como documentación previa en la segunda corrida', () =>
+  conRepo(async (repo) => {
+    repo.escribir('README.md', '# Hola');
+    repo.commit('inicio');
+    assert.deepEqual(proyectoDocumentado(repo.raiz), [], 'un repo pelado no está documentado');
+
+    await iniciar({ raiz: repo.raiz });
+    repo.commit('init');
+    assert.deepEqual(proyectoDocumentado(repo.raiz), ['AI-FIRST.md', 'AGENTS.md'], 'sólo el contrato y el de agentes, que init acaba de crear');
+  }));
+
+test('una skill enlazada nunca se adapta: se cambiaría la fuente del paquete, no la copia: criterio 5', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    const antes = readFileSync(join(carpetaSkillsDelPaquete(), 'protocolo-features/SKILL.md'), 'utf8');
+
+    const { items } = await iniciar({
+      raiz: repo.raiz,
+      enlazar: true,
+      entrevistar: respondiendo({ producto: 'api' }),
+    });
+
+    const item = items.find((i) => i.ruta === '.agents/skills/protocolo-features/SKILL.md');
+    assert.equal(item?.estado, 'sugerido');
+    assert.match(item?.razon ?? '', /enlace a la carpeta del paquete/);
+    assert.equal(readFileSync(join(carpetaSkillsDelPaquete(), 'protocolo-features/SKILL.md'), 'utf8'), antes, 'la fuente del paquete, intacta');
+  }));
+
+test('la entrevista es idempotente: mismas respuestas, ningún cambio: criterio 6', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    const respuestas = respondiendo({ producto: 'api', secuencia: 'contrato-cli', verificacion: 'make test' });
+
+    await iniciar({ raiz: repo.raiz, hoy: '2026-09-21', entrevistar: respuestas });
+    repo.commit('init');
+    const antes = foto(repo.raiz);
+
+    const { items } = await iniciar({ raiz: repo.raiz, hoy: '2026-09-21', entrevistar: respuestas });
+    assert.deepEqual(foto(repo.raiz), antes, 'la segunda corrida no cambia nada');
+    assert.ok(items.every((i) => i.estado !== 'escrito'), 'y lo reporta todo como saltado o sugerido');
+
+    // Con otra respuesta cambia sólo lo de dentro de las marcas.
+    await iniciar({ raiz: repo.raiz, hoy: '2026-09-21', entrevistar: respondiendo({ producto: 'api', secuencia: 'hexagonal', verificacion: 'make test' }) });
+    const features = readFileSync(join(repo.raiz, '.agents/skills/protocolo-features/SKILL.md'), 'utf8');
+    assert.match(features, /infraestructura backend/, 'la secuencia nueva');
+    assert.ok(!features.includes('interfaz de línea de comandos'), 'y la vieja se fue');
+    assert.match(features, /Capítulo de referencia/, 'lo de fuera de las marcas sigue intacto');
   }));

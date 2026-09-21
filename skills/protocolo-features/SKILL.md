@@ -193,4 +193,4 @@ Detener y reevaluar si:
 2. Reemplaza los comandos de verificación por los de tu stack.
 3. Si no usas agentes paralelos, ignora esa sección — el protocolo funciona igual en secuencial.
 
-Capítulo de referencia: Blueprint AI-First — Parte III, «Protocolo de desarrollo de features».
+Capítulo de referencia: Falcux AI-First — Parte III, «Protocolo de desarrollo de features».
