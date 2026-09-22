@@ -176,6 +176,13 @@ este repo llevan esa diferencia anotada arriba del todo; `init` no los volverá 
 tocar porque nunca sobreescribe. La plantilla que se reparte queda sin ese caso,
 que es de uno.
 
+**El hook se estrenó rompiendo un push** (CHG-006). Charlie empujó desde su
+cliente gráfico y el hook murió con `node: command not found`: un push lanzado
+fuera de una terminal no hereda el PATH del shell, y `node` vive en nvm. La
+guarda comprobaba que el archivo del detector existiera, no que hubiera con qué
+ejecutarlo. Corregido el mismo día en la `0.5.1`; la `0.5.0` quedó etiquetada y
+sin publicar.
+
 **Crear `.github/workflows/` despertó un P2 dormido.** En cuanto la carpeta
 existió, el check 4 cobró una mención del handoff al publish.yml que sigue sin
 escribirse: es exactamente lo que `AGENTS.md` advierte —una ruta entre acentos

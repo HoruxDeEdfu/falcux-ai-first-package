@@ -7,7 +7,7 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -176,19 +176,54 @@ test('el hook propaga el código de salida del detector', () =>
     }
   }));
 
-test('sin ai-first alcanzable el hook avisa y deja pasar', () =>
+test('con node pero sin ai-first por ningún lado, el hook avisa y deja pasar', () =>
   conRepo(async (repo) => {
     repo.commit('inicio');
     await iniciar({ raiz: repo.raiz });
 
-    // Un PATH con lo mínimo para correr sh, sin ai-first y sin npx.
-    const vacio = mkdtempSync(join(tmpdir(), 'ai-first-sin-'));
+    // Un PATH con node y **sin npx**, para que ninguna de las tres vías resuelva.
+    // El HOME vacío evita que la guarda cargue el nvm de la máquina: sin eso, la
+    // prueba encontraría npx, correría el detector de verdad y probaría otra cosa.
+    const bin = mkdtempSync(join(tmpdir(), 'ai-first-solo-node-'));
+    const casa = mkdtempSync(join(tmpdir(), 'ai-first-casa-'));
     try {
-      const r = correrHook(repo, `refs/heads/main abc refs/heads/main def\n`, RUTA_HOOK, { PATH: `${vacio}:/usr/bin:/bin` });
+      symlinkSync(execFileSync('sh', ['-c', 'command -v node'], { encoding: 'utf8' }).trim(), join(bin, 'node'));
+      const r = correrHook(repo, 'refs/heads/main abc refs/heads/main def\n', RUTA_HOOK, {
+        PATH: `${bin}:/usr/bin:/bin`,
+        HOME: casa,
+        NVM_DIR: join(casa, '.nvm'),
+      });
       assert.equal(r.codigo, 0, 'no encontrarse a sí mismo no frena un push');
       assert.match(r.salida, /no está instalado/);
     } finally {
-      rmSync(vacio, { recursive: true, force: true });
+      rmSync(bin, { recursive: true, force: true });
+      rmSync(casa, { recursive: true, force: true });
+    }
+  }));
+
+test('sin node en el PATH el hook avisa y deja pasar, aunque el detector esté ahí', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    await iniciar({ raiz: repo.raiz });
+    // El detector, presente y ejecutable. Lo que falta es con qué correrlo: es
+    // el caso de un push lanzado desde un cliente gráfico, que no hereda el
+    // PATH del shell y por tanto no ve el node de nvm ni el de Homebrew.
+    mkdirSync(join(repo.raiz, 'node_modules/.bin'), { recursive: true });
+    writeFileSync(join(repo.raiz, 'node_modules/.bin/ai-first'), '#!/usr/bin/env node\nconsole.log(1);\n', 'utf8');
+    chmodSync(join(repo.raiz, 'node_modules/.bin/ai-first'), 0o755);
+
+    // HOME a una carpeta vacía para que tampoco encuentre nvm por ahí.
+    const casa = mkdtempSync(join(tmpdir(), 'ai-first-casa-'));
+    try {
+      const r = correrHook(repo, 'refs/heads/main abc refs/heads/main def\n', RUTA_HOOK, {
+        PATH: '/usr/bin:/bin',
+        HOME: casa,
+        NVM_DIR: join(casa, '.nvm'),
+      });
+      assert.equal(r.codigo, 0, 'un push no se frena porque falte el intérprete');
+      assert.match(r.salida, /no encuentro node/);
+    } finally {
+      rmSync(casa, { recursive: true, force: true });
     }
   }));
 

@@ -1,6 +1,6 @@
 {
   "name": "@falcux/ai-first",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Gobierno del contexto para proyectos AI-First: mide la entropía documental en código puro, sin modelo ni API key.",
   "type": "module",
   "license": "Apache-2.0",

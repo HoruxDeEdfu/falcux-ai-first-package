@@ -186,3 +186,43 @@ transcripción del prompt: el dato viejo en pasado es registro, no error.
    con su fecha y su ADR en el mismo commit que los cerró; el 3 y el 4 se
    cerraron con código y nadie volvió a la lista. Lo hecho se anota donde
    estaba lo pendiente, no sólo donde se hizo.
+
+---
+
+## CHG-006 — El hook frenaba el push cuando quien lo lanzaba no tenía node en el PATH
+
+- **Fecha:** 2026-09-22 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo completo por contar tres archivos, sin schema ni
+  decisión de ADR
+- **Archivos:** `plantillas/pre-push`, `.githooks/pre-push`,
+  `test/init-punto-de-control.test.ts`
+
+**Resumen.** El primer push real del hook, hecho desde el cliente gráfico de
+Charlie, muri´o con `node: command not found` y git abort´o el push. La causa: un
+push lanzado fuera de una terminal no hereda el PATH del shell, y `node` vive en
+nvm, que se carga desde el perfil. La guarda que el hook ya tenía comprobaba que
+el **archivo** del detector existiera —`-f`, `-x`—, no que hubiera con qué
+**ejecutarlo**, así que no cubría este caso. Ahora el hook recupera `node` de
+Homebrew y de `nvm.sh` antes de elegir nada, y si aun así no aparece avisa y
+sale con 0.
+
+**Quién lo encontró.** Charlie, empujando. No el detector, no la suite, no la
+prueba de extremo a extremo que empuja a un remoto de verdad: esa hereda el PATH
+del proceso de pruebas, que sí tiene node.
+
+**Lo que esto le costó a la versión.** La `0.5.0` quedó etiquetada y sin
+publicar, como la `0.1.4` en su día. La `0.5.1` la incluye entera.
+
+**Lecciones.**
+
+1. **Comprobar que el programa existe no es comprobar que se puede ejecutar.**
+   Es el bug, en una línea. `[ -x algo ]` no dice nada sobre el shebang de ese
+   algo, y `node_modules/.bin/ai-first` empieza por `#!/usr/bin/env node`.
+2. **Un hook se estrena en el entorno más pobre, no en el del autor.** Se probó
+   desde la terminal, donde todo está en el PATH, y se rompió en el primero que
+   no lo tenía. Cualquier cosa que git invoque corre sin perfil: los clientes
+   gráficos, los IDE y los servicios del sistema son el caso normal, no el raro.
+3. **Una prueba puede pasar por la razón equivocada.** La que verificaba «sin
+   `ai-first` alcanzable, avisa y deja pasar» pasaba porque no encontraba nada,
+   no porque la guarda funcionara. Al corregir el hook empezó a fallar, que es
+   como se supo. Ahora aísla el PATH y el HOME para probar lo que dice probar.

@@ -12,7 +12,23 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
-## [0.5.0] — 2026-09-22
+## [0.5.1] — 2026-09-22
+
+### Corregido
+
+- **El hook de `pre-push` ya no frena un push cuando no encuentra `node`.** Un
+  push lanzado desde un cliente gráfico, un IDE o un servicio del sistema no
+  hereda el PATH del shell, donde viven nvm, Homebrew y fnm; el hook moría con
+  `node: command not found` y git abortaba el push. Ahora recupera `node` de las
+  rutas habituales y de `nvm.sh`, y si aun así no aparece **avisa en una línea y
+  deja pasar**, que es lo que la spec pedía desde el principio. La guarda
+  anterior comprobaba que el archivo del detector existiera, no que hubiera con
+  qué ejecutarlo.
+
+## [0.5.0] — 2026-09-22 — sin publicar
+
+> Etiquetada y nunca subida al registro: el defecto del hook apareció en el
+> primer push real, antes de publicarla. La `0.5.1` la incluye entera.
 
 ### Agregado
 

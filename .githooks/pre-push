@@ -22,6 +22,26 @@ while read -r _local_ref _local_sha _remote_ref remote_sha; do
   esac
 done
 
+# Un push lanzado desde un cliente gráfico, un IDE o un servicio del sistema no
+# hereda el PATH del shell: nvm, Homebrew y fnm se cargan en el perfil, que sólo
+# lee una terminal interactiva. Sin esto, el hook muere con «node: command not
+# found» y frena el push —que es justo lo que no debe hacer—.
+if ! command -v node >/dev/null 2>&1; then
+  export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+  if [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then
+    . "${NVM_DIR:-$HOME/.nvm}/nvm.sh" >/dev/null 2>&1
+  fi
+fi
+
+# Ninguna de las formas de invocar el detector funciona sin node, así que se
+# comprueba una sola vez y acá. No encontrarlo **nunca** frena un push.
+if ! command -v node >/dev/null 2>&1; then
+  echo "ai-first: no encuentro node, así que el punto de control no corrió."
+  echo "          Si empujas desde un cliente gráfico, arráncalo desde una"
+  echo "          terminal o deja node en /usr/local/bin."
+  exit 0
+fi
+
 # ADAPTADO PARA ESTE REPO, que es el paquete y no un adoptante suyo: el detector
 # que tiene que correr es el de `dist/`, no el de la versión publicada en npm.
 # La plantilla que `ai-first init` reparte no trae estas cuatro líneas —ver
