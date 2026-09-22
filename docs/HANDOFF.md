@@ -1030,3 +1030,38 @@ nada.
 y sobre `Stop`, que es el «hook de cierre» que la spec del paquete ya nombra al
 explicar `--registrar`. Empezando por Claude Code y sin prometer las otras
 cuatro herramientas.
+
+### La `0.5.1` sale a npm, y la `0.5.0` se queda con el tag (2026-09-22)
+
+Charlie avanzó `prod` a `70b6c73` —avance directo, sin commit de merge— y publicó
+el mismo día. Es la octava versión publicada a mano.
+
+Verificado, no asumido:
+
+- `@falcux/ai-first@0.5.1` en npm a las 21:14:46 UTC, y `latest` apunta a ella.
+  El shasum del tarball bajado del registro coincide con el que el registro
+  declara, `a4693cd5…`, y trae la carpeta `plantillas/` con el hook y el flujo.
+- **El CHANGELOG dentro del tarball dice «[0.5.1] — 2026-09-22», con fecha.** Es
+  CHG-004 funcionando por primera vez dentro del artefacto real: la regla que se
+  escribió ayer después de que el sitio encontrara el defecto en la `0.4.0`.
+- `npx @falcux/ai-first@0.5.1 init --sin-entrevista` sobre una carpeta vacía la
+  configura entera, deja el hook ejecutable con `core.hooksPath` apuntado, y el
+  `audit` que sigue da 0 / 100. El hook de lo publicado, corrido con un PATH sin
+  node, sale con 0: la corrección de CHG-006 viaja.
+
+**La `0.5.0` tiene tag y no llegó al registro**, como la `0.1.4` en su día. Su
+publish falló dos veces por autenticación —`PUT 404` y después `PUT 401`, con
+`npm whoami` respondiendo bien porque eso es una lectura— y entre tanto apareció
+CHG-006. Se resolvió con `npm login` y la `0.5.1` la incluye entera.
+
+**Tercer publish manual que falla**, después de la `0.2.1` por sesión caducada y
+la `0.3.0` porque `prod` iba detrás. El pendiente 4 —trusted publishing y el
+workflow disparado por push a `prod`— es lo que elimina este paso, y lleva tres
+versiones ganando argumentos.
+
+**Aviso al sitio, enviado.** Con la versión y con lo que les toca revisar: su
+capítulo «Gobierno del contexto» llama «hooks» a la tercera capa, y el paquete
+ahora entrega hook de git y flujo de integración continua, no hooks de agente.
+Si el capítulo lo dice en el sentido del agente, quien lea el manual y luego
+instale el paquete buscará algo que no está. Ninguna ruta que ellos enlacen
+cambió, así que no les bloquea nada.
