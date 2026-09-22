@@ -9,3 +9,4 @@ la implementación. Lo que fue decisión difícil de revertir no vive acá: vive
 |---|---|
 | `init-completo.md` | Implementada el 2026-09-18 (ADR-018) |
 | `version-flag.md` | Implementada el 2026-09-21 |
+| `punto-de-control.md` | Implementada el 2026-09-22 (ADR-022) |

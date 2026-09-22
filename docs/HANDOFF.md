@@ -88,7 +88,7 @@ Charlie:
    alias, el archivo de workspace de pnpm y su prueba se borraron el mismo día.
    **Pendiente, para cuando haya versión nueva que publicar:** configurar
    trusted publishing en npmjs.com para `@falcux/ai-first` apuntando a este
-   repo, y escribir `.github/workflows/publish.yml` disparado por push a
+   repo, y escribir el publish.yml de .github/workflows disparado por push a
    `prod`, con `id-token: write`, que corre la suite y `audit:self --base`,
    compara la versión del `package.json` con la publicada y publica sólo si
    cambió. Queda por verificar si `pnpm publish` ya habla OIDC con npm; si no,
@@ -659,8 +659,27 @@ arquitectura detectada (ej. Next.js + Supabase simple vs. hexagonal).
    cinco verificaciones y la fórmula del puntaje. **El código llegó con la
    `0.1.0`**: `src/ai-first-md.ts` es el único sitio que interpreta el
    frontmatter, y el `audit:self` de este repo lo lee con él.
-5. **Hooks no se entregan** → la metodología enseña 3 capas (AGENTS.md / skills / hooks)
-   pero el paquete solo entrega 1 y 2. Falta el hook de PostToolUse y Stop.
+5. ~~**El detector no corre solo**~~ → **cerrado el 2026-09-22** (ADR-022).
+   `init` escribe el punto de control: `.githooks/pre-push`, que corre
+   `audit --base` sobre el rango que se publica y sin `--estricto` —avisa, sólo
+   un P0 interrumpe—, y el flujo de integración continua, que lo corre **con**
+   `--estricto`. `--hook-local` lo pone en `.git/hooks/` sin tocar la
+   configuración; `--sin-hook` y `--sin-ci` lo saltan.
+   Spec en `docs/specs/punto-de-control.md`.
+
+   **Con esto el mapa de cinco huecos queda cerrado entero.**
+
+   Se enunciaba como «faltan los hooks de PostToolUse y Stop», y ese enunciado
+   se retiró el 2026-09-22 por dos razones. Los hooks **quedaron fuera del
+   estándar Agent Skills**: Claude Code los declara en su settings.json, Codex
+   CLI en su config.toml, Gemini CLI llama AfterAgent a su Stop y OpenCode no
+   admite hooks de shell sino plugins de TypeScript —entregar «el hook» son
+   cuatro adaptadores propietarios, justo lo que ADR-008 se construyó para
+   evitar—. Y `PostToolUse` **corre sin commit**, donde la anotación
+   `ai-first: sin-decision` todavía no se puede leer: cobraría P1 en cada
+   edición sin dejar forma de silenciarlo. El hook de agente entra después,
+   como adaptador opcional y sobre `Stop`, que es el «hook de cierre» que la
+   spec del paquete ya nombra.
 
 ## Mapa de comandos v1
 
@@ -981,3 +1000,33 @@ del aviso y no queda ninguna: la palabra sólo sobrevive en menciones legítimas
 
 La regla, en una línea: **el nombre viejo sólo puede aparecer en pasado o como
 identificador, nunca nombrando la metodología en presente.**
+
+### El hueco 5 se cierra, y con él el mapa de cinco (2026-09-22, ADR-022)
+
+El detector ya no depende de que alguien se acuerde. `init` escribe un hook de
+`pre-push` y un flujo de integración continua, y este repo los adoptó el mismo
+día: desde ahora cada push de acá pasa por el detector.
+
+**El enunciado del hueco se retiró antes de implementarlo.** Pedía «el hook de
+PostToolUse y Stop», y eso eran cuatro adaptadores propietarios —los hooks
+quedaron fuera del estándar Agent Skills, y cada agente trae su formato— sobre un
+evento que corre sin commit, donde la anotación de excepción todavía no se puede
+leer. El detalle está en ADR-022 y en la spec.
+
+**Lo que este repo aprendió de adoptarlo.** La plantilla busca el paquete
+instalado, y acá el paquete es el repo: su hook y su flujo tienen que correr el
+detector de `dist/` y no el de la versión publicada, que sería la anterior a los
+cambios del PR. Los dos archivos llevan la diferencia anotada; lo que se reparte
+no la lleva, porque es un caso de uno.
+
+**Aviso al sitio, pendiente.** El capítulo «Gobierno del contexto» enumera tres
+capas y nombra la tercera «hooks». Si con eso se refiere a los del agente, el
+paquete ahora entrega otra cosa —hook de git y CI— y conviene que lo sepan antes
+de que alguien busque en el paquete lo que el manual promete. Si dice
+«automatización», ya está cubierto. Ninguna ruta se movió, así que no les bloquea
+nada.
+
+**Lo que queda de la tercera capa.** El hook de agente, como adaptador opcional
+y sobre `Stop`, que es el «hook de cierre» que la spec del paquete ya nombra al
+explicar `--registrar`. Empezando por Claude Code y sin prometer las otras
+cuatro herramientas.

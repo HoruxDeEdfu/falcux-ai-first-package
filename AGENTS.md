@@ -26,6 +26,8 @@ src/git.ts  src/glob.ts  src/markdown.ts   Lo único que se le pregunta a git, a
 test/                      node:test sobre repos git desechables. Sin mocks.
 skills/                    Las 11 skills. Acá es su único hogar desde ADR-006. El sitio enlaza a las de `prod`.
 templates/                 Los 8 templates. Acá es su único hogar. El sitio enlaza a los de `prod`.
+plantillas/                Lo que `init` escribe tal cual: el hook de pre-push y el flujo de CI. No son los templates.
+.githooks/                 El punto de control de ESTE repo, puesto por su propio `init` (ADR-022).
 .agents/skills/            Las skills de ESTE repo (hoy, `criterio`). `.claude/skills` es un enlace a ella (ADR-008).
 docs/SPEC-PAQUETE.md       El contrato: formato de AI-FIRST.md, los 5 checks, el puntaje.
 docs/ADR.md                Por qué se decidió cada cosa. Se agrega, no se edita.
@@ -168,6 +170,10 @@ Las versiones publicadas llevan tag `vX.Y.Z` sobre el commit que las publicó;
   encadenado ya dejó pasar un rojo una vez.
 - `audit:self` en **0 / 100**. Si no, o hay algo que arreglar o hay una fila de
   ADR que escribir.
+- **El `pre-push` de `.githooks/` lo corre solo** desde el 2026-09-22 (ADR-022),
+  sobre el rango que se publica y sin `--estricto`: avisa, y sólo un P0 frena.
+  El de acá usa `dist/`, así que compila antes de empujar. `--no-verify` lo
+  salta y no se combate.
 
 ### Idioma
 
@@ -197,9 +203,13 @@ tildes**; el resto, con ellas.
   en `docs/HANDOFF.md`. El scope `@falcux` es de la cuenta de usuario `falcux`
   (ADR-004); no hay organización que crear.
 - **No cambies los pesos del puntaje** sin ADR y sin avisar al sitio.
-- **No pongas entre acentos graves una ruta de otro repo** en `docs/HANDOFF.md`
-  ni en `docs/ADR.md`: el check 4 la busca acá y la cobra como P2 en cuanto
-  exista la primera carpeta del camino. Las rutas ajenas van en prosa pelada.
+- **No pongas entre acentos graves una ruta que acá no existe** en
+  `docs/HANDOFF.md` ni en `docs/ADR.md`: el check 4 la busca acá y la cobra
+  como P2 en cuanto exista la primera carpeta del camino. Vale para las rutas de
+  otro repo, para los archivos de configuración de otras herramientas y para lo
+  que este repo todavía no ha escrito —crear `.github/workflows/` despertó de
+  golpe una mención al publish.yml que llevaba cinco días dormida—. Todas van
+  en prosa pelada.
 - **No hagas que la entrevista adapte una skill enlazada.** Con `--enlazar`, lo
   que hay en `.agents/skills/` apunta a `skills/`: escribir ahí cambia la fuente
   publicada y el cambio viaja al siguiente que instale el paquete. Se reporta

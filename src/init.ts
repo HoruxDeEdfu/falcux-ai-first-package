@@ -4,23 +4,23 @@
 // delimitado en AGENTS.md. Es el `init` completo de docs/specs/init-completo.md,
 // montado encima del mínimo de ADR-003 (ADR-018).
 //
-// Lo que NO hace, y por qué: no entrevista ni reescribe skills instaladas
-// (hueco 2 del mapa). Reescribir obliga a saber qué escribió la herramienta y
-// qué editó el humano, y eso pide el manifiesto que ADR-003 dejó pendiente.
-// Esta versión no actualiza nada, así que no lo necesita: crea lo que falta y
-// reporta lo que ya estaba. La única excepción es el bloque de AGENTS.md, donde
-// las marcas hacen de manifiesto: dentro escribe la herramienta; fuera, nadie.
+// Desde la 0.4.0 también entrevista y adapta cada skill instalada (ADR-019), y
+// desde la 0.5.0 escribe el punto de control —el hook de git y el flujo de
+// integración continua— de docs/specs/punto-de-control.md. Lo que no hace es
+// actualizar lo que ya estaba: crea lo que falta y reporta lo demás. Las marcas
+// hacen de manifiesto donde hace falta —dentro escribe la herramienta; fuera,
+// nadie— y por eso no hizo falta el `.ai-first/manifest.json` de ADR-003.
 //
 // Regla de oro: nunca sobreescribe. Ni archivos, ni carpetas, ni enlaces. Lo
 // que ya existe se salta y se reporta como tal; saltar no es error (ADR-017).
 // Una skill que existe se salta ENTERA, no se fusiona (ADR-014). Correrlo dos
 // veces deja el repo igual.
 
-import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NOMBRE_ARCHIVO, interpretar, ErrorAiFirst, type Perfil } from './ai-first-md.js';
-import { esRepoGit, inicializarRepo, listarArchivos } from './git.js';
+import { esRepoGit, fijarHooksPath, hooksPathConfigurado, inicializarRepo, listarArchivos } from './git.js';
 import { coincide } from './glob.js';
 import { bloqueDeSkill, ENCABEZADO_ADAPTACION } from './adaptacion.js';
 import { perfilDe, skillsDelPerfil, SKILL_ARRANQUE, type Respuestas } from './entrevista.js';
@@ -312,6 +312,10 @@ export const CHANGE_LOG_INICIAL = `# Registro de cambios
 /** Las cinco sin interfaz. `skills/README.md` dice «no instales las diez el primer día». */
 export const SKILLS_POR_DEFECTO = ['protocolo-features', 'protocolo-cambios', 'protocolo-cierre', 'version-bump', 'test-fix'];
 
+export const CARPETA_HOOKS = '.githooks';
+export const NOMBRE_HOOK = 'pre-push';
+export const RUTA_CI = '.github/workflows/ai-first.yml';
+
 export const CARPETA_SKILLS = '.agents/skills';
 export const ENLACE_CLAUDE = '.claude/skills';
 
@@ -322,6 +326,19 @@ export const ENLACE_CLAUDE = '.claude/skills';
  */
 export function carpetaSkillsDelPaquete(): string {
   return fileURLToPath(new URL('../../skills/', import.meta.url));
+}
+
+/**
+ * La carpeta `plantillas/` del paquete, resuelta como la de skills: desde
+ * `dist/src/init.js` es `../../plantillas/`, instalado o en este repo. Son
+ * archivos y no cadenas incrustadas para poder leerlos y probarlos sueltos.
+ */
+export function carpetaPlantillas(): string {
+  return fileURLToPath(new URL('../../plantillas/', import.meta.url));
+}
+
+function leerPlantilla(nombre: string): string {
+  return readFileSync(join(carpetaPlantillas(), nombre), 'utf8');
 }
 
 /**
@@ -584,6 +601,16 @@ export interface OpcionesInit {
    * función que devuelve respuestas fijas.
    */
   entrevistar?: (escaneo: Escaneo, documentado: string[]) => Promise<Respuestas | undefined>;
+  /** `--sin-hook`: no escribir el hook de git. */
+  sinHook?: boolean;
+  /** `--sin-ci`: no escribir el flujo de integración continua. */
+  sinCi?: boolean;
+  /**
+   * `--hook-local`: el hook va a `.git/hooks/`, que no viaja en el clon, y la
+   * configuración del repo no se toca. Por defecto va a `.githooks/`, que sí
+   * viaja y se revisa en un PR.
+   */
+  hookLocal?: boolean;
 }
 
 export interface ResultadoInit {
@@ -720,7 +747,38 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
     items.push({ ruta: ENLACE_CLAUDE, estado: 'escrito' });
   }
 
-  // 6. El bloque de AGENTS.md, con lo que de verdad quedó instalado.
+  // 6. El punto de control: el mismo detector en dos sitios con tolerancias
+  // distintas —el hook avisa y sólo un P0 frena; el flujo de integración
+  // continua corta con `--estricto`—. docs/specs/punto-de-control.md.
+  if (!opciones.sinHook) {
+    const cuerpo = leerPlantilla(NOMBRE_HOOK);
+    if (opciones.hookLocal) {
+      const ruta = `.git/hooks/${NOMBRE_HOOK}`;
+      if (escribirSiFalta(ruta, cuerpo)) chmodSync(join(raiz, ruta), 0o755);
+    } else {
+      const ruta = `${CARPETA_HOOKS}/${NOMBRE_HOOK}`;
+      if (escribirSiFalta(ruta, cuerpo)) chmodSync(join(raiz, ruta), 0o755);
+      // La configuración ajena no se pisa, igual que un archivo (ADR-003): un
+      // repo con husky o lefthook ya apunta a otro sitio, y cambiárselo le
+      // apagaría los hooks que ya tenía.
+      const configurado = hooksPathConfigurado(raiz);
+      if (configurado === undefined) {
+        fijarHooksPath(raiz, CARPETA_HOOKS);
+        items.push({ ruta: 'core.hooksPath', estado: 'escrito' });
+      } else if (configurado === CARPETA_HOOKS) {
+        items.push({ ruta: 'core.hooksPath', estado: 'saltado' });
+      } else {
+        items.push({
+          ruta: 'core.hooksPath',
+          estado: 'sugerido',
+          razon: `ya apunta a ${configurado}; mueve el hook ahí o cambia la configuración a ${CARPETA_HOOKS}`,
+        });
+      }
+    }
+  }
+  if (!opciones.sinCi) escribirSiFalta(RUTA_CI, leerPlantilla('ai-first.yml'));
+
+  // 7. El bloque de AGENTS.md, con lo que de verdad quedó instalado.
   const instaladas = existsSync(carpetaSkills)
     ? skillsDelPaquete(carpetaSkills)
         .filter((n) => disponibles.includes(n))

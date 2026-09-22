@@ -1,0 +1,48 @@
+#!/bin/sh
+# El punto de control de la metodología AI-First, antes de publicar.
+#
+# Lo escribe `ai-first init`. Corre el detector de entropía documental sobre el
+# rango que se va a empujar y **sin `--estricto`**: sólo un P0 interrumpe; un P1
+# o un P2 se imprimen y el push sigue. Un hook que bloquea por todo se
+# desinstala, y con él se van los cinco checks.
+#
+# Se salta con `git push --no-verify`. No se combate: el detector informa, la
+# disciplina es del equipo.
+
+# git entrega por entrada estándar una línea por referencia empujada:
+#   <ref local> <sha local> <ref remota> <sha remoto>
+# El sha remoto es la base del rango. Viene en ceros cuando la rama todavía no
+# existe en el remoto: entonces no hay rango que comparar y se corre contra el
+# árbol de trabajo, que es lo que hay.
+base=""
+while read -r _local_ref _local_sha _remote_ref remote_sha; do
+  [ -z "$remote_sha" ] && continue
+  case "$remote_sha" in
+    *[!0]*) base="$remote_sha" ; break ;;
+  esac
+done
+
+# ADAPTADO PARA ESTE REPO, que es el paquete y no un adoptante suyo: el detector
+# que tiene que correr es el de `dist/`, no el de la versión publicada en npm.
+# La plantilla que `ai-first init` reparte no trae estas cuatro líneas —ver
+# plantillas/pre-push— y no las va a pisar: init nunca sobreescribe (ADR-003).
+if [ -f "dist/src/cli.js" ]; then
+  ai_first="node dist/src/cli.js"
+elif [ -x "node_modules/.bin/ai-first" ]; then
+  ai_first="node_modules/.bin/ai-first"
+elif command -v ai-first >/dev/null 2>&1; then
+  ai_first="ai-first"
+elif command -v npx >/dev/null 2>&1 && npx --no-install @falcux/ai-first --version >/dev/null 2>&1; then
+  ai_first="npx --no-install @falcux/ai-first"
+else
+  # No encontrarse a sí mismo no es motivo para frenar un push.
+  echo "ai-first: no hay dist/ compilado, así que el punto de control no corrió."
+  echo "          Corre «pnpm run build»."
+  exit 0
+fi
+
+if [ -n "$base" ]; then
+  $ai_first audit --base "$base"
+else
+  $ai_first audit
+fi

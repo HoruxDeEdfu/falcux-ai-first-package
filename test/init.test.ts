@@ -22,6 +22,8 @@ import { crearRepo, type Repo } from './ayuda.js';
 /** Lo que init deja además de AI-FIRST.md y el ADR, en el orden en que lo escribe. */
 const ESTRUCTURA = ['docs/SESSION_LOG.md', 'docs/changes/CHANGE_LOG.md', 'docs/changes/pending/.gitkeep'];
 const SKILLS_DEFECTO_RUTAS = SKILLS_POR_DEFECTO.map((s) => `.agents/skills/${s}`);
+/** El punto de control, en el orden en que init lo escribe: docs/specs/punto-de-control.md. */
+const PUNTO_DE_CONTROL = ['.githooks/pre-push', 'core.hooksPath', '.github/workflows/ai-first.yml'];
 
 function esEnlace(ruta: string): boolean {
   return lstatSync(ruta).isSymbolicLink();
@@ -67,7 +69,7 @@ test('init escribe AI-FIRST.md con lo que encuentra, y audit lo lee', () =>
     proyectoTipico(repo);
 
     const { escaneo, escritos, saltados } = await iniciar({ raiz: repo.raiz, hoy: '2026-09-17' });
-    assert.deepEqual(escritos, ['AI-FIRST.md', 'docs/ADR.md', ...ESTRUCTURA, ...SKILLS_DEFECTO_RUTAS, '.claude/skills', 'AGENTS.md']);
+    assert.deepEqual(escritos, ['AI-FIRST.md', 'docs/ADR.md', ...ESTRUCTURA, ...SKILLS_DEFECTO_RUTAS, '.claude/skills', ...PUNTO_DE_CONTROL, 'AGENTS.md']);
     assert.deepEqual(saltados, []);
 
     const texto = readFileSync(join(repo.raiz, 'AI-FIRST.md'), 'utf8');
@@ -105,7 +107,7 @@ test('init en un repo vacío deja el repo configurado entero: criterio 2 de la s
     repo.commit('inicio');
 
     const { escritos, saltados, sugeridos } = await iniciar({ raiz: repo.raiz, hoy: '2026-09-17' });
-    assert.deepEqual(escritos, ['AI-FIRST.md', 'docs/ADR.md', ...ESTRUCTURA, ...SKILLS_DEFECTO_RUTAS, '.claude/skills', 'AGENTS.md']);
+    assert.deepEqual(escritos, ['AI-FIRST.md', 'docs/ADR.md', ...ESTRUCTURA, ...SKILLS_DEFECTO_RUTAS, '.claude/skills', ...PUNTO_DE_CONTROL, 'AGENTS.md']);
     assert.deepEqual(saltados, []);
     assert.deepEqual(sugeridos, [], 'en un AI-FIRST.md propio no hay nada que sugerir: alcance.spec sale declarado');
 
@@ -255,6 +257,7 @@ test('init sobre un repo ya configurado salta todo, y la segunda corrida no camb
       ...ESTRUCTURA,
       ...SKILLS_DEFECTO_RUTAS,
       '.claude/skills',
+      ...PUNTO_DE_CONTROL,
       'AGENTS.md',
     ]);
     assert.deepEqual(foto(repo.raiz), despuesDeUna, 'idempotente: ni un byte distinto');

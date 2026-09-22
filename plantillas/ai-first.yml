@@ -1,0 +1,23 @@
+# El punto de control de la metodología AI-First, en integración continua.
+#
+# Lo escribe `ai-first init`. A diferencia del hook local, éste corre **con
+# `--estricto`**: acá el corte por P1 y P2 sí se quiere, porque hay un humano
+# revisando y el costo de parar es un rebote, no una interrupción.
+name: ai-first
+
+on:
+  pull_request:
+
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # El detector compara contra la rama base: sin historia no hay rango.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Entropía documental
+        run: npx --yes @falcux/ai-first audit --base "origin/${{ github.base_ref }}" --estricto

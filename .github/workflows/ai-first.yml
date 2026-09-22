@@ -1,0 +1,29 @@
+# El punto de control de este repo en integración continua.
+#
+# Difiere de la plantilla que `ai-first init` reparte —plantillas/ai-first.yml—
+# porque este repo **es** el paquete: el detector que tiene que correr es el de
+# su propio código, no el de la versión publicada en npm, que sería la anterior
+# a los cambios del PR. Por lo mismo corre antes la suite: acá `audit` sólo
+# vale si el código que lo implementa está en verde.
+name: ai-first
+
+on:
+  pull_request:
+
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # El detector compara contra la rama base: sin historia no hay rango.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - name: Entropía documental
+        run: node dist/src/cli.js audit --base "origin/${{ github.base_ref }}" --estricto

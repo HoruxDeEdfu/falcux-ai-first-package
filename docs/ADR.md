@@ -976,3 +976,56 @@ basta para tener un repo gobernado. La prueba que verificaba el error de uso se
 reemplazó por una que verifica la inicialización, y otra que comprueba que una
 carpeta inexistente sigue fallando. Es lo único que `git init` escribe en el
 repo del adoptante sin que lo haya pedido explícitamente, y por eso se reporta.
+
+## ADR-022 — La tercera capa se entrega como hook de git y flujo de integración continua, no como hook de agente
+
+- **Fecha:** 2026-09-22
+- **Estado:** aceptada. Supera el enunciado del hueco 5 de `docs/HANDOFF.md`
+  —«falta el hook de PostToolUse y Stop»— y precisa lo que la spec del paquete
+  §8 apartó como «adaptadores por herramienta».
+
+**Contexto.** El detector existe desde la `0.1.0` y nadie lo corre solo: se
+invoca a mano o no se invoca. Este repo es la prueba, con CHG-003 y CHG-005
+pasando por debajo de todas las corridas en 0 porque nadie las corrió buscando
+eso. El hueco 5 reclamaba esa automatización, pero con el vocabulario de una
+sola herramienta, y ese enunciado no sobrevivió a dos comprobaciones hechas el
+2026-09-22. La primera: **los hooks quedaron fuera del estándar Agent Skills**.
+`.agents/skills/` lo leen Codex, Cursor, OpenCode y Kimi Code (ADR-008); los
+hooks no los lee nadie más que quien los define, y cada herramienta trae el
+suyo con formato propio —settings.json, config.toml, hooks.json, o plugins de
+TypeScript en el caso de OpenCode, que no admite hooks de shell—. La segunda:
+**`PostToolUse` corre sin commit**, y en el modo de árbol de trabajo la
+anotación `ai-first: sin-decision` no se lee, porque vive en el cuerpo del
+commit y sólo existe con `--base`. Habría dado P1 en cada edición de una
+superficie de decisión sin dejar forma de anotarla.
+
+**Decisión.** `init` escribe un hook de **`pre-push`** que corre `audit --base`
+con el sha remoto que git le entrega, **sin `--estricto`** —sólo un P0
+interrumpe—, y un flujo de integración continua que lo corre **con
+`--estricto`** en cada pull request. El hook va a `.githooks/` y `init` apunta
+`core.hooksPath` ahí; `--hook-local` lo pone en `.git/hooks/` y no toca la
+configuración. El hook de agente queda para después, como adaptador opcional y
+sobre **`Stop`**, que es el «hook de cierre» que la spec del paquete ya nombra.
+
+**Alternativas.** *Los adaptadores por herramienta, empezando por Claude Code*:
+convierte una promesa de metodología en una función de una herramienta, cuando
+el paquete vende once skills para cinco agentes; y son cuatro formatos que
+mantener. *`pre-commit` en vez de `pre-push`*: arrastra el mismo defecto que
+`PostToolUse` —el commit todavía no existe— e interrumpe en el momento de menor
+tolerancia. *`.git/hooks/` como único destino*: no viaja en el clon, no se ve en
+un diff y gobierna sólo la máquina donde se escribió; queda como opción tras
+pedirlo Charlie, no como valor por defecto. *No entregar nada y dejarlo al
+adoptante*: es el estado que este repo ya demostró que no funciona.
+
+**Consecuencias.** El paquete gana una carpeta `plantillas/`, declarada en
+`files`, con los dos archivos como archivos y no como cadenas incrustadas: se
+leen y se prueban sueltos. `src/git.ts` gana `hooksPathConfigurado` y
+`fijarHooksPath`, y con ellas `init` toca por primera vez la configuración del
+repo —nunca la global— y sólo cuando estaba vacía: una configuración ajena se
+reporta como sugerida, que es ADR-003 aplicado a algo que no es un archivo.
+Este repo adoptó su propio hook el mismo día, y al hacerlo apareció el límite
+de la plantilla: el repo del paquete **es** el paquete, así que su hook y su
+flujo tienen que correr el detector de `dist/` y no el de la versión publicada,
+que sería la anterior a los cambios del PR. Los dos archivos de este repo
+llevan esa diferencia anotada; `init` no los volverá a tocar porque nunca
+sobreescribe.

@@ -45,10 +45,31 @@ export function esRepoGit(raiz: string): boolean {
  * Convierte una carpeta en repositorio git. Es lo único que el paquete le pide
  * a git que cambie, y sólo cuando no hay `.git`: un proyecto que todavía no
  * existe se arranca acá, no en otro comando que el adoptante tiene que
- * recordar. No crea commits ni toca la configuración del usuario.
+ * recordar. No crea commits, y de la configuración sólo toca la del repo
+ * —`core.hooksPath`, y sólo si estaba vacía—, nunca la global del usuario.
  */
 export function inicializarRepo(raiz: string): void {
   git(raiz, ['init', '-q']);
+}
+
+/**
+ * Qué `core.hooksPath` tiene configurado el repo, si tiene alguno. `init` lo
+ * consulta antes de fijar el suyo: una configuración ajena —husky, lefthook—
+ * no se pisa, se reporta. Es ADR-003 aplicado a algo que no es un archivo.
+ *
+ * `--local`, nunca global: el paquete no toca la configuración del usuario.
+ */
+export function hooksPathConfigurado(raiz: string): string | undefined {
+  const valor = gitOpcional(raiz, ['config', '--local', '--get', 'core.hooksPath'])?.trim();
+  return valor ? valor : undefined;
+}
+
+/**
+ * Apunta el repo a su carpeta de hooks versionada. Lo llama `init` sólo cuando
+ * `hooksPathConfigurado` devuelve `undefined`.
+ */
+export function fijarHooksPath(raiz: string, carpeta: string): void {
+  git(raiz, ['config', '--local', 'core.hooksPath', carpeta]);
 }
 
 export function tieneHead(raiz: string): boolean {

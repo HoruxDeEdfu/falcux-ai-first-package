@@ -10,6 +10,103 @@
 
 ---
 
+## 2026-09-22 (sesión 9) — El hueco 5, cerrado: el detector corre solo
+
+### Resumen
+Se cierra el último hueco del mapa de cinco. `init` escribe el punto de control
+—un hook de `pre-push` y un flujo de integración continua— y este repo lo adoptó
+el mismo día. Pasó por `protocolo-features` con la spec
+`docs/specs/punto-de-control.md` como contrato, escrita en la misma sesión.
+
+### El enunciado del hueco no sobrevivió a revisarlo (ADR-022)
+Charlie pidió comprobar si los hooks debían ir en el paquete antes de
+implementarlos. Se revisó con `criterio` y el enunciado —«falta el hook de
+PostToolUse y Stop»— cayó por dos razones verificadas, no supuestas:
+
+- **Los hooks quedaron fuera del estándar Agent Skills.** `.agents/skills/` lo
+  leen cuatro agentes además de Claude Code (ADR-008); los hooks no los lee
+  nadie más que quien los define, y cada herramienta trae su formato —Codex
+  estabilizó los suyos en la v0.124.0 con los mismos nombres pero en otro
+  archivo; OpenCode no admite hooks de shell, sino plugins de TypeScript—.
+  Entregar «el hook» eran cuatro adaptadores propietarios.
+- **`PostToolUse` corre sin commit**, y ahí la anotación `ai-first: sin-decision`
+  no se puede leer. Habría cobrado P1 en cada edición de una superficie de
+  decisión sin dejar forma de silenciarlo. Un detector que no se puede callar
+  cuando tiene razón se desactiva, y se lleva los otros cuatro checks.
+
+Lo que sí faltaba no dependía de ninguna herramienta: la spec §7 diseñó los
+códigos de salida para un hook local y para integración continua, y el paquete
+no entregaba ninguno de los dos.
+
+### `pre-commit` también se cayó, al escribir la spec
+La primera recomendación de la sesión fue `pre-commit`, y duró hasta redactar el
+alcance: arrastra el mismo defecto que `PostToolUse`, porque el commit tampoco
+existe todavía. **`pre-push`** es el punto correcto —los commits ya están
+escritos, el rango es el que se publica y `--base` ya estaba implementado para
+eso—. Escribir la spec sirvió exactamente para lo que sirve.
+
+### Lo implementado
+- `plantillas/pre-push` y `plantillas/ai-first.yml`, como archivos y no como
+  cadenas incrustadas, declarados en `files` del manifiesto.
+- `src/git.ts` gana `hooksPathConfigurado` y `fijarHooksPath`. `init` toca por
+  primera vez la configuración **del repo** —nunca la global— y sólo si estaba
+  vacía: un `core.hooksPath` de husky o lefthook se reporta como sugerido, que
+  es ADR-003 aplicado a algo que no es un archivo.
+- `src/init.ts` escribe los dos archivos y los informa; `src/cli.ts` gana
+  `--sin-hook`, `--sin-ci` y `--hook-local`, con su ayuda.
+- `--hook-local` lo pidió Charlie sobre la recomendación de entregar sólo
+  `.githooks/`: escribe en `.git/hooks/` y no toca la configuración.
+
+### Este repo adoptó su propio hook, y ahí apareció el límite
+`ai-first init --enlazar --sin-entrevista` saltó los doce ítems que ya existían
+y escribió sólo los tres del punto de control. Pero **la plantilla no sirve para
+el repo del paquete**: busca el paquete instalado, y este repo *es* el paquete,
+con su detector en `dist/`. Con la plantilla tal cual, el hook habría avisado de
+que no se encuentra y habría dejado pasar todo. Los dos archivos de acá llevan
+la diferencia anotada arriba; `init` no los volverá a tocar porque nunca
+sobreescribe. Es un caso de uno y no entra en lo que se reparte.
+
+### El detector cazó dos cosas antes que nadie
+Primera vez en dos sesiones que encuentra algo antes que quien escribía, y las
+dos mientras se escribía el feature que existe para que eso pase siempre:
+
+1. **Dos P2 al redactar el hueco 5**, por poner entre acentos graves los archivos
+   de configuración de Claude Code y de Codex, que son de otras herramientas.
+2. **Un P2 dormido que despertó al crear `.github/workflows/`**: una mención del
+   handoff al publish.yml que sigue sin escribirse. La regla de `AGENTS.md`
+   esperó cinco días a que alguien creara esa carpeta. La regla se amplió con
+   este caso: no es sólo «rutas de otro repo», es **cualquier ruta que acá no
+   existe**, incluidas las que este repo todavía no ha escrito.
+
+### Validación
+- typecheck → PASS (dentro de `pnpm test`, que compila con `tsc`)
+- lint      → no ejecutado (el repo no tiene lint configurado)
+- tests     → PASS, 99 / 99 por código de salida. Ocho pruebas nuevas, incluida
+  una de extremo a extremo que empuja a un remoto de verdad y comprueba que un
+  P0 frena el push y que `--no-verify` lo deja pasar.
+- `audit:self` → 0 / 100, por código de salida.
+- El hook, corrido a mano contra `origin/dev`: rango correcto, aviso y salida 0.
+
+`test-fix` corrigió cinco fallas en dos rondas, todas mecánicas y sin una sola
+pregunta de negocio: tres listas `deepEqual` que no conocían los archivos nuevos,
+una aserción propia que buscaba `--estricto` en todo el hook cuando aparece en un
+comentario, y un `node $CLI` sin comillas —la ruta de este repo tiene espacios—.
+
+### Pendiente para la siguiente sesión
+Sigue todo lo de las sesiones 7 y 8 menos el hueco 5. Se le suma:
+- [ ] **El hook de agente**, que es lo que queda de la tercera capa: un
+      adaptador opcional sobre `Stop` —el «hook de cierre» que la spec del
+      paquete ya nombra al explicar `--registrar`—, empezando por Claude Code sin
+      prometer las otras cuatro herramientas. No es urgente: el `pre-push` ya
+      cubre el momento en que los cinco checks tienen sentido.
+- [ ] **El `--hook-local` no tiene quien lo pruebe en un repo real.** Existe por
+      pedido y con su prueba, pero nadie lo ha usado todavía.
+- [ ] El pendiente 4 del handoff toca ahora lo mismo que este feature: el
+      workflow de publish viviría al lado del de auditoría, y `publish-branch` de
+      `.npmrc` —que npm va a retirar— se resolvería con el mismo `pre-push`.
+
+---
+
 ## 2026-09-22 (sesión 8) — CHG-005: el handoff se contradecía a sí mismo
 
 ### Resumen

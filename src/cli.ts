@@ -27,6 +27,7 @@ const AYUDA = `ai-first — gobierno del contexto para proyectos AI-First
 Uso:
   ai-first init  [--raiz <dir>] [--enlazar] [--skills <lista>|todas]
                  [--entrevista | --sin-entrevista]
+                 [--sin-hook] [--hook-local] [--sin-ci]
   ai-first audit [opciones]
 
 init configura el repo para la metodología y nunca sobreescribe: lo que ya
@@ -38,6 +39,10 @@ todavía no es repositorio, corre git init y sigue. Escribe:
   - Las skills del paquete en .agents/skills/, y el enlace .claude/skills.
   - Un bloque delimitado en AGENTS.md con dónde escribe cada skill. Fuera de
     las marcas <!-- ai-first:inicio --> y <!-- ai-first:fin --> no toca nada.
+  - El punto de control: .githooks/pre-push, que corre el detector sobre lo que
+    se va a publicar y sólo interrumpe ante un P0, y
+    .github/workflows/ai-first.yml, que lo corre con --estricto en cada pull
+    request. Un core.hooksPath ya configurado no se pisa: se reporta.
 Lo que no puede escribir en un archivo que ya existía lo reporta como
 sugerido.
 
@@ -60,6 +65,11 @@ Opciones de init:
                    que el perfil del producto pida.
   --entrevista     Entrevista aunque el proyecto ya esté documentado.
   --sin-entrevista No entrevista nunca, ni en un repo vacío.
+  --sin-hook       No escribe el hook de git ni toca core.hooksPath.
+  --hook-local     El hook va a .git/hooks/, que no viaja en el clon, y la
+                   configuración del repo no se toca. Por defecto va a
+                   .githooks/, que sí viaja y se revisa en un PR.
+  --sin-ci         No escribe el flujo de integración continua.
   --raiz <dir>     Raíz del repositorio. Por defecto, el directorio actual.
 
 Opciones de audit:
@@ -168,6 +178,9 @@ async function main(argv: string[]): Promise<number> {
       skills: { type: 'string' },
       entrevista: { type: 'boolean', default: false },
       'sin-entrevista': { type: 'boolean', default: false },
+      'sin-hook': { type: 'boolean', default: false },
+      'hook-local': { type: 'boolean', default: false },
+      'sin-ci': { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h', default: false },
       version: { type: 'boolean', short: 'v', default: false },
     },
@@ -202,7 +215,17 @@ async function main(argv: string[]): Promise<number> {
       return 2;
     }
 
-    const opcionesInit: Parameters<typeof iniciar>[0] = { raiz, enlazar: values.enlazar };
+    if (values['sin-hook'] && values['hook-local']) {
+      process.stderr.write('--sin-hook y --hook-local se contradicen: elige una.\n');
+      return 2;
+    }
+    const opcionesInit: Parameters<typeof iniciar>[0] = {
+      raiz,
+      enlazar: values.enlazar,
+      sinHook: values['sin-hook'],
+      hookLocal: values['hook-local'],
+      sinCi: values['sin-ci'],
+    };
     if (values.skills !== undefined) opcionesInit.skills = values.skills === 'todas' ? 'todas' : values.skills.split(',');
 
     // Sin terminal se procede como con --sin-entrevista, en vez de colgarse
