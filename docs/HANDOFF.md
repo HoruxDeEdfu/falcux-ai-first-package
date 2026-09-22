@@ -1,6 +1,6 @@
 # Handoff — `@falcux/ai-first`
 
-El paquete: los 8 templates, las 10 skills y el detector de
+El paquete: los 8 templates, las 11 skills y el detector de
 entropía documental. El sitio de la metodología tiene su propio handoff en el
 repo `falcux-ai-first-docs-web`; acá sólo lo que es del paquete y lo que los
 dos comparten. Este repo se llama `falcux-ai-first-package` desde el
@@ -639,21 +639,26 @@ arquitectura detectada (ej. Next.js + Supabase simple vs. hexagonal).
    Con la entrevista llegó también `protocolo-arranque`, la undécima skill, que
    cubre lo que antes se hacía en un proyecto de chat aparte: descubrimiento,
    decisión de stack y los artefactos de inicio desde los templates.
-3. **Nada ejecutable** → ningún skill declara `allowed-tools` ni trae scripts. Construir
-   el **detector de entropía** en código puro (git + fs + regex, sin modelo ni API key).
-   Checks iniciales:
+3. ~~**Nada ejecutable**~~ → **el detector de entropía corre desde la `0.1.0`**,
+   publicada el 2026-09-17. `ai-first audit` en código puro —git, sistema de
+   archivos y regex, sin modelo ni API key—, con un archivo por check en
+   `src/verificaciones/` y los cinco de la spec verificando:
    - Zona Prohibida tocada (P0)
    - Decisión arquitectónica sin fila nueva en ADR (P1)
    - Artefacto huérfano: referenciado pero inexistente (P2)
    - Más de N archivos fuera del scope de la spec (P1)
    - Librería de componentes modificada sin actualizar su inventario (P2)
 
-   Salida con exit codes → sirve igual para hook local y para CI.
+   Salida con códigos de salida, así que sirve igual en un hook local y en CI;
+   lo que falta es entregar el hook, que es el hueco 5. Lo que ninguna skill
+   declara todavía es `allowed-tools`: el ejecutable es el comando, no la skill.
 4. ~~**Falta artefacto de estado**~~ → **`AI-FIRST.md` especificado** el 2026-09-16
    en `docs/SPEC-PAQUETE.md` §5: Markdown con frontmatter YAML, donde el frontmatter lo
    verifica el detector y el cuerpo lo lee un humano en el diff del PR. Con él
    quedaron definidos los cuatro instrumentos, la frontera con `AGENTS.md`, las
-   cinco verificaciones y la fórmula del puntaje. Falta el código.
+   cinco verificaciones y la fórmula del puntaje. **El código llegó con la
+   `0.1.0`**: `src/ai-first-md.ts` es el único sitio que interpreta el
+   frontmatter, y el `audit:self` de este repo lo lee con él.
 5. **Hooks no se entregan** → la metodología enseña 3 capas (AGENTS.md / skills / hooks)
    pero el paquete solo entrega 1 y 2. Falta el hook de PostToolUse y Stop.
 

@@ -10,6 +10,71 @@
 
 ---
 
+## 2026-09-22 (sesión 8) — CHG-005: el handoff se contradecía a sí mismo
+
+### Resumen
+Sesión de estado. Charlie pidió el estado del proyecto; al contrastar la lista
+de huecos con lo que el detector demuestra al correr aparecieron dos desfases en
+`docs/HANDOFF.md`, que es el archivo que este repo manda leer al empezar. Se
+corrigieron por `protocolo-cambios`, flujo corto, abierto y cerrado el mismo día.
+Sin cambios de código.
+
+### El estado, verificado antes de reportarlo
+- `dev`, `prod` y `origin/prod` en `939ed7b`: la misma punta. Árbol limpio.
+- `@falcux/ai-first@0.4.0` en npm, con `latest` apuntando ahí.
+- `docs/changes/pending/` vacío: ningún CHG abierto al empezar.
+- 91 pruebas en verde y `audit:self` en 0 / 100.
+
+### CHG-005: dos desfases de prosa en el handoff
+- **Los huecos 3 y 4 se describían como abiertos.** El 3 en futuro —«Construir
+  el detector de entropía»— y el 4 cerrando con «Falta el código», cuando los
+  dos están hechos y publicados desde la `0.1.0`: `src/verificaciones/` tiene un
+  archivo por check y `src/ai-first-md.ts` lee el contrato. Ahora los cuatro
+  cerrados se leen como cerrados y sólo el 5, los hooks, sigue abierto.
+- **El párrafo de apertura contaba diez skills.** Son once desde que
+  `protocolo-arranque` llegó con la `0.4.0`. `AGENTS.md` y `README.md` ya decían
+  once; el desfase era sólo del handoff.
+- **Lo que no se tocó**, a propósito: las dos menciones de «10 skills» de las
+  líneas 339 y 456, dentro de entradas fechadas del 2026-09-18 que narran qué se
+  contó ese día. Misma regla que en CHG-003 dejó viva la transcripción del
+  prompt: el dato viejo en pasado es registro, no error.
+- El enunciado del hueco 3 traía un matiz cierto que no se perdió al tacharlo:
+  ninguna skill declara `allowed-tools` todavía. Ahora dice además por qué —el
+  ejecutable es el comando, no la skill—, en vez de quedar como pendiente mudo.
+
+### Lo que esto enseña
+- **El mismo documento se contradecía y nadie lo vio.** Su línea 871 dice «Sólo
+  el 5» desde el cierre de la sesión 7, mientras la lista de arriba seguía
+  pidiendo construir el detector. Un archivo que crece por el final deja de ser
+  coherente por el medio.
+- **Cuarta vez del mismo patrón**, tras la `0.1.2`, la `0.2.1` y CHG-004: prosa
+  que afirma un estado que cambia más tarde que ella. La variante nueva es de
+  estado interno y no de publicación, así que la regla es más ancha de lo que
+  CHG-004 la dejó escrita: no es sobre el publish, es sobre cualquier texto que
+  describa algo que todavía se mueve.
+- **Cerrar un hueco incluye tachar el hueco.** Los huecos 1 y 2 se tacharon en el
+  mismo commit que los cerró; el 3 y el 4 se cerraron con código y nadie volvió
+  a la lista. Lo hecho se anota donde estaba lo pendiente.
+- **El detector sigue sin poder cazar esto.** Es la segunda vez, después de
+  CHG-003: el check 4 verifica que las rutas existan, no que la prosa diga la
+  verdad. El pendiente de la sesión 7 sobre nombres propios gana un caso.
+
+### Validación
+- typecheck → PASS (va dentro de `pnpm test`, que compila con `tsc`)
+- lint      → no ejecutado (el repo no tiene lint configurado)
+- tests     → PASS, 91 / 91 por código de salida
+- `audit:self` → 0 / 100. Con el CHG abierto el check 3 se activó y pasó: lo
+  tocado fue lo declarado. Al cerrarlo volvió a omitirse, que es lo correcto.
+
+### Pendiente para la siguiente sesión
+Los de la sesión 7 siguen vigentes; ninguno se cerró acá. Se les suma:
+- [ ] **Revisar si el handoff tiene más prosa desfasada.** Esta sesión corrigió
+      lo que salió de responder una pregunta, no de auditar el archivo. Tiene más
+      de novecientas líneas y crece por el final; nadie lo ha leído entero contra
+      el estado real desde que se escribió.
+
+---
+
 ## 2026-09-21 (sesión 7) — El arranque de un proyecto entra al paquete: el hueco 2, cerrado
 
 ### Resumen

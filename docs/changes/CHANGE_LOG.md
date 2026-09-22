@@ -144,3 +144,45 @@ ningún comportamiento como argumento en contra.
 3. **El verificador de fuera encuentra lo que el de dentro no busca.** El aviso
    al sitio se manda para que actualicen su inventario; de paso leyeron el
    tarball y hallaron esto. Vale la pena que el aviso siga siendo detallado.
+
+---
+
+## CHG-005 — El handoff describía como abiertos dos huecos cerrados, y contaba diez skills donde hay once
+
+- **Fecha:** 2026-09-22 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo corto, un archivo, sin schema ni decisión de ADR
+- **Archivos:** `docs/HANDOFF.md`
+
+**Resumen.** La sección «Los 5 huecos a cerrar» describía el hueco 3 en futuro
+—«Construir el detector de entropía»— y cerraba el 4 con «Falta el código»,
+cuando los dos están hechos y publicados desde la `0.1.0`: `src/verificaciones/`
+tiene los cinco checks y `src/ai-first-md.ts` lee el contrato. El párrafo de
+apertura contaba diez skills, que fueron diez hasta que `protocolo-arranque`
+llegó con la `0.4.0`. Ahora los cuatro huecos cerrados se leen como cerrados y
+sólo el 5, los hooks, sigue abierto.
+
+**Quién lo encontró.** Esta sesión, al responder qué estado tenía el proyecto.
+Salió de contrastar la lista con lo que el detector demuestra al correr, no de
+leerla.
+
+**Lo que no se tocó.** Las dos menciones de «10 skills» de las líneas 339 y 456:
+están dentro de entradas fechadas del 2026-09-18 que narran qué se contó ese
+día, y ese día eran diez. Es la misma regla que en CHG-003 dejó viva la
+transcripción del prompt: el dato viejo en pasado es registro, no error.
+
+**Lecciones.**
+
+1. **El mismo documento se contradecía y nadie lo vio.** La línea 871 dice
+   «Sólo el 5» desde el cierre de la sesión 7, mientras la lista de arriba
+   seguía pidiendo construir el detector. Un archivo que crece por el final
+   deja de ser coherente por el medio, y es el que este repo manda leer al
+   empezar.
+2. **Cuarta vez del mismo patrón**, después de la `0.1.2`, la `0.2.1` y
+   CHG-004: prosa que afirma un estado que cambia más tarde que ella. Acá la
+   variante es de estado interno y no de publicación, lo que sugiere que la
+   regla no es sobre el publish sino sobre cualquier texto que describa algo
+   que todavía se está moviendo.
+3. **Cerrar un hueco incluye tachar el hueco.** Los huecos 1 y 2 se cerraron
+   con su fecha y su ADR en el mismo commit que los cerró; el 3 y el 4 se
+   cerraron con código y nadie volvió a la lista. Lo hecho se anota donde
+   estaba lo pendiente, no sólo donde se hizo.
