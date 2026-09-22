@@ -12,6 +12,39 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
+## [0.5.0] — 2026-09-22
+
+### Agregado
+
+- **El punto de control: el detector ya no depende de que alguien se acuerde.**
+  `ai-first init` escribe dos cosas nuevas:
+  - `.githooks/pre-push`, que corre `audit --base` sobre el rango que se va a
+    publicar y **sin `--estricto`**: imprime los hallazgos y sólo un P0
+    interrumpe el push. Se salta con `git push --no-verify`.
+  - `.github/workflows/ai-first.yml`, que lo corre **con `--estricto`** en cada
+    pull request, que es donde el corte por P1 y P2 sí se quiere.
+  `init` apunta `core.hooksPath` a `.githooks/` sólo si estaba sin configurar:
+  un `core.hooksPath` de husky o lefthook no se pisa, se reporta. Con esto el
+  paquete entrega las tres capas de la metodología y el mapa de cinco huecos
+  queda cerrado.
+- **Tres banderas para `init`:** `--hook-local` escribe el hook en `.git/hooks/`
+  y no toca la configuración del repo; `--sin-hook` y `--sin-ci` saltan lo suyo.
+- **La carpeta `plantillas/`** viaja en el paquete, con el hook y el flujo como
+  archivos legibles y no como cadenas incrustadas en el código.
+
+### Notas
+
+- **El hook no habla con la red ni exige instalación global.** Busca el
+  `ai-first` del proyecto, luego el del PATH, y sólo usa `npx --no-install`, que
+  no descarga. Si no encuentra ninguno, avisa en una línea y **deja pasar el
+  push**: un hook que bloquea por no encontrarse a sí mismo se desinstala.
+- **Por qué `pre-push` y no un hook del agente.** Los hooks quedaron fuera del
+  estándar Agent Skills y cada herramienta trae su formato, así que entregarlos
+  serían cuatro adaptadores propietarios. Y un evento por cada escritura corre
+  sin commit, donde la anotación `ai-first: sin-decision` todavía no se puede
+  leer: cobraría P1 sin dejar forma de silenciarlo. El hook de agente llegará
+  como adaptador opcional sobre el evento de cierre.
+
 ## [0.4.0] — 2026-09-21
 
 ### Agregado
