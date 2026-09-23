@@ -448,3 +448,19 @@ corre el detector de `dist/`, recibe el mismo cambio. Nueva prueba con un
 **Lección.** Un script que termina en el comando que envuelve hereda todos sus
 códigos de salida, no sólo el que se pensó. Cuando el contrato distingue
 códigos, el script los tiene que distinguir con nombre.
+
+## CHG-014 — Una opción mal escrita responde en español y sin traza
+
+- **Fecha:** 2026-09-23 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, sin schema ni decisión de ADR
+- **Archivos:** `src/cli.ts`, `test/cli.test.ts`, `CHANGELOG.md`
+
+**Resumen.** `parseArgs` corría sin protección y sus `TypeError` llegaban al
+manejador final, que imprime la traza de todo lo que no sea `ErrorAiFirst`. El
+sitio lo encontró documentando los errores de uso: `audit --nada` devolvía una
+traza en inglés. `leerOpciones` traduce los tres errores de `parseArgs` —opción
+desconocida, sin su valor, con un valor que no lleva— a un `ErrorAiFirst`; el
+resto de lo inesperado sigue con traza, que es lo que sirve para reportarlo.
+
+**Lección.** El manejador de «lo inesperado» se llena de lo esperado si nadie lo
+vacía: una opción mal escrita es el error de uso más común que hay.

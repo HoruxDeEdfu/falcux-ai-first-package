@@ -79,3 +79,19 @@ test('--sin-entrevista no menciona la entrevista: se pidió no tenerla', () => {
     repo.limpiar();
   }
 });
+
+test('una opción desconocida lo dice en español, sin traza, y sale con 2: CHG-014', () => {
+  const r = correr('audit', '--nada');
+  assert.equal(r.status, 2);
+  assert.equal(r.stderr, 'ai-first: opción desconocida: «--nada». Las opciones de cada comando están en «ai-first --help».\n');
+});
+
+test('una opción sin su valor, o con un valor que no lleva, también: CHG-014', () => {
+  const sinValor = correr('audit', '--base');
+  assert.equal(sinValor.status, 2);
+  assert.match(sinValor.stderr, /«--base» necesita un valor/);
+  const conValor = correr('audit', '--estricto=si');
+  assert.equal(conValor.status, 2);
+  assert.match(conValor.stderr, /«--estricto» no lleva valor/);
+  assert.doesNotMatch(`${sinValor.stderr}${conValor.stderr}`, /at |TypeError/);
+});

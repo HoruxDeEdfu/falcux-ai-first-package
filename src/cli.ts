@@ -168,27 +168,54 @@ function lineaDeItem(item: ItemInstalado): string {
   return `  ${estado} ${item.ruta} — ${item.razon ?? ''}`;
 }
 
+/**
+ * Traduce los errores de `parseArgs` a un mensaje propio. Sin esto llegaban al
+ * manejador final como `TypeError` y se imprimían con la traza de Node, en
+ * inglés, para algo tan común como una opción mal escrita (CHG-014).
+ */
+function errorDeOpciones(error: unknown): ErrorAiFirst | undefined {
+  const codigo = (error as { code?: unknown } | null)?.code;
+  if (typeof codigo !== 'string' || !codigo.startsWith('ERR_PARSE_ARGS_')) return undefined;
+  const mensaje = error instanceof Error ? error.message : '';
+  const opcion = /'([^' ]+)/.exec(mensaje)?.[1] ?? 'una opción';
+  const ayuda = 'Las opciones de cada comando están en «ai-first --help».';
+  if (codigo === 'ERR_PARSE_ARGS_UNKNOWN_OPTION') return new ErrorAiFirst(`opción desconocida: «${opcion}». ${ayuda}`);
+  if (codigo === 'ERR_PARSE_ARGS_INVALID_OPTION_VALUE' && /argument missing/.test(mensaje)) {
+    return new ErrorAiFirst(`«${opcion}» necesita un valor. ${ayuda}`);
+  }
+  if (codigo === 'ERR_PARSE_ARGS_INVALID_OPTION_VALUE') return new ErrorAiFirst(`«${opcion}» no lleva valor. ${ayuda}`);
+  return new ErrorAiFirst(`${mensaje} ${ayuda}`);
+}
+
+function leerOpciones(argv: string[]) {
+  try {
+    return parseArgs({
+      args: argv,
+      allowPositionals: true,
+      options: {
+        base: { type: 'string' },
+        estricto: { type: 'boolean', default: false },
+        registrar: { type: 'boolean', default: false },
+        json: { type: 'boolean', default: false },
+        raiz: { type: 'string' },
+        enlazar: { type: 'boolean', default: false },
+        skills: { type: 'string' },
+        entrevista: { type: 'boolean', default: false },
+        'sin-entrevista': { type: 'boolean', default: false },
+        'sin-hook': { type: 'boolean', default: false },
+        'hook-local': { type: 'boolean', default: false },
+        'sin-ci': { type: 'boolean', default: false },
+        help: { type: 'boolean', short: 'h', default: false },
+        version: { type: 'boolean', short: 'v', default: false },
+      },
+    });
+  } catch (error) {
+    throw errorDeOpciones(error) ?? error;
+  }
+}
+
 async function main(argv: string[]): Promise<number> {
-  const { values, positionals } = parseArgs({
-    args: argv,
-    allowPositionals: true,
-    options: {
-      base: { type: 'string' },
-      estricto: { type: 'boolean', default: false },
-      registrar: { type: 'boolean', default: false },
-      json: { type: 'boolean', default: false },
-      raiz: { type: 'string' },
-      enlazar: { type: 'boolean', default: false },
-      skills: { type: 'string' },
-      entrevista: { type: 'boolean', default: false },
-      'sin-entrevista': { type: 'boolean', default: false },
-      'sin-hook': { type: 'boolean', default: false },
-      'hook-local': { type: 'boolean', default: false },
-      'sin-ci': { type: 'boolean', default: false },
-      help: { type: 'boolean', short: 'h', default: false },
-      version: { type: 'boolean', short: 'v', default: false },
-    },
-  });
+  const { values, positionals } = leerOpciones(argv);
 
   if (values.version) {
     process.stdout.write(`${versionDelPaquete()}\n`);

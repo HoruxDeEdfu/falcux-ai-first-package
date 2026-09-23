@@ -23,6 +23,10 @@ etiquetada que nunca llegó al registro se marca «sin publicar».
   en dos líneas y deja pasar, como ya hacía cuando no encuentra `node` o el
   paquete. El flujo de CI sigue cortando con 2. Un hook ya instalado no cambia:
   `init` nunca sobreescribe; para el nuevo, bórralo y vuelve a correr `init`.
+- **Una opción mal escrita responde en una línea.** `audit --nada`, `audit
+  --base` sin valor o `audit --estricto=si` imprimían la traza de Node, en
+  inglés. Ahora nombran la opción y remiten a `ai-first --help`. El código de
+  salida sigue siendo 2.
 
 ## [0.5.2] — 2026-09-23
 
