@@ -6,10 +6,10 @@ otro repo, `falcux-ai-first-docs-web`; este repo, `falcux-ai-first-package`,
 **entrega**; aquél **documenta**.
 
 **El paquete está publicado.** `@falcux/ai-first@0.1.0` salió a npm el
-2026-09-17, sin `private: true`. `.npmrc` fija `publish-branch=prod`: un
-`pnpm publish` desde otra rama se niega solo. El comando sigue siendo
-`ai-first`, vía el `bin` del paquete con scope; el alias sin scope se
-descartó (ADR-011).
+2026-09-17, sin `private: true`. `pnpm-workspace.yaml` fija
+`publishBranch: prod`: un `pnpm publish` desde otra rama se niega solo. El
+comando sigue siendo `ai-first`, vía el `bin` del paquete con scope; el alias
+sin scope se descartó (ADR-011).
 
 ## Estructura
 
@@ -139,7 +139,11 @@ Las versiones publicadas llevan tag `vX.Y.Z` sobre el commit que las publicó;
   despliega, en los tres. No hay `main`; se llamó así hasta el 2026-09-17.
 - Mover o renombrar algo en `skills/` o `templates/` obliga a coordinar con el
   sitio antes del merge a `prod`.
-- `.npmrc` fija `publish-branch=prod`: `pnpm publish` se niega desde otra rama.
+- `pnpm-workspace.yaml` fija `publishBranch: prod`: `pnpm publish` se niega
+  desde otra rama, con `ERR_PNPM_GIT_NOT_CORRECT_BRANCH`. Vivió en el .npmrc
+  hasta el 2026-09-23 (CHG-007); desde pnpm 11 ese archivo queda sólo para
+  autenticación y registro, y la clave habría dejado de leerse en silencio. El
+  archivo lleva ajustes, no paquetes: esto no es un monorepo.
 
 ### El detector
 

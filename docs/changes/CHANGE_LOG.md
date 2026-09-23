@@ -226,3 +226,46 @@ publicar, como la `0.1.4` en su día. La `0.5.1` la incluye entera.
    `ai-first` alcanzable, avisa y deja pasar» pasaba porque no encontraba nada,
    no porque la guarda funcionara. Al corregir el hook empezó a fallar, que es
    como se supo. Ahora aísla el PATH y el HOME para probar lo que dice probar.
+
+---
+
+## CHG-007 — `publish-branch` se muda al archivo que pnpm va a leer
+
+- **Fecha:** 2026-09-23 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo completo por contar cuatro archivos, sin schema ni
+  decisión de ADR
+- **Archivos:** `pnpm-workspace.yaml` (nuevo), el .npmrc (borrado), `AGENTS.md`,
+  `docs/HANDOFF.md`
+
+**Resumen.** La barrera que impide publicar desde la rama equivocada vivía en el
+.npmrc como `publish-branch=prod`, y estaba condenada por los dos lados: npm
+avisaba en cada corrida que no reconoce esa clave y que dejará de tolerarla, y
+pnpm 11 restringe ese archivo a autenticación y registro. Lo segundo es lo
+grave: la comprobación habría **desaparecido en silencio**. Ahora vive en
+`pnpm-workspace.yaml` como `publishBranch: prod`, que es donde pnpm lo
+documenta. El archivo no declara «packages»: lleva ajustes, y esto no es un
+monorepo.
+
+**Verificado, no leído.** Sobre un paquete de mentira en un repo desechable, con
+el archivo real de este repo y sin tocar `@falcux`: desde `dev`, pnpm aborta con
+`ERR_PNPM_GIT_NOT_CORRECT_BRANCH`. Y `pnpm install` se comporta igual, que era
+el único riesgo de meter ese archivo en un repo de un solo paquete.
+
+**Hallazgo del propio detector, y es un defecto suyo.** Con el cambio en el
+árbol, el check 3 cobró P1 por el .npmrc «fuera del alcance declarado», aunque
+el CHG lo declaraba entre acentos graves en su sección «Archivos afectados». La
+causa está en `pareceRuta` (`src/markdown.ts`): un token cuenta como ruta si
+tiene «/» o una extensión conocida, y un dotfile de la raíz no tiene ninguna de
+las dos. Git sí lo cuenta como tocado, así que **un archivo como el .npmrc, el
+.nvmrc, un Makefile o un Dockerfile no se puede declarar en una spec**, y su P1
+no hay forma de apagarlo. Se apagó solo al cerrar el cambio, como en CHG-003,
+pero la asimetría sigue ahí. Queda como pendiente con su caso real.
+
+**Lecciones.**
+
+1. **Una clave que dos herramientas dejan de leer avisa una sola vez.** npm lo
+   decía en cada corrida y era ruido fácil de ignorar; pnpm no lo va a decir, y
+   ahí el modo de fallo es que la protección desaparece sin que nadie lo note.
+2. **Lo que el detector puede ver y lo que puede declarar no coinciden**, y esa
+   asimetría produce un P1 imposible de silenciar. Vale para cualquier archivo
+   de configuración sin extensión, que es medio repo en su raíz.

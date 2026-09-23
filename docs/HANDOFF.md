@@ -1065,3 +1065,24 @@ ahora entrega hook de git y flujo de integración continua, no hooks de agente.
 Si el capítulo lo dice en el sentido del agente, quien lea el manual y luego
 instale el paquete buscará algo que no está. Ninguna ruta que ellos enlacen
 cambió, así que no les bloquea nada.
+
+### `publish-branch` se muda al archivo que pnpm va a leer (2026-09-23, CHG-007)
+
+La barrera que impide publicar desde la rama equivocada vivía en el .npmrc, y
+estaba condenada por los dos lados: npm avisaba en cada corrida que no reconoce
+esa clave y que dejará de tolerarla, y pnpm 11 restringe ese archivo a
+autenticación y registro. Lo segundo es lo grave: la comprobación habría
+**desaparecido en silencio**, sin error que avisara, y es lo único que impide
+publicar desde `dev` por descuido.
+
+Ahora vive en `pnpm-workspace.yaml` como `publishBranch: prod`, que es donde
+pnpm lo documenta. El archivo no declara «packages»: lleva ajustes, y este repo
+no es un monorepo.
+
+Verificado sobre un paquete de mentira en un repo desechable, con el archivo
+real de este repo y sin tocar `@falcux`: desde `dev`, pnpm aborta con
+`ERR_PNPM_GIT_NOT_CORRECT_BRANCH`. Y `pnpm install` se comporta igual que antes,
+que era el riesgo de meter ese archivo en un repo de un solo paquete.
+
+ADR-007 no gana fila: la decisión —publicar sólo desde `prod`— no cambió; cambió
+el archivo que la hace cumplir.

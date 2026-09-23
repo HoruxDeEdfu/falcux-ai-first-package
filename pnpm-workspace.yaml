@@ -1,0 +1,7 @@
+# Los ajustes de pnpm, no un monorepo: este repo publica un solo paquete y por
+# eso no declara «packages». El archivo existe porque desde pnpm 11 `.npmrc`
+# queda restringido a autenticación y registro, y los ajustes de pnpm se leen
+# de acá. pnpm 10.28 ya lo lee, así que la mudanza no espera (CHG-007).
+
+# `pnpm publish` sólo desde la rama publicada (ADR-007). Sin esto asume main.
+publishBranch: prod
