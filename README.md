@@ -70,7 +70,7 @@ node dist/src/cli.js audit --raiz /ruta/a/tu/proyecto
 documentos que ya existen; un `docs/ADR.md` vacío; el registro de sesión y la
 carpeta de cambios que los protocolos asumen; las cinco skills sin interfaz en
 `.agents/skills/` con el enlace para Claude Code (`--skills todas` para las
-diez, `--enlazar` para enlaces en vez de copias); y un bloque delimitado en
+once, `--enlazar` para enlaces en vez de copias); y un bloque delimitado en
 `AGENTS.md` que dice dónde escribe cada skill. Nunca sobreescribe: lo que ya
 existe lo reporta como saltado y sigue, y fuera de sus marcas en `AGENTS.md` no
 toca nada. Los templates de `templates/` los consume `protocolo-arranque`, que

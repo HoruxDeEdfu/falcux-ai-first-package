@@ -409,3 +409,23 @@ una llamada de red (ADR-019).
    adoptante que vuelve.
 2. **El texto que se copia es interfaz.** El botón de la portada es el primer
    comando que corre casi cualquiera, y no estaba en ninguna prueba de este repo.
+
+## CHG-012 — La cuenta de skills dice once, y la de las que asumen el ADR, cinco
+
+- **Fecha:** 2026-09-23 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, sólo prosa, sin schema ni decisión de ADR
+- **Archivos:** `skills/README.md`, `README.md`, `AGENTS.md`, `docs/SPEC-PAQUETE.md`, `skills/protocolo-arranque/references/artefactos-por-perfil.md`
+
+**Resumen.** Al reestructurar su documentación, el sitio contó las skills contra
+`prod` y encontró dos cuentas viejas. La de todas decía «diez» en cinco sitios,
+de antes de que entrara `protocolo-arranque` (ADR-019). La de las que asumen el
+capítulo «Gobierno del contexto» decía tres acá y seis en el sitio: son cinco
+—arranque, features, cambios, cierre e information-architecture—, y el sitio
+contaba a `test-fix` porque su `grep` encontraba «adr» dentro de «cuadran». La
+tabla de `skills/README.md` nombra ahora las cinco. Queda fuera, a propósito,
+dónde se declaran las Zonas Prohibidas: la tabla sigue diciendo «en el
+AGENTS.md» y el paquete las lee de `AI-FIRST.md`. Es una deuda del capítulo, y
+se corrige con él.
+
+**Lección.** Un conteo por `grep` sin límite de palabra cuenta subcadenas. Para
+contar menciones de una sigla, `grep -w`.

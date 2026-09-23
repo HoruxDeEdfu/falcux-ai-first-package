@@ -20,7 +20,7 @@ npx @falcux/ai-first init
 enlace `.claude/skills` para Claude Code y deja además lo que los protocolos
 asumen: `AI-FIRST.md`, el registro de decisiones, el de sesión y la carpeta de
 cambios, más un bloque en `AGENTS.md` que dice dónde escribe cada skill. Con
-`--skills todas` instala las diez; con `--skills i18n,ux-writer` eliges. Con
+`--skills todas` instala las once; con `--skills i18n,ux-writer` eliges. Con
 `--enlazar` deja enlaces simbólicos relativos en vez de copias, para quien
 vendoriza las skills en un monorepo.
 
@@ -147,14 +147,14 @@ Los archivos de apoyo viven dentro de la carpeta de cada skill (`references/`, `
 
 ## Lo que estas skills asumen del proyecto
 
-Tres de las diez dan por hecho que el proyecto tiene los instrumentos del
+Cinco de las once dan por hecho que el proyecto tiene los instrumentos del
 capítulo «Gobierno del contexto» (Parte II del manual). Ninguna falla sin ellos,
 pero rinden menos:
 
 | Instrumento | Quién lo usa | Si no existe |
 |---|---|---|
 | **Zonas Prohibidas** en el AGENTS.md | `protocolo-features`, `protocolo-cambios` | El agente descubre el límite al chocarse, con trabajo ya hecho |
-| **`docs/ADR.md`** | `protocolo-cierre`, y las otras dos al detectar una decisión | El porqué de cada decisión se entierra en el log de sesiones |
+| **`docs/ADR.md`** | `protocolo-arranque`, que lo abre con la decisión de stack; `protocolo-cierre` e `information-architecture`; y `protocolo-features` y `protocolo-cambios` al detectar una decisión | El porqué de cada decisión se entierra en el log de sesiones |
 
 Crear un `docs/ADR.md` vacío cuesta un minuto y es el que más se paga después: un
 registro de decisiones que arranca en el mes seis nace con seis meses de huecos.

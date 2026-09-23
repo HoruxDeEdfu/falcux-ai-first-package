@@ -55,6 +55,6 @@ artefactos:
 - **El registro de sesión y el de cambios.** Son cronología; nacen vacíos con
   `init` y los llenan `protocolo-cierre` y `protocolo-cambios`.
 - **El handoff.** Describe un estado, y al arrancar no hay estado que describir.
-- **Las skills.** El paquete trae diez y `init` instala las del perfil. Este
+- **Las skills.** El paquete trae once y `init` instala las del perfil. Este
   protocolo no escribe skills nuevas: si una del paquete no encaja, se adapta
   dentro de sus marcas, y si falta un oficio entero, eso es una decisión de ADR.

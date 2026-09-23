@@ -116,11 +116,13 @@ Las versiones publicadas llevan tag `vX.Y.Z` sobre el commit que las publicó;
   (ADR-006). Hasta entonces era una copia que el sitio sobreescribía con
   `rsync --delete`; ese workflow ya no existe y nada regenera la carpeta. Se
   edita acá, y sólo acá.
-- Tres skills asumen el capítulo «Gobierno del contexto» del manual:
-  `protocolo-features`, `protocolo-cambios` y `protocolo-cierre` dan por hecho
-  las Zonas Prohibidas y el `docs/ADR.md` que ese capítulo define. Tocar cualquiera
-  de las tres obliga a **avisar al repo del sitio** para revisar el capítulo; si
-  el capítulo cambia, el sitio avisa acá.
+- Cinco skills asumen el capítulo «Gobierno del contexto» del manual:
+  `protocolo-arranque`, `protocolo-features`, `protocolo-cambios`,
+  `protocolo-cierre` e `information-architecture` dan por hecho el `docs/ADR.md`
+  que ese capítulo define, y features y cambios además las Zonas Prohibidas.
+  Tocar cualquiera de las cinco obliga a **avisar al repo del sitio** para
+  revisar el capítulo; si el capítulo cambia, el sitio avisa acá. Recontadas el
+  2026-09-23 con `grep -il adr` sobre `prod` (CHG-012); `test-fix` no lo nombra.
 - **Los hooks son de otro capítulo**, «Skills, hooks y gestión de contexto», que
   enseña `PreToolUse`, `PostToolUse` y `Stop` como capa 2. Lo confirmó el sitio
   el 2026-09-23 (CHG-010), después de que acá se le atribuyera a «Gobierno del

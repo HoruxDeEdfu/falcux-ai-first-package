@@ -372,7 +372,7 @@ continua, donde se quiere el corte.
   salta lo que ya existe en vez de sobreescribirlo. El prefijo queda como salida
   al conflicto, no como nombre por defecto. Deja de ser restricción de diseño
   de `init`, al que ya sólo le falta el esquema del manifiesto.
-- **Los cuatro instrumentos, en las diez skills.** Van a medias: cinco nombran
+- **Los cuatro instrumentos, en las once skills.** Van a medias: cinco nombran
   el ADR y dos las Zonas Prohibidas, incorporadas al generalizarlas. La matriz
   de permisos no la invoca ninguna, y la entropía documental sólo aparece de
   pasada en una.
