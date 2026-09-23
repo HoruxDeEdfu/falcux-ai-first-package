@@ -57,8 +57,19 @@ else
   exit 0
 fi
 
+codigo=0
 if [ -n "$base" ]; then
-  $ai_first audit --base "$base"
+  $ai_first audit --base "$base" || codigo=$?
 else
-  $ai_first audit
+  $ai_first audit || codigo=$?
 fi
+
+# 1 es un P0 y frena. 2 es un error de uso —no hay AI-FIRST.md, su formato es
+# desconocido, la base del rango no existe—: el detector no llegó a medir, y no
+# medir no es motivo para frenar un push, igual que no encontrarse a sí mismo.
+if [ "$codigo" -eq 2 ]; then
+  echo "ai-first: el detector no pudo correr, así que el punto de control no midió nada."
+  echo "          El push sigue. El error está arriba; corrígelo y corre «ai-first audit»."
+  exit 0
+fi
+exit "$codigo"

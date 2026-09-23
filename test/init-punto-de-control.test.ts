@@ -176,6 +176,22 @@ test('el hook propaga el código de salida del detector', () =>
     }
   }));
 
+test('un error de uso del detector avisa y deja pasar: no medir no frena un push', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    await iniciar({ raiz: repo.raiz });
+    const falso = aiFirstDeMentira(2);
+    try {
+      const r = correrHook(repo, `refs/heads/main abc refs/heads/main def\n`, RUTA_HOOK, {
+        PATH: `${falso.bin}:${process.env['PATH']}`,
+      });
+      assert.equal(r.codigo, 0, 'un 2 es que el detector no corrió, no un hallazgo');
+      assert.match(r.salida, /no pudo correr/);
+    } finally {
+      falso.limpiar();
+    }
+  }));
+
 test('con node pero sin ai-first por ningún lado, el hook avisa y deja pasar', () =>
   conRepo(async (repo) => {
     repo.commit('inicio');

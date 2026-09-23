@@ -12,6 +12,18 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
+## [Sin publicar]
+
+### Corregido
+
+- **El hook de `pre-push` ya no frena un push cuando el detector no pudo
+  correr.** Un error de uso —no hay `AI-FIRST.md`, su formato es desconocido, la
+  base del rango no existe— sale con 2, y el hook lo propagaba: frenaba igual que
+  un P0, aunque su propio comentario dice que sólo un P0 interrumpe. Ahora avisa
+  en dos líneas y deja pasar, como ya hacía cuando no encuentra `node` o el
+  paquete. El flujo de CI sigue cortando con 2. Un hook ya instalado no cambia:
+  `init` nunca sobreescribe; para el nuevo, bórralo y vuelve a correr `init`.
+
 ## [0.5.2] — 2026-09-23
 
 ### Corregido

@@ -429,3 +429,22 @@ se corrige con él.
 
 **Lección.** Un conteo por `grep` sin límite de palabra cuenta subcadenas. Para
 contar menciones de una sigla, `grep -w`.
+
+## CHG-013 — El hook deja pasar el push cuando el detector no pudo correr
+
+- **Fecha:** 2026-09-23 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, sin schema ni decisión de ADR: alinea el hook con ADR-022
+- **Archivos:** `plantillas/pre-push`, `.githooks/pre-push`, `test/init-punto-de-control.test.ts`, `CHANGELOG.md`
+
+**Resumen.** El sitio, al documentar el punto de control, notó que el hook
+terminaba en `ai-first audit` y salía con su código: un 2 —error de uso— frenaba
+el push igual que un P0, contra lo que dicen el comentario del hook, la ayuda y
+ADR-022. Ahora el código se captura; con 2 el hook avisa y sale con 0, y con
+cualquier otro sale con él. Es la misma regla que ya tenían las dos guardas de
+arriba: no medir no es motivo para frenar un push. La copia de este repo, que
+corre el detector de `dist/`, recibe el mismo cambio. Nueva prueba con un
+`ai-first` de mentira que sale con 2.
+
+**Lección.** Un script que termina en el comando que envuelve hereda todos sus
+códigos de salida, no sólo el que se pensó. Cuando el contrato distingue
+códigos, el script los tiene que distinguir con nombre.
