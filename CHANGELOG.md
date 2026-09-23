@@ -12,6 +12,28 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
+## [0.5.2] — 2026-09-23
+
+### Corregido
+
+- **Un archivo sin extensión ya se puede declarar en el alcance de un cambio.**
+  El check 3 exigía que toda ruta declarada llevara «/» o una extensión conocida,
+  así que el `.npmrc`, el `.gitignore`, un `LICENSE` o un `Makefile` **no se
+  podían declarar**: git sí los ve como tocados, y el P1 resultante no había
+  forma de apagarlo haciendo lo correcto. Ahora se aceptan.
+- **El molde del documento de cambio lo dice.** Su sección «Cómo lo lee el
+  detector» era el único sitio que enumera qué cuenta como ruta, y enumeraba de
+  menos.
+
+### Notas
+
+- **El check 4 no cambió.** Sigue exigiendo barra o extensión para señalar un
+  artefacto que no existe, y hay una prueba que lo fija. Los dos checks leen las
+  mismas referencias con reglas distintas a propósito: en el 3 una ruta declarada
+  **excusa** un archivo tocado —y tiene que coincidir exacto con él—, y en el 4
+  una ruta que no existe **acusa** con un P2. Un filtro puede ser laxo donde
+  excusa y tiene que ser estricto donde acusa.
+
 ## [0.5.1] — 2026-09-22
 
 ### Corregido
