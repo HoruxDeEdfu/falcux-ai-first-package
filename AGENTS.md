@@ -121,6 +121,11 @@ Las versiones publicadas llevan tag `vX.Y.Z` sobre el commit que las publicó;
   las Zonas Prohibidas y el `docs/ADR.md` que ese capítulo define. Tocar cualquiera
   de las tres obliga a **avisar al repo del sitio** para revisar el capítulo; si
   el capítulo cambia, el sitio avisa acá.
+- **Los hooks son de otro capítulo**, «Skills, hooks y gestión de contexto», que
+  enseña `PreToolUse`, `PostToolUse` y `Stop` como capa 2. Lo confirmó el sitio
+  el 2026-09-23 (CHG-010), después de que acá se le atribuyera a «Gobierno del
+  contexto» sin poder comprobarlo. Es el capítulo a mirar el día que entre el
+  hook de agente.
 - El sitio enlaza a `prod/skills/<nombre>/SKILL.md` y a `prod/templates/<archivo>`.
   Mover o renombrar cualquiera de esas rutas rompe enlaces publicados: se
   coordina con el sitio antes del merge a `prod`. Agregar archivos de apoyo

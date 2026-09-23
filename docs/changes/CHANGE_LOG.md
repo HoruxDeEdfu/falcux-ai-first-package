@@ -343,3 +343,40 @@ próxima versión lo lleva. Ninguna ruta se movió: no hay enlace publicado roto
    árbol traía CHG-008 sin commitear junto al CHG-009 abierto, igual que en
    CHG-003. Commitear el primero dejó el segundo solo y el check pasó. Es la
    tercera vez que el check 3 señala un árbol con dos cambios encima.
+
+---
+
+## CHG-010 — Le atribuimos a un capítulo del manual algo que decía otro
+
+- **Fecha:** 2026-09-23 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo corto, dos archivos, sin schema ni decisión de ADR
+- **Archivos:** `docs/HANDOFF.md`, `AGENTS.md`
+
+**Resumen.** Desde la sesión 9 el handoff afirmaba que el capítulo «Gobierno del
+contexto» enumera tres capas y llama «hooks» a la tercera. El sitio, que es la
+fuente, lo corrigió al responder el aviso: los hooks del agente los enseña
+**«Skills, hooks y gestión de contexto»**, y ahí son **capa 2**. «Gobierno del
+contexto» ya decía «hook local e integración continua», así que en ese capítulo
+no había nada que arreglar.
+
+**No fue un dato que caducó, fue una suposición presentada como hecho.** Era
+falsa cuando se escribió, y viajó en dos avisos al sitio pidiéndoles revisar el
+capítulo equivocado. El daño fue leve porque ellos conocen su manual y lo
+enrutaron solos.
+
+**Lo que ellos cambiaron, y conviene no deshacer.** Mantienen los hooks del
+agente como metodología, con una nota de que el hook del paquete es de git, y
+**retiraron la afirmación de que los hooks eran «específicos de Claude Code»** —
+lo mismo que ADR-022 midió por su cuenta al comparar los cuatro formatos.
+
+**Lecciones.**
+
+1. **Cuando el aviso depende de lo que diga el otro repo, se pregunta, no se
+   afirma.** Desde acá no se puede leer el manual, y eso se sabía: la frase
+   debió salir como pregunta desde el primer aviso.
+2. **Un aviso no está recibido hasta que contestan.** El de la `0.5.1` se dio por
+   entregado y la sesión destinataria se cerró sin leerlo; se procesó un día
+   después, junto con el siguiente.
+3. **El verificador de fuera vuelve a encontrar lo que el de dentro no busca.**
+   Es la segunda vez, después de CHG-004: ellos verificaron la `0.5.1` contra el
+   registro por su cuenta en vez de fiarse del aviso.

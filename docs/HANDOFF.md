@@ -1019,12 +1019,11 @@ detector de `dist/` y no el de la versión publicada, que sería la anterior a l
 cambios del PR. Los dos archivos llevan la diferencia anotada; lo que se reparte
 no la lleva, porque es un caso de uno.
 
-**Aviso al sitio, pendiente.** El capítulo «Gobierno del contexto» enumera tres
-capas y nombra la tercera «hooks». Si con eso se refiere a los del agente, el
-paquete ahora entrega otra cosa —hook de git y CI— y conviene que lo sepan antes
-de que alguien busque en el paquete lo que el manual promete. Si dice
-«automatización», ya está cubierto. Ninguna ruta se movió, así que no les bloquea
-nada.
+**Aviso al sitio, enviado y respondido** (ver la entrada del 2026-09-23). El
+capítulo que enseña los hooks del agente no es «Gobierno del contexto», como se
+supuso acá sin poder comprobarlo, sino **«Skills, hooks y gestión de
+contexto»**, y ahí son la **capa 2**. Ninguna ruta se movió, así que no les
+bloqueó nada.
 
 **Lo que queda de la tercera capa.** El hook de agente, como adaptador opcional
 y sobre `Stop`, que es el «hook de cierre» que la spec del paquete ya nombra al
@@ -1059,12 +1058,11 @@ la `0.3.0` porque `prod` iba detrás. El pendiente 4 —trusted publishing y el
 workflow disparado por push a `prod`— es lo que elimina este paso, y lleva tres
 versiones ganando argumentos.
 
-**Aviso al sitio, enviado.** Con la versión y con lo que les toca revisar: su
-capítulo «Gobierno del contexto» llama «hooks» a la tercera capa, y el paquete
-ahora entrega hook de git y flujo de integración continua, no hooks de agente.
-Si el capítulo lo dice en el sentido del agente, quien lea el manual y luego
-instale el paquete buscará algo que no está. Ninguna ruta que ellos enlacen
-cambió, así que no les bloquea nada.
+**Aviso al sitio, enviado.** Con la versión y con lo que les tocaba revisar: el
+paquete ahora entrega hook de git y flujo de integración continua, no hooks de
+agente, y quien lea el manual y luego instale el paquete no debe buscar algo que
+no está. El aviso señalaba el capítulo equivocado —ver la entrada del
+2026-09-23—; ellos lo enrutaron al suyo. Ninguna ruta que ellos enlacen cambió.
 
 ### `publish-branch` se muda al archivo que pnpm va a leer (2026-09-23, CHG-007)
 
@@ -1099,3 +1097,37 @@ Resuelto separando las dos varas: el check 3 lee las referencias con
 `permitirSinExtension` y el check 4 sigue igual, porque uno **excusa** y el otro
 **acusa** (ADR-023). La lista blanca global, que era la opción obvia, se descartó
 al medirla: habría dado dos P2 sobre `docs/ADR.md`, que no se edita.
+
+### El sitio responde, y corrige a qué capítulo apuntaba el aviso (2026-09-23, CHG-010)
+
+Llegaron los dos avisos —el de la `0.5.1` y el de la `0.5.2`— y el sitio los
+procesó junto. El primero no les había llegado a tiempo: la sesión a la que se
+mandó se cerró antes de leerlo. **Conviene no dar un aviso por recibido hasta que
+contesten.**
+
+**Verificaron la `0.5.1` por su cuenta**, sin fiarse del aviso: registro directo
+con `latest` en 0.5.1 y el shasum `a4693cd5…`, la `0.5.0` ausente de `versions`,
+y un `init` sobre una copia que deja el hook, el `core.hooksPath` y el flujo de
+integración continua. Queda reflejado en su `dev`, commit `f1dd22c` con su tag
+`v0.1.7`; publicar a su `prod` es un merge de Charlie.
+
+**Nos corrigieron el capítulo, y el dato importa para el pendiente del hook de
+agente.** Los hooks del agente no los describe «Gobierno del contexto» sino
+**«Skills, hooks y gestión de contexto»**, donde se enseñan `PreToolUse`,
+`PostToolUse` y `Stop` como **capa 2**, no como la tercera. «Gobierno del
+contexto» ya decía «hook local e integración continua», así que ahí sólo
+precisaron que `init` deja los dos.
+
+Lo que cambiaron en el suyo: mantienen los hooks del agente como metodología
+—sigue siendo válida— con una nota de que el hook del paquete es de git y no del
+agente, y **retiraron la afirmación de que los hooks eran «específicos de Claude
+Code»**, que es justo lo que ADR-022 midió de otra forma. Su apéndice cuenta las
+banderas y la advertencia del cliente gráfico sin perfil de shell.
+
+**La `0.5.2` no les afecta**: su sitio nunca enumera qué rutas acepta el detector.
+Cuando se publique, cambian el número y nada más.
+
+La lección de acá es sobre nosotros: **se afirmó dos veces, en el handoff y en dos
+avisos, algo del manual que no se podía verificar desde este repo**. No fue un
+dato que caducó, fue una suposición presentada como hecho. Cuando el aviso
+dependa de lo que diga el otro repo, se pregunta, no se afirma.

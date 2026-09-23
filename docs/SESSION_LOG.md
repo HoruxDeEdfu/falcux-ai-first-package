@@ -10,6 +10,62 @@
 
 ---
 
+## 2026-09-23 (sesión 11) — La 0.5.2 sale a `dev`, y el sitio corrige una suposición nuestra
+
+### Resumen
+Tramo corto después del cierre de la sesión 10: el bump a la `0.5.2` con su tag,
+el aviso al sitio, y CHG-010 al recibir su respuesta, que corrigió un dato que
+este repo afirmaba sin poder verificarlo.
+
+### La `0.5.2`
+- PATCH: dos correcciones del detector (CHG-007, CHG-008) y una de documentación
+  distribuida (CHG-009). Ninguna funcionalidad nueva.
+- El commit de CHG-009 lleva prefijo `docs:`, que la tabla de `version-bump`
+  manda a «ninguno». Se contó como PATCH igual, porque acá `skills/` **viaja en
+  el tarball**: el prefijo describe la naturaleza del cambio, no su alcance de
+  distribución.
+- `dev` y el tag `v0.5.2` en `0a4e831`. **Sin publicar**: `prod` sigue atrás y el
+  publish lo decide Charlie.
+
+### CHG-010: el capítulo de los hooks era otro
+- Desde la sesión 9 el handoff decía que «Gobierno del contexto» enumera tres
+  capas y llama «hooks» a la tercera. **Era falso cuando se escribió**, y viajó
+  en los dos avisos al sitio pidiéndoles revisar el capítulo equivocado.
+- Lo correcto, según ellos: los hooks del agente los enseña **«Skills, hooks y
+  gestión de contexto»**, y ahí son **capa 2**. «Gobierno del contexto» ya decía
+  «hook local e integración continua» y no tenía nada que arreglar.
+- Corregido en el handoff y anotado en `AGENTS.md`, que ahora nombra los dos
+  capítulos: es el que hay que mirar el día que entre el hook de agente.
+- Ellos retiraron de su capítulo la afirmación de que los hooks eran
+  «específicos de Claude Code» —lo mismo que ADR-022 midió por su cuenta— y
+  añadieron una nota de que el hook del paquete es de git.
+
+### Lo que esto enseña
+- **Cuando el aviso depende de lo que diga el otro repo, se pregunta, no se
+  afirma.** Desde acá no se puede leer el manual, y eso se sabía.
+- **Un aviso no está recibido hasta que contestan.** El de la `0.5.1` se dio por
+  entregado y su sesión destinataria se cerró sin leerlo; se procesó al día
+  siguiente junto con el segundo.
+- **El verificador de fuera vuelve a encontrar lo que el de dentro no busca**,
+  como en CHG-004: verificaron la `0.5.1` contra el registro por su cuenta en vez
+  de fiarse del aviso.
+
+### Validación
+- typecheck → PASS (dentro de `pnpm test`)
+- lint      → no ejecutado (el repo no tiene lint configurado)
+- tests     → PASS, 103 / 103 por código de salida
+- `audit:self` → 0 / 100, por código de salida
+
+### Pendiente para la siguiente sesión
+Siguen los de las sesiones 7 a 10. Además:
+- [ ] **Publicar la `0.5.2`**: `prod` está en `145e5bf` y `dev` en la punta con
+      el tag puesto. Al publicar, avisar al sitio para que cambien el número; ya
+      confirmaron que esa versión no les obliga a nada más.
+- [ ] El pendiente del hook de agente gana destino: su capítulo es «Skills,
+      hooks y gestión de contexto», no «Gobierno del contexto».
+
+---
+
 ## 2026-09-23 (sesión 10) — Dos correcciones encadenadas: la barrera del publish y el filtro de rutas
 
 ### Resumen
