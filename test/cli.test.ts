@@ -34,6 +34,13 @@ test('--help lista --version', () => {
   assert.match(r.stdout, /-v, --version/);
 });
 
+test('sin comando, la ayuda dice cómo se empieza, con @latest, y sale con 2: CHG-011', () => {
+  // Es lo que ve quien copia `npx @falcux/ai-first` de la portada del sitio.
+  const r = correr();
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /Para empezar[^\n]*\n\s*npx @falcux\/ai-first@latest init\n/);
+});
+
 test('--entrevista y --sin-entrevista se contradicen, y el comando lo dice', () => {
   const r = correr('init', '--entrevista', '--sin-entrevista');
   assert.equal(r.status, 2);

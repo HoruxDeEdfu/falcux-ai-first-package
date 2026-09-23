@@ -20,7 +20,7 @@ escribir hasta un repo gobernado que se audita solo.
 | 11 skills para agentes de código (Claude Code, Codex, Cursor, OpenCode, Kimi Code) | `skills/` | publicadas; `init` las instala — [cómo](skills/README.md) |
 | Detector de entropía (`ai-first audit`) | `src/` | publicado |
 | `ai-first init`: escribe `AI-FIRST.md` y el ADR, instala las skills, crea `docs/` y mantiene su bloque en `AGENTS.md` | `src/init.ts` | publicado |
-| La entrevista de `init`: adapta cada skill instalada a tu proyecto | `src/entrevista.ts` | escrito, sin publicar |
+| La entrevista de `init`: adapta cada skill instalada a tu proyecto | `src/entrevista.ts` | publicada desde la 0.4.0 |
 | `sync`, `adr`, `handoff` | — | mapeados en la especificación, sin escribir |
 
 Las skills viven acá y sólo acá desde el 2026-09-17; el sitio enlaza a las
@@ -32,8 +32,12 @@ de `prod`. Antes eran una copia que el repo del sitio sobreescribía. Eran 8;
 
 ```bash
 mkdir mi-proyecto && cd mi-proyecto
-npx @falcux/ai-first init
+npx @falcux/ai-first@latest init
 ```
+
+El `@latest` no es adorno: sin él, `npx` reutiliza la versión que ya tenga
+guardada de una prueba anterior, sin preguntar si hay otra más nueva. Y sin
+`init` sólo se imprime la ayuda.
 
 En una carpeta que todavía no es repositorio, `init` la inicializa y sigue. Si
 el proyecto no tiene documentación, **entrevista**: pregunta la fase, qué clase

@@ -24,6 +24,10 @@ import { reporteHumano, reporteJson } from './reporte.js';
 
 const AYUDA = `ai-first — gobierno del contexto para proyectos AI-First
 
+Para empezar, en la raíz del proyecto:
+  npx @falcux/ai-first@latest init
+Sin @latest, npx puede reutilizar una versión vieja que ya tenga guardada.
+
 Uso:
   ai-first init  [--raiz <dir>] [--enlazar] [--skills <lista>|todas]
                  [--entrevista | --sin-entrevista]

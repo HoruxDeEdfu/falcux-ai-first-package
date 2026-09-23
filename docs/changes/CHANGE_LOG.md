@@ -380,3 +380,32 @@ lo mismo que ADR-022 midió por su cuenta al comparar los cuatro formatos.
 3. **El verificador de fuera vuelve a encontrar lo que el de dentro no busca.**
    Es la segunda vez, después de CHG-004: ellos verificaron la `0.5.1` contra el
    registro por su cuenta en vez de fiarse del aviso.
+
+## CHG-011 — El comando para empezar es `npx @falcux/ai-first@latest init`
+
+- **Fecha:** 2026-09-23 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, tres archivos, sin schema ni decisión de ADR
+- **Archivos:** `README.md`, `src/cli.ts`, `test/cli.test.ts`
+
+**Resumen.** Charlie probó la instalación en una carpeta vacía con
+`npx @falcux/ai-first init` y le respondió la 0.1.0, que se niega fuera de un
+repositorio. npx guarda una entrada por cada forma en que se invocó el paquete:
+la del nombre sin versión apuntaba a `^0.1.0` y se reutilizaba sin consultar el
+registro, que ya iba en la 0.5.1. Antes, el botón de la portada del sitio le
+había dado `npx @falcux/ai-first`, sin `init`, que sólo imprime la ayuda.
+
+Ahora la ayuda abre con «Para empezar, en la raíz del proyecto:
+`npx @falcux/ai-first@latest init`», que es lo primero que ve quien llega por
+ese botón, y el README enseña lo mismo con una frase sobre la caché. La tabla del
+README decía que la entrevista estaba «escrito, sin publicar» desde antes de la
+0.4.0, que la publicó. Se descartó que el CLI avisara de versiones nuevas: sería
+una llamada de red (ADR-019).
+
+**Lecciones.**
+
+1. **Probar el comando publicado desde una máquina limpia no prueba el de quien
+   ya lo probó.** La verificación de la 0.5.1 fijó la versión
+   (`npx @falcux/ai-first@0.5.1`), y así esquivó justo la caché que atrapa al
+   adoptante que vuelve.
+2. **El texto que se copia es interfaz.** El botón de la portada es el primer
+   comando que corre casi cualquiera, y no estaba en ninguna prueba de este repo.
