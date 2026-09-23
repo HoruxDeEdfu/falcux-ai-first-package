@@ -464,3 +464,28 @@ resto de lo inesperado sigue con traza, que es lo que sirve para reportarlo.
 
 **Lección.** El manejador de «lo inesperado» se llena de lo esperado si nadie lo
 vacía: una opción mal escrita es el error de uso más común que hay.
+
+## CHG-015 — La 0.5.2 publicada trae cuatro cambios que el CHANGELOG daba por no publicados
+
+- **Fecha:** 2026-09-23 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo corto, un archivo, sin schema ni decisión de ADR
+- **Archivos:** `CHANGELOG.md`
+
+**Resumen.** El bump a 0.5.2 se hizo en `0a4e831`, y ahí quedó el tag. El publish
+salió después con `npm publish` desde `prod` en `cc776eb`, así que el tarball
+trae también CHG-011 (la ayuda con `@latest`), CHG-013 (el hook) y CHG-014 (la
+opción mal escrita); CHG-012 viaja pero sólo toca texto de dos skills. Se
+comprobó bajando el tarball del registro: sus archivos son idénticos a
+`cc776eb`, y su `dist/` es igual al de compilar ese commit. El `CHANGELOG.md`
+ahora cuenta esos cambios en la 0.5.2 y dice desde dónde salió; el del tarball
+conserva el texto viejo, porque el registro no deja reemplazarlo. El tag lo
+mueve Charlie a `cc776eb`.
+
+**Lecciones.**
+
+1. **Lo que se publica es la punta de la rama, no el commit del bump.** Todo lo
+   que entra entre el bump y el publish viaja con un número que no lo cuenta.
+   Si entró algo, se vuelve a correr `version-bump` antes de publicar.
+2. **`npm publish` no lee el `publishBranch` de pnpm.** Esta vez no importó
+   porque se publicó desde `prod`, pero la compuerta de rama sólo existe con
+   `pnpm publish`.

@@ -12,22 +12,6 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
-## [Sin publicar]
-
-### Corregido
-
-- **El hook de `pre-push` ya no frena un push cuando el detector no pudo
-  correr.** Un error de uso —no hay `AI-FIRST.md`, su formato es desconocido, la
-  base del rango no existe— sale con 2, y el hook lo propagaba: frenaba igual que
-  un P0, aunque su propio comentario dice que sólo un P0 interrumpe. Ahora avisa
-  en dos líneas y deja pasar, como ya hacía cuando no encuentra `node` o el
-  paquete. El flujo de CI sigue cortando con 2. Un hook ya instalado no cambia:
-  `init` nunca sobreescribe; para el nuevo, bórralo y vuelve a correr `init`.
-- **Una opción mal escrita responde en una línea.** `audit --nada`, `audit
-  --base` sin valor o `audit --estricto=si` imprimían la traza de Node, en
-  inglés. Ahora nombran la opción y remiten a `ai-first --help`. El código de
-  salida sigue siendo 2.
-
 ## [0.5.2] — 2026-09-23
 
 ### Corregido
@@ -40,9 +24,28 @@ etiquetada que nunca llegó al registro se marca «sin publicar».
 - **El molde del documento de cambio lo dice.** Su sección «Cómo lo lee el
   detector» era el único sitio que enumera qué cuenta como ruta, y enumeraba de
   menos.
+- **El hook de `pre-push` ya no frena un push cuando el detector no pudo
+  correr.** Un error de uso —no hay `AI-FIRST.md`, su formato es desconocido, la
+  base del rango no existe— sale con 2, y el hook lo propagaba: frenaba igual que
+  un P0, aunque su propio comentario dice que sólo un P0 interrumpe. Ahora avisa
+  en dos líneas y deja pasar, como ya hacía cuando no encuentra `node` o el
+  paquete. El flujo de CI sigue cortando con 2. Un hook ya instalado no cambia:
+  `init` nunca sobreescribe; para el nuevo, bórralo y vuelve a correr `init`.
+- **Una opción mal escrita responde en una línea.** `audit --nada`, `audit
+  --base` sin valor o `audit --estricto=si` imprimían la traza de Node, en
+  inglés. Ahora nombran la opción y remiten a `ai-first --help`. El código de
+  salida sigue siendo 2.
+- **La ayuda dice cómo se empieza.** Sin subcomando, `ai-first` imprimía la ayuda
+  sin decir cuál es el primer paso. Ahora abre con
+  `npx @falcux/ai-first@latest init`: sin `@latest`, `npx` puede reutilizar una
+  versión vieja que tenga guardada de una prueba anterior.
 
 ### Notas
 
+- **Salió desde `cc776eb`, no desde el commit que subió el número.** Entre los
+  dos entraron el hook, la opción mal escrita y la ayuda, y viajan en esta
+  versión. El `CHANGELOG.md` del tarball publicado todavía los lista como «Sin
+  publicar»: el registro no deja reemplazarlo, así que el texto correcto es éste.
 - **El check 4 no cambió.** Sigue exigiendo barra o extensión para señalar un
   artefacto que no existe, y hay una prueba que lo fija. Los dos checks leen las
   mismas referencias con reglas distintas a propósito: en el 3 una ruta declarada
