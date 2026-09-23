@@ -259,9 +259,15 @@ individual ya no tiene lector. Algunos proyectos prefieren moverlo a
 
 Con `alcance.spec: docs/changes/pending/` en `AI-FIRST.md`, el check 3 toma
 todos los documentos de esa carpeta, busca la sección cuyo título empiece por
-«Archivos» o «Alcance», extrae las rutas entre acentos graves (con globs) y
-compara contra los archivos tocados en la sesión. Más archivos fuera de lo
+«Archivos» o «Alcance», extrae las rutas entre acentos graves —con globs, y
+también nombres sin barra ni extensión, como `.npmrc`, `LICENSE` o `Makefile`—
+y compara contra los archivos tocados en la sesión. Más archivos fuera de lo
 declarado que la tolerancia configurada → P1. Por eso la subsección se llama
 «Archivos afectados» **sin número delante** —el título tiene que empezar por
 la palabra— y por eso las rutas van entre acentos graves: no es estilo, es lo
 que la máquina lee. Los placeholders con `{llaves}` y `XXX` se ignoran.
+
+Acá se admite más de lo que parece una ruta porque lo declarado **excusa** un
+archivo tocado, y para excusarlo tiene que coincidir exacto con él: declarar de
+más no acusa a nadie. Donde el detector busca artefactos que no existen es al
+revés, y ahí sólo cuenta lo que lleva barra o una extensión conocida.

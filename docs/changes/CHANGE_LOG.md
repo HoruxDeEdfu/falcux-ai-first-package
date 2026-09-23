@@ -308,3 +308,38 @@ no habría tenido arreglo posible.
    convivir con lo que el ADR ya dice, porque el ADR no se va a acomodar.
 3. **Dos consumidores del mismo filtro no tienen por qué querer lo mismo.**
    Compartían `pareceRuta` desde el principio y nadie había preguntado si debían.
+
+---
+
+## CHG-009 — El molde del documento de cambio no decía que ya se pueden declarar archivos sin extensión
+
+- **Fecha:** 2026-09-23 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo corto, un archivo, sin schema ni decisión de ADR
+- **Archivos:** `skills/protocolo-cambios/references/documento-de-cambio.md`
+
+**Resumen.** CHG-008 hizo que el check 3 acepte nombres sin barra ni extensión,
+y el párrafo que le enseña al adoptante **qué puede declarar** seguía enumerando
+sólo «rutas entre acentos graves (con globs)». Ahora los nombra, con tres
+ejemplos, y añade en una línea por qué acá el filtro es más permisivo que el del
+check 4: lo declarado excusa, y para excusar tiene que coincidir exacto.
+
+**Por qué era una frase y no una omisión menor.** De los once archivos que
+mencionan la convención, ése es el único que **enumera** qué cuenta como ruta.
+Los demás dicen «rutas entre acentos graves» sin abrir la lista, y siguen siendo
+ciertos. Quien leyera el molde concluiría que su .npmrc es indeclarable: el
+defecto corregido en el código habría seguido vivo en lo que el adoptante cree
+que puede hacer.
+
+**Toca una skill que obliga a avisar al sitio.** `protocolo-cambios` es una de
+las tres que asumen el capítulo «Gobierno del contexto», así que el aviso de la
+próxima versión lo lleva. Ninguna ruta se movió: no hay enlace publicado roto.
+
+**Lecciones.**
+
+1. **Un arreglo del detector no está terminado hasta que la documentación que
+   se distribuye lo dice.** El código y el molde viajan en el mismo tarball; el
+   adoptante lee el segundo.
+2. **El detector volvió a separar dos cambios mezclados.** Cobró P1 porque el
+   árbol traía CHG-008 sin commitear junto al CHG-009 abierto, igual que en
+   CHG-003. Commitear el primero dejó el segundo solo y el check pasó. Es la
+   tercera vez que el check 3 señala un árbol con dos cambios encima.

@@ -77,12 +77,10 @@ al hacerlo, el detector destapó un defecto suyo que se corrigió a continuació
 ### Pendiente para la siguiente sesión
 Siguen los de las sesiones 7 a 9 menos `publish-branch`, que se cierra acá. Se
 le suma:
-- [ ] **El molde del documento de cambio dice a medias cómo lo lee el
-      detector.** Su sección «Cómo lo lee el detector» explica que se extraen
-      las rutas entre acentos graves «con globs», y desde ADR-023 también los
-      nombres sin extensión. El molde vive dentro de `protocolo-cambios`, que es
-      una de las tres skills que **obligan a avisar al sitio** antes de tocarlas,
-      así que la corrección de una frase arrastra ese aviso. Lo decide Charlie.
+- [x] ~~**El molde del documento de cambio dice a medias cómo lo lee el
+      detector.**~~ Charlie lo resolvió el mismo día: **CHG-009**. La frase ya
+      nombra los archivos sin extensión. Como toca `protocolo-cambios`, el aviso
+      de la próxima versión al sitio lo lleva.
 
 ---
 
