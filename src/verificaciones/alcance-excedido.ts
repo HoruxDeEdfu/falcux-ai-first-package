@@ -7,8 +7,9 @@
 // CONVENCIÓN QUE LA SPEC DEJÓ ABIERTA. docs/SPEC-PAQUETE.md §6 pide que la spec
 // «liste archivos» pero no dice cómo. Acá se adopta la lectura mínima: una
 // sección cuyo encabezado empiece por «Archivos» o «Alcance», con las rutas
-// entre acentos graves (se admiten globs). Si esa convención cambia, cambia
-// sólo este archivo.
+// entre acentos graves (se admiten globs, y nombres sin extensión como
+// `.npmrc` o `LICENSE`: acá una ruta excusa, no acusa —ADR-023—). Si esa
+// convención cambia, cambia sólo este archivo.
 //
 // No cuentan como fuera de alcance: `AI-FIRST.md`, la propia spec, y los
 // artefactos declarados —actualizar el SESSION_LOG al cerrar es parte del
@@ -43,7 +44,7 @@ async function archivosDeclarados(raiz: string, spec: string): Promise<string[]>
   const texto = await readFile(resolve(raiz, spec), 'utf8');
   const cuerpo = seccion(texto, TITULO_SECCION);
   if (cuerpo === undefined) return [];
-  return referenciasARutas(cuerpo, { permitirGlob: true }).map((r) => normalizarRuta(r.texto).replace(/^\/+/, ''));
+  return referenciasARutas(cuerpo, { permitirGlob: true, permitirSinExtension: true }).map((r) => normalizarRuta(r.texto).replace(/^\/+/, ''));
 }
 
 export const alcanceExcedido: Verificacion = {

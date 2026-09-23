@@ -1086,3 +1086,16 @@ que era el riesgo de meter ese archivo en un repo de un solo paquete.
 
 ADR-007 no gana fila: la decisión —publicar sólo desde `prod`— no cambió; cambió
 el archivo que la hace cumplir.
+
+### El detector no dejaba declarar sus propios archivos de configuración (2026-09-23, CHG-008, ADR-023)
+
+Lo destapó CHG-007 al borrar el .npmrc: el documento de cambio lo declaraba y el
+check 3 lo cobró igual. `pareceRuta` exigía «/» o una extensión conocida, y los
+archivos tocados los da git, que no tiene esa limitación. Un P1 que el autor no
+podía apagar haciendo lo correcto, que es el mismo defecto por el que ADR-022
+descartó `PostToolUse`. Acá afectaba a `LICENSE`, `.gitignore` y `.nvmrc`.
+
+Resuelto separando las dos varas: el check 3 lee las referencias con
+`permitirSinExtension` y el check 4 sigue igual, porque uno **excusa** y el otro
+**acusa** (ADR-023). La lista blanca global, que era la opción obvia, se descartó
+al medirla: habría dado dos P2 sobre `docs/ADR.md`, que no se edita.

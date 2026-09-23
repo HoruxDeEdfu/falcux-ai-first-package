@@ -295,6 +295,57 @@ test('alcance excedido: sin spec activa o sin «alcance.spec», se omite', () =>
     esperaEstado(await auditar({ raiz: repo.raiz }), 'alcance-excedido', 'omitido');
   }));
 
+test('alcance excedido: un archivo sin extensi\u00f3n se puede declarar, como el .npmrc de CHG-007', () =>
+  conRepo(async (repo) => {
+    // El caso real: CHG-007 borr\u00f3 el .npmrc y lo declar\u00f3 entre acentos graves, y
+    // el check lo cobr\u00f3 igual porque `pareceRuta` exig\u00eda barra o extensi\u00f3n.
+    repo.escribir('AI-FIRST.md', aiFirstMd(`alcance:
+  spec: docs/changes/pending/
+artefactos:
+  session_log: docs/SESSION_LOG.md`));
+    repo.escribir(
+      'docs/changes/pending/CHG-007.md',
+      '# CHG-007\n\n## Archivos afectados\n\n- `.npmrc`\n- `LICENSE`\n- `pnpm-workspace.yaml`\n',
+    );
+    repo.escribir('.npmrc', 'publish-branch=prod');
+    repo.escribir('LICENSE', 'Apache');
+    repo.commit('inicio');
+
+    repo.borrar('.npmrc');
+    repo.escribir('LICENSE', 'MIT');
+    repo.escribir('pnpm-workspace.yaml', 'publishBranch: prod');
+    esperaEstado(await auditar({ raiz: repo.raiz }), 'alcance-excedido', 'aprobado');
+  }));
+
+test('alcance excedido: un nombre suelto no excusa a un archivo que no se declar\u00f3', () =>
+  conRepo(async (repo) => {
+    // La contraparte: que el filtro sea m\u00e1s laxo no puede volverlo in\u00fatil.
+    repo.escribir('AI-FIRST.md', aiFirstMd(`alcance:
+  spec: docs/changes/pending/
+artefactos:
+  session_log: docs/SESSION_LOG.md`));
+    repo.escribir('docs/changes/pending/CHG-001.md', '# CHG-001\n\n## Archivos\n\n- `LICENSE`\n');
+    repo.escribir('LICENSE', 'Apache');
+    repo.escribir('src/otro.ts', '// v1');
+    repo.commit('inicio');
+
+    repo.escribir('LICENSE', 'MIT');
+    repo.escribir('src/otro.ts', '// v2');
+    const [h] = hallazgos(await auditar({ raiz: repo.raiz }), 'alcance-excedido');
+    assert.deepEqual(h?.detalle, ['src/otro.ts'], 'el declarado se excusa, el otro no');
+  }));
+
+test('artefacto hu\u00e9rfano: un nombre sin extensi\u00f3n no acusa, aunque no exista (ADR-023)', () =>
+  conRepo(async (repo) => {
+    // El caso que descart\u00f3 la lista blanca global: docs/ADR.md de este repo cita
+    // el `.zshrc` de una m\u00e1quina en una analog\u00eda, y ese documento no se edita.
+    repo.escribir('AI-FIRST.md', aiFirstMd('artefactos:\n  adr: docs/ADR.md'));
+    repo.escribir('docs/ADR.md', '# ADR\n\nComo el `.zshrc` de tu m\u00e1quina, o un `Makefile`.\n');
+    repo.commit('inicio');
+
+    esperaEstado(await auditar({ raiz: repo.raiz }), 'artefacto-huerfano', 'aprobado');
+  }));
+
 // ---------------------------------------------------------------- check 4
 
 test('artefacto huérfano: una ruta mencionada que no existe es P2, con línea', () =>

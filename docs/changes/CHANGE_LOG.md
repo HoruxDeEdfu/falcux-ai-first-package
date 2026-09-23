@@ -269,3 +269,42 @@ pero la asimetría sigue ahí. Queda como pendiente con su caso real.
 2. **Lo que el detector puede ver y lo que puede declarar no coinciden**, y esa
    asimetría produce un P1 imposible de silenciar. Vale para cualquier archivo
    de configuración sin extensión, que es medio repo en su raíz.
+
+---
+
+## CHG-008 — Un archivo sin extensión no se podía declarar en una spec
+
+- **Fecha:** 2026-09-23 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo completo, sin schema. **Con decisión: ADR-023**
+- **Archivos:** `src/markdown.ts`, `src/verificaciones/alcance-excedido.ts`,
+  `test/verificaciones.test.ts`, `docs/ADR.md`
+
+**Resumen.** `pareceRuta` cerraba exigiendo «/» o una extensión conocida, así
+que un archivo de configuración de la raíz no contaba como ruta. Los archivos
+tocados los da git, que sí los ve: el resultado era que el .npmrc, un `LICENSE`
+o un `Makefile` **no se podían declarar** en un documento de cambio, y su P1 no
+tenía forma de apagarse. Ahora el check 3 lee las referencias con
+`permitirSinExtension`, y el check 4 sigue exactamente igual.
+
+**La decisión, en una línea.** Los dos checks leen las mismas referencias y
+hacen cosas opuestas con ellas: en el 3 una ruta **excusa** un archivo tocado;
+en el 4 **acusa** con un P2. Un filtro puede ser laxo donde excusa y tiene que
+ser estricto donde acusa. Está en ADR-023.
+
+**Lo que decidió el diseño fue una medición, no una preferencia.** La opción
+obvia —una lista blanca de nombres conocidos para los dos checks— se descartó al
+medirla contra este repo: `docs/ADR.md` cita el `.zshrc` de una máquina en una
+analogía y el .npmrc que CHG-007 acababa de borrar, así que la lista habría
+producido dos P2 sobre un documento que **se agrega y no se edita**. El hallazgo
+no habría tenido arreglo posible.
+
+**Lecciones.**
+
+1. **Antes de elegir la regla, medir qué cobraría hoy.** Media hora de `grep`
+   sobre los artefactos reales descartó la solución que parecía obvia y señaló
+   la que no se veía.
+2. **Un documento que no se edita es una restricción de diseño**, no sólo una
+   convención de proceso: cualquier regla nueva del detector tiene que poder
+   convivir con lo que el ADR ya dice, porque el ADR no se va a acomodar.
+3. **Dos consumidores del mismo filtro no tienen por qué querer lo mismo.**
+   Compartían `pareceRuta` desde el principio y nadie había preguntado si debían.

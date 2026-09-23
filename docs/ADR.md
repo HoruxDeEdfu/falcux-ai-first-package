@@ -1029,3 +1029,46 @@ flujo tienen que correr el detector de `dist/` y no el de la versión publicada,
 que sería la anterior a los cambios del PR. Los dos archivos de este repo
 llevan esa diferencia anotada; `init` no los volverá a tocar porque nunca
 sobreescribe.
+
+## ADR-023 — Las rutas se leen con dos varas: laxa donde excusan, estricta donde acusan
+
+- **Fecha:** 2026-09-23
+- **Estado:** aceptada. Precisa la convención que el check 3 adoptó cuando la
+  spec del paquete §6 dejó abierto cómo «listar archivos».
+
+**Contexto.** CHG-007 borró el .npmrc, lo declaró entre acentos graves en la
+sección «Archivos afectados» de su documento de cambio, y el check 3 lo cobró
+igual como fuera de alcance. La causa estaba en `pareceRuta`, que cierra
+exigiendo «/» o una extensión de una lista: un archivo de configuración en la
+raíz no cumple ninguna de las dos. Los archivos tocados los da git, que sí los
+ve, así que el resultado era un P1 **imposible de apagar haciendo lo correcto**
+—no hay forma de declarar lo indeclarable—, el mismo defecto por el que ADR-022
+descartó `PostToolUse`. En este repo afecta a `LICENSE`, `.gitignore` y
+`.nvmrc`.
+
+**Decisión.** `pareceRuta` gana `permitirSinExtension`, que acepta además un
+token con forma de nombre de archivo sin barra ni extensión, y **sólo la activa
+el check 3**. Los dos checks siguen leyendo las mismas referencias, con reglas
+distintas, porque hacen cosas opuestas con ellas: en el check 3 una ruta
+declarada **excusa** un archivo tocado, y tiene que coincidir exacto con él para
+lograrlo; en el check 4 una ruta mencionada que no existe **acusa**, con un P2.
+Un filtro puede permitirse ser laxo donde excusa y tiene que ser estricto donde
+acusa.
+
+**Alternativas.** *Una lista blanca de nombres conocidos aplicada a los dos
+checks*: descartada por lo que se midió en este repo, no por principio. Con ella,
+`docs/ADR.md` pasaría a dar dos P2 —cita el `.zshrc` de una máquina en una
+analogía, y el .npmrc que CHG-007 acaba de borrar— sobre un documento **que se
+agrega y no se edita**, así que el hallazgo no tendría arreglo. Además la lista
+envejece: cada proyecto trae sus archivos de configuración. *Una regla general
+de dotfiles en los dos checks*: lo mismo y peor, porque `.length` o `.trim` en
+prosa técnica entrarían.
+
+**Consecuencias.** El check 4 no cambia en nada, y hay una prueba que lo fija
+con el caso del `.zshrc`. Un documento de cambio ya puede declarar el .npmrc, un
+LICENSE o un Makefile. El precio es que el check 3 acepta como «declarado» algún
+token que no es una ruta —`prod` entre acentos graves, por ejemplo—; es
+inofensivo, porque para excusar algo tiene que coincidir exactamente con una
+ruta que git reporta como tocada. Es la primera vez que las dos verificaciones
+dejan de compartir el mismo filtro, y la razón es que nunca hicieron lo mismo
+con él.

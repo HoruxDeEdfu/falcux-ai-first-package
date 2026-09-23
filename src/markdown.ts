@@ -17,6 +17,9 @@ const EXTENSIONES = /\.(mdx?|tsx?|jsx?|[cm]js|jsonc?|ya?ml|toml|py|astro|css|sh|
 const CARACTERES_NO_RUTA = /[\s<>|=()$"'&;!,]/;
 const CARACTERES_GLOB = /[*?{}[\]]/;
 const REF_DE_GIT = /^(origin|upstream|refs|HEAD)\//;
+// Un nombre de archivo a secas: `.npmrc`, `LICENSE`, `Makefile`. Con punto
+// inicial opcional, y nunca `..`.
+const NOMBRE_SUELTO = /^\.?[a-z0-9_][a-z0-9._-]*$/i;
 
 /**
  * Reemplaza cada bloque de código por saltos de línea equivalentes, para que
@@ -37,7 +40,10 @@ export function lineaDe(texto: string, indice: number): number {
  * URL o una ruta de otro sitio? Las reglas salieron de correr el detector
  * contra un repo real; cada una tiene su falso positivo detrás.
  */
-export function pareceRuta(token: string, opciones: { permitirGlob?: boolean } = {}): boolean {
+export function pareceRuta(
+  token: string,
+  opciones: { permitirGlob?: boolean; permitirSinExtension?: boolean } = {},
+): boolean {
   if (token.length < 2 || token.length > 200) return false;
   if (CARACTERES_NO_RUTA.test(token)) return false;
   if (token.includes('://') || token.startsWith('mailto:') || token.startsWith('#')) return false;
@@ -50,7 +56,16 @@ export function pareceRuta(token: string, opciones: { permitirGlob?: boolean } =
   if (!opciones.permitirGlob && CARACTERES_GLOB.test(token)) return false;
   if (/^\d+(\.\d+)*$/.test(token)) return false; // versiones: 1.2.3
   if (/^\.[a-z0-9]+$/i.test(token) && EXTENSIONES.test(token)) return false; // una extensión suelta: `.glb`
-  return token.includes('/') || EXTENSIONES.test(token);
+  if (token.includes('/') || EXTENSIONES.test(token)) return true;
+
+  // Sin barra ni extensión conocida —`.npmrc`, `LICENSE`, `Makefile`— sólo
+  // cuenta donde las rutas EXCUSAN, nunca donde acusan (ADR-023). El check 3 lo
+  // activa porque un token de más ahí no imputa nada: tiene que coincidir exacto
+  // con un archivo que git reporta como tocado para excusarlo. El check 4 no,
+  // porque ahí la ruta que no existe es un P2, y este repo ya tiene el caso en
+  // `docs/ADR.md`: cita el `.zshrc` de una máquina en una analogía, y ese
+  // documento se agrega, no se edita.
+  return opciones.permitirSinExtension === true && NOMBRE_SUELTO.test(token);
 }
 
 /** Quita lo que no forma parte de la ruta: `#ancla`, `:42`, «/» final, puntuación de cierre. */
@@ -63,7 +78,10 @@ export function normalizarRuta(token: string): string {
 }
 
 /** Referencias a rutas en enlaces `[texto](ruta)` y entre acentos graves, fuera de bloques de código. */
-export function referenciasARutas(texto: string, opciones: { permitirGlob?: boolean } = {}): Referencia[] {
+export function referenciasARutas(
+  texto: string,
+  opciones: { permitirGlob?: boolean; permitirSinExtension?: boolean } = {},
+): Referencia[] {
   const limpio = sinBloquesDeCodigo(texto);
   const salida: Referencia[] = [];
   for (const patron of [ENLACE, ACENTOS_GRAVES]) {

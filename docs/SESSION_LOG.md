@@ -10,6 +10,82 @@
 
 ---
 
+## 2026-09-23 (sesión 10) — Dos correcciones encadenadas: la barrera del publish y el filtro de rutas
+
+### Resumen
+Sesión de mantenimiento. Se cerró el pendiente de `publish-branch` (CHG-007) y,
+al hacerlo, el detector destapó un defecto suyo que se corrigió a continuación
+(CHG-008, ADR-023). Sin funcionalidad nueva: las dos son correcciones.
+
+### CHG-007: la barrera del publish se muda antes de que deje de leerse
+- `publish-branch=prod` vivía en el .npmrc y estaba condenada por los dos lados:
+  npm avisaba en cada corrida que no reconoce esa clave, y **pnpm 11 restringe
+  ese archivo a autenticación y registro**. Lo segundo es lo grave: la
+  comprobación habría desaparecido **en silencio**, y es lo único que impide
+  publicar desde `dev` por descuido.
+- Ahora es `publishBranch: prod` en `pnpm-workspace.yaml`, sin clave «packages»
+  porque esto no es un monorepo. El .npmrc se borró: no le quedaba contenido.
+- Verificado corriéndolo sobre un paquete de mentira en un repo desechable, con
+  el archivo real de este repo y **sin tocar `@falcux`**: desde `dev`, pnpm
+  aborta con `ERR_PNPM_GIT_NOT_CORRECT_BRANCH`. Y `pnpm install` se comporta
+  igual, que era el único riesgo de meter ese archivo acá.
+- ADR-007 no ganó fila: la decisión —publicar sólo desde `prod`— no cambió;
+  cambió el archivo que la hace cumplir.
+
+### CHG-008: el detector no dejaba declarar sus propios archivos de configuración
+- Lo destapó CHG-007. Con el .npmrc borrado y **declarado** en el documento de
+  cambio, el check 3 lo cobró igual: `pareceRuta` cerraba exigiendo «/» o una
+  extensión conocida, y los archivos tocados los da git, que no tiene esa
+  limitación. Un P1 **imposible de apagar haciendo lo correcto**, que es el mismo
+  defecto por el que ADR-022 descartó `PostToolUse`. Acá afecta a `LICENSE`,
+  `.gitignore` y `.nvmrc`.
+- **La medición decidió el diseño, no la preferencia.** La opción obvia —una
+  lista blanca de nombres conocidos para los dos checks— se descartó al medirla
+  contra este repo: `docs/ADR.md` cita el `.zshrc` de una máquina en una
+  analogía y el .npmrc que CHG-007 acababa de borrar, así que habría producido
+  dos P2 sobre un documento **que se agrega y no se edita**. El hallazgo no
+  habría tenido arreglo.
+- La salida fue ver que los dos checks nunca hicieron lo mismo con las
+  referencias: en el 3 una ruta **excusa** un archivo tocado —y tiene que
+  coincidir exacto con él—; en el 4 **acusa** con un P2. `pareceRuta` gana
+  `permitirSinExtension` y **sólo el check 3 la activa** (ADR-023).
+- Tres pruebas: el caso real del .npmrc, la contraparte —que el filtro más laxo
+  siga sin excusar lo no declarado— y una que fija que el check 4 no cambió,
+  con el `.zshrc` como caso.
+
+### Lo que esto enseña
+- **Antes de elegir una regla del detector, medir qué cobraría hoy.** Unos
+  `grep` sobre los artefactos reales descartaron la solución que parecía obvia y
+  señalaron la que no se veía.
+- **Un documento que no se edita es una restricción de diseño**, no sólo una
+  convención de proceso: una regla nueva tiene que poder convivir con lo que el
+  ADR ya dice, porque el ADR no se va a acomodar.
+- **Dos consumidores del mismo filtro no tienen por qué querer lo mismo.**
+  Compartían `pareceRuta` desde el principio y nadie había preguntado si debían.
+- Es la segunda sesión seguida en que **un cambio destapa el siguiente**: el
+  hook rompió un push y eso dio CHG-006; el .npmrc borrado dio CHG-008.
+
+### Validación
+- typecheck → PASS (dentro de `pnpm test`, que compila con `tsc`)
+- lint      → no ejecutado (el repo no tiene lint configurado)
+- tests     → PASS, 103 / 103 por código de salida. Tres pruebas nuevas.
+- `audit:self` → 0 / 100, por código de salida. Con CHG-008 abierto, el check 3
+  pasó sobre el mismo árbol donde con CHG-007 daba P1: es la comprobación de que
+  la corrección resuelve el caso real.
+- La barrera del publish, corrida de verdad desde una rama que no es `prod`.
+
+### Pendiente para la siguiente sesión
+Siguen los de las sesiones 7 a 9 menos `publish-branch`, que se cierra acá. Se
+le suma:
+- [ ] **El molde del documento de cambio dice a medias cómo lo lee el
+      detector.** Su sección «Cómo lo lee el detector» explica que se extraen
+      las rutas entre acentos graves «con globs», y desde ADR-023 también los
+      nombres sin extensión. El molde vive dentro de `protocolo-cambios`, que es
+      una de las tres skills que **obligan a avisar al sitio** antes de tocarlas,
+      así que la corrección de una frase arrastra ese aviso. Lo decide Charlie.
+
+---
+
 ## 2026-09-22 (sesión 9) — El hueco 5, cerrado: el detector corre solo
 
 ### Resumen
