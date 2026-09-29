@@ -10,6 +10,67 @@
 
 ---
 
+## 2026-09-29 (sesión 13) — El flujo de publish: `prod` con versión nueva publica sola
+
+### Resumen
+Se cerró el pendiente 4 del handoff, abierto desde ADR-007. Se hizo por
+`protocolo-features`, con la spec `docs/specs/publicacion.md` escrita en la
+misma sesión y dos decisiones que tomó Charlie. Queda escrito y probado en
+local. Falta que Charlie configure el trusted publisher en npmjs.com.
+
+### El flujo (ADR-024)
+- `.github/workflows/publish.yml` corre en cada push a `prod`: la suite, el
+  detector con `--estricto` sobre `before...HEAD`, la versión contra la lista
+  entera del registro, la entrada fechada del CHANGELOG y un aviso si el tag no
+  apunta al commit. Después, `npm publish` por OIDC.
+- **Charlie decidió dos cosas.** El detector corre con `--estricto`: un P1 frena
+  la publicación, porque publicar no se deshace. Y publica npm 11 en vez de
+  migrar a pnpm 11.
+- **pnpm 10 no publica con OIDC**; llegó con pnpm 11. Se comprobó antes de
+  diseñar, no se supuso, como pedía la lección de CHG-010.
+- **Una base que no existe se detecta a propósito.** `gitOpcional` devuelve
+  vacío ante una referencia inválida, así que después de un push forzado el
+  detector auditaría un rango vacío y pasaría. El flujo comprueba la base con
+  `git cat-file` y falla si no está.
+- `test/publicacion.test.ts` fija los invariantes del flujo. Se probó mutándolo:
+  abrirlo a `dev` y pasar a `pnpm publish` hacen fallar cuatro de las seis
+  pruebas.
+
+### Docs
+- `docs/ADR.md`: ADR-024.
+- `AGENTS.md`: la sección de ramas y la de publicar ya no dicen que el workflow
+  está pendiente. Ahora dicen que avanzar `prod` con la versión subida publica.
+- `docs/HANDOFF.md`: el pendiente 4 queda tachado y hay una sección nueva con el
+  paso que le falta a Charlie.
+- `docs/specs/README.md`: la fila de la spec.
+
+### Validación
+- typecheck → PASS (dentro de `pnpm test`)
+- lint      → no ejecutado (el repo no tiene lint configurado)
+- tests     → PASS, 113 / 113 por código de salida
+- `audit:self` → 0 / 100 sobre el árbol
+- La lógica de los pasos se ensayó en local contra el registro real.
+  `actionlint` no está instalado y no se corrió. Nada se corrió en GitHub
+  Actions.
+
+### Pendiente para la siguiente sesión
+- [x] ~~**Charlie configura el trusted publisher**~~ en npmjs.com. Hecho el
+      2026-09-29: `HoruxDeEdfu/falcux-ai-first-package`, `publish.yml`, con los
+      permisos `npm publish` y `npm stage publish`. El acceso por token sigue
+      abierto a propósito, como respaldo, hasta que el flujo publique bien una
+      vez.
+- [ ] **El primer push a `prod` con este flujo** tiene que terminar en verde
+      diciendo «ya publicada» para la `0.5.2`. Si falla, el cableado está mal y
+      se corrige antes de subir la versión.
+- [ ] **La primera versión que publique el flujo** es la prueba real del paso
+      OIDC. Hay que verificarla contra el registro, incluida la provenance, que
+      ninguna versión anterior tiene.
+- [ ] **El flujo `ai-first.yml` de este repo sólo corre en `pull_request`**, y
+      acá no hay PRs: no ha corrido nunca. Quedó fuera de alcance; va por
+      `protocolo-cambios` si se decide.
+
+---
+
 ## 2026-09-23 (sesión 12) — Cuatro correcciones que trajo el sitio, y la 0.5.2 sale con ellas
 
 ### Resumen

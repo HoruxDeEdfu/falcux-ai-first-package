@@ -1,0 +1,58 @@
+// El flujo que publica a npm (ADR-024). No se puede ensayar sin publicar, así
+// que se fija lo que no puede cambiar sin que alguien lo decida: cuándo corre,
+// cómo se autentica y con qué publica.
+
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { test } from 'node:test';
+import { parse } from 'yaml';
+
+const TEXTO = readFileSync(new URL('../../.github/workflows/publish.yml', import.meta.url), 'utf8');
+
+interface Paso { name?: string; run?: string; if?: string }
+interface Flujo {
+  on: Record<string, { branches?: string[] }>;
+  permissions: Record<string, string>;
+  concurrency: { group: string; 'cancel-in-progress': boolean };
+  jobs: { publicar: { steps: Paso[] } };
+}
+
+const FLUJO = parse(TEXTO) as Flujo;
+const PASOS = FLUJO.jobs.publicar.steps;
+const COMANDOS = PASOS.map((p) => p.run ?? '').join('\n');
+
+test('corre sólo con push a prod', () => {
+  assert.deepEqual(Object.keys(FLUJO.on), ['push']);
+  assert.deepEqual(FLUJO.on.push?.branches, ['prod']);
+});
+
+test('se autentica por OIDC y no lee ningún secreto', () => {
+  assert.equal(FLUJO.permissions['id-token'], 'write');
+  assert.equal(FLUJO.permissions.contents, 'read');
+  assert.doesNotMatch(TEXTO, /secrets\./);
+  assert.doesNotMatch(TEXTO, /NODE_AUTH_TOKEN|NPM_TOKEN/);
+});
+
+test('publica con npm 11, no con pnpm, que en la 10 no habla OIDC', () => {
+  assert.match(COMANDOS, /npm install -g npm@\^11\.5\.1/);
+  assert.match(COMANDOS, /^npm publish --access public$/m);
+  assert.doesNotMatch(COMANDOS, /pnpm publish/);
+});
+
+test('dos pushes seguidos publican en fila', () => {
+  assert.equal(FLUJO.concurrency.group, 'publish');
+  assert.equal(FLUJO.concurrency['cancel-in-progress'], false);
+});
+
+test('la suite y el detector estricto van antes de publicar', () => {
+  const indice = (patron: RegExp) => PASOS.findIndex((p) => patron.test(p.run ?? ''));
+  const publicar = indice(/^npm publish/m);
+  assert.ok(indice(/^pnpm test$/m) < publicar);
+  assert.ok(indice(/audit --base "\$BASE" --estricto/) < publicar);
+  assert.ok(indice(/grep -E "\^## \\\[/) < publicar, 'la compuerta del CHANGELOG');
+});
+
+test('publicar depende de que la versión sea nueva', () => {
+  const publicar = PASOS.find((p) => /^npm publish/m.test(p.run ?? ''));
+  assert.equal(publicar?.if, "steps.version.outputs.nueva == 'si'");
+});

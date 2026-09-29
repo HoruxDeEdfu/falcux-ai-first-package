@@ -140,8 +140,9 @@ Las versiones publicadas llevan tag `vX.Y.Z` sobre el commit que las publicó;
 
 - Se trabaja en **`dev`**. **`prod` es la rama publicada y se avanza sólo
   cuando Charlie lo decide**, con `--ff-only`. Mergear a `prod` **despliega**:
-  el sitio sirve skills y templates desde sus raw links al instante, y el
-  workflow de publish (pendiente, ADR-007) sube a npm si la versión cambió.
+  el sitio sirve skills y templates desde sus raw links al instante, y
+  `.github/workflows/publish.yml` publica a npm si la versión no está en el
+  registro (ADR-024). **Subir la versión y avanzar `prod` es publicar.**
   Es la misma convención que los repos del sitio y de la landing: `prod`
   despliega, en los tres. No hay `main`; se llamó así hasta el 2026-09-17.
 - Mover o renombrar algo en `skills/` o `templates/` obliga a coordinar con el
@@ -150,7 +151,9 @@ Las versiones publicadas llevan tag `vX.Y.Z` sobre el commit que las publicó;
   desde otra rama, con `ERR_PNPM_GIT_NOT_CORRECT_BRANCH`. Vivió en el .npmrc
   hasta el 2026-09-23 (CHG-007); desde pnpm 11 ese archivo queda sólo para
   autenticación y registro, y la clave habría dejado de leerse en silencio. El
-  archivo lleva ajustes, no paquetes: esto no es un monorepo.
+  archivo lleva ajustes, no paquetes: esto no es un monorepo. El flujo de
+  publish no pasa por ahí: publica con `npm publish`, porque pnpm 10 no maneja
+  OIDC, y su compuerta de rama es el disparador (ADR-024).
 
 ### El detector
 
@@ -210,9 +213,10 @@ tildes**; el resto, con ellas.
   sin avisar al sitio: asumen su capítulo «Gobierno del contexto».
 - **No avances `prod` sin que Charlie lo pida.** Mergear ahí despliega.
 - **No publiques a npm sin que Charlie lo pida.** Ni con `--dry-run` sin
-  avisar. El primer publish ya salió (`0.1.0`); los siguientes tienen su lista
-  en `docs/HANDOFF.md`. El scope `@falcux` es de la cuenta de usuario `falcux`
-  (ADR-004); no hay organización que crear.
+  avisar. Desde ADR-024 publica el flujo, por trusted publishing y sin token:
+  un publish a mano es la excepción, y hay que decir por qué. El scope
+  `@falcux` es de la cuenta de usuario `falcux` (ADR-004); no hay organización
+  que crear.
 - **No cambies los pesos del puntaje** sin ADR y sin avisar al sitio.
 - **No pongas entre acentos graves una ruta que acá no existe** en
   `docs/HANDOFF.md` ni en `docs/ADR.md`: el check 4 la busca acá y la cobra

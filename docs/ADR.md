@@ -1072,3 +1072,52 @@ inofensivo, porque para excusar algo tiene que coincidir exactamente con una
 ruta que git reporta como tocada. Es la primera vez que las dos verificaciones
 dejan de compartir el mismo filtro, y la razón es que nunca hicieron lo mismo
 con él.
+
+## ADR-024 — npm publica solo desde un flujo con OIDC, y lo publicado lo decide el registro, no el tag
+
+- **Fecha:** 2026-09-29
+- **Estado:** aceptada. Cumple lo que ADR-007 dejó pendiente: el workflow que
+  publica cuando `prod` avanza con versión nueva. No supera a ADR-007; precisa
+  con qué herramienta y contra qué se compara.
+
+**Contexto.** Las nueve versiones publicadas salieron a mano, y el paso manual
+falló de cuatro maneras: sesión de npm caducada (`0.2.1`), `prod` atrasada
+(`0.3.0`), dos fallos de autenticación que dejaron la `0.5.0` con tag y sin
+registro, y la `0.5.2` publicada desde un commit posterior al del bump
+(CHG-015). Ninguna lleva provenance. Además, esa última salió con `npm publish`,
+que no lee el `publishBranch` de `pnpm-workspace.yaml`, así que la única
+compuerta de rama no actuó. Trusted publishing exige npm 11.5.1 o superior, y
+pnpm 10.28.2, que fija este repo, no maneja OIDC al publicar: eso llegó con
+pnpm 11.
+
+**Decisión.** `.github/workflows/publish.yml` corre en cada push a `prod`. Pasa
+la suite y el detector **con `--estricto`** sobre el rango que se publica, y
+compara la versión del `package.json` con la **lista completa** de versiones del
+registro. Si la versión ya existe, termina sin publicar. Si no, comprueba que el
+CHANGELOG tenga la entrada fechada y publica con **npm 11**, autenticado por
+OIDC, sin token guardado. La compuerta de rama deja de ser el `publishBranch`
+y pasa a ser el disparador del flujo. El tag lo sigue poniendo Charlie: el flujo
+solo avisa si no apunta al commit que se publica. Charlie configura el trusted
+publisher en npmjs.com una vez.
+
+**Alternativas.**
+- *Migrar a pnpm 11 para usar `pnpm publish` con OIDC*: cambia la herramienta
+  del repo entero por un solo paso, y tiene un defecto abierto justo en ese
+  camino (pnpm/pnpm#11513).
+- *Un token de npm guardado como secreto del repo*: es lo que ADR-007 quiso
+  evitar desde el primer publish. Además no da provenance y caduca, que es como
+  falló la `0.2.1`.
+- *Comparar contra `latest`*: no ve una versión que se quedó con tag y nunca
+  llegó al registro, como la `0.5.0`.
+- *Detector sin `--estricto`, como el `pre-push`*: el `pre-push` avisa porque un
+  push se puede corregir con otro. Una versión publicada no se puede corregir:
+  npm no deja reutilizar el número.
+- *Publicar por tag `v*`*: ADR-007 ya lo descartó por meter un segundo gesto.
+
+**Consecuencias.** Mergear a `prod` con la versión subida publica sin ningún
+paso más, y un merge sin subirla deja una corrida en verde que dice «ya
+publicada». Un P1 en el rango deja la versión sin publicar hasta el siguiente
+push que lo corrija; como se compara contra el registro, ese push la publica.
+`publishBranch` queda como defensa para quien corra `pnpm publish` a mano. El
+paso de OIDC recién se prueba con la primera versión después de este flujo: no
+se puede ensayar sin publicar. Si falla, falla cerrado, con 404 y sin publicar.

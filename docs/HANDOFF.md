@@ -86,13 +86,11 @@ Charlie:
    forzarlo para un nombre sin scope. Charlie decidió descartar el alias
    (**ADR-011**) en vez de pedir una excepción a soporte de npm. La carpeta del
    alias, el archivo de workspace de pnpm y su prueba se borraron el mismo día.
-   **Pendiente, para cuando haya versión nueva que publicar:** configurar
-   trusted publishing en npmjs.com para `@falcux/ai-first` apuntando a este
-   repo, y escribir el publish.yml de .github/workflows disparado por push a
-   `prod`, con `id-token: write`, que corre la suite y `audit:self --base`,
-   compara la versión del `package.json` con la publicada y publica sólo si
-   cambió. Queda por verificar si `pnpm publish` ya habla OIDC con npm; si no,
-   el workflow empaqueta con `pnpm pack` y publica el tarball con `npm publish`.
+   ~~**Pendiente: el workflow de publish.**~~ **Escrito el 2026-09-29**
+   (ADR-024): `.github/workflows/publish.yml`. `pnpm publish` no habla OIDC en
+   la 10, así que publica `npm publish` con npm 11. **Lo que falta es de
+   Charlie**: configurar el trusted publisher en npmjs.com. Detalle al final de
+   este archivo.
 5. ~~**Verificar en una carpeta vacía.**~~ **Hecho el 2026-09-18**:
    `npx @falcux/ai-first --help` desde una carpeta vacía baja el paquete de npm
    y da la ayuda del comando `ai-first`, con salida cero. Lo publicado funciona.
@@ -1149,3 +1147,32 @@ tag. El aviso al sitio salió y fue respondido el 2026-09-28: lo documentaron en
 `publishBranch` de pnpm, así que en este publish la compuerta de rama no actuó.
 No hizo falta porque se publicó desde `prod`, pero un workflow disparado por el
 push a `prod` elimina tanto este riesgo como el del commit que no es el del bump.
+
+### El flujo de publish existe, y espera su configuración en npm (2026-09-29, ADR-024)
+
+`.github/workflows/publish.yml` corre en cada push a `prod`. Pasa la suite y el
+detector con `--estricto` sobre el rango que se publica, y compara la versión
+con la lista entera del registro. Si ya está, termina en verde sin publicar. Si
+no, exige la entrada fechada del CHANGELOG, avisa si el tag no apunta al commit
+y publica con `npm publish` por OIDC, sin token. La spec es
+`docs/specs/publicacion.md`.
+
+**Antes de la próxima versión, Charlie tiene que hacer esto en npmjs.com**:
+en la configuración del paquete `@falcux/ai-first`, agregar un trusted
+publisher de GitHub Actions con el usuario `HoruxDeEdfu`, el repositorio
+`falcux-ai-first-package` y el workflow `publish.yml`, sin environment. Sin eso
+el paso de publicar falla con 404, y no sale nada. **Hecho el 2026-09-29**, con
+«Allow npm publish» marcado aunque npm lo desaconseja: sin esa casilla, el
+flujo solo podría hacer publicación por etapas, que exige aprobar cada versión
+a mano, y ADR-024 decidió que avanzar `prod` publique sin más pasos. El acceso
+por token sigue abierto como respaldo; se cierra cuando el flujo publique bien
+la primera vez.
+
+**Qué se verificó y qué no.** La lógica de los pasos se ensayó en local contra
+el registro real: la `0.5.2` da «ya publicada»; una versión inventada da
+«nueva»; la entrada de la `0.5.0` en el CHANGELOG da «sin publicar»; y una base
+que no existe se detecta. La prueba de invariantes falla si el flujo se abre a
+`dev` o pasa a `pnpm publish`. **No se verificó nada en GitHub Actions ni el
+paso OIDC**: el primero se ve con el próximo push a `prod`, que debe terminar en
+«ya publicada». El segundo, recién con la siguiente versión. `actionlint` no
+está instalado y no se corrió.
