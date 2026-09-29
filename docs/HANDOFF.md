@@ -1216,8 +1216,9 @@ reparte y verifica; el paquete sigue trabajando repo por repo. Lo único que los
 une es que el paquete ya no pisa lo que la plantilla reparte (CHG-018).
 
 **La `0.5.4` salió sola por el flujo**, desde `bef679b`, con provenance, y está
-verificada contra el registro. El tag lo pone Charlie. El aviso al sitio se
-envió.
+verificada contra el registro. El tag `v0.5.4` ya está sobre `bef679b`. El
+aviso al sitio se envió y fue respondido: lo documentan en su `dev`, con el
+segundo caso junto al de la skill enlazada.
 
 **Qué haría falta para que el paquete sí piense en workspace**, cuando el uso
 real lo pida: que `AI-FIRST.md` pueda declarar «soy workspace» o «soy miembro»,

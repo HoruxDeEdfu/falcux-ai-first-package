@@ -66,8 +66,13 @@ publicada por el flujo.
 - Revisión de CI en `dev` y flujo de publish, en verde.
 
 ### Pendiente para la siguiente sesión
-- [ ] **Tag `v0.5.4` sobre `bef679b`**: lo pone Charlie.
-- [ ] **Esperar la respuesta del sitio** al aviso de la `0.5.4`.
+- [x] ~~**Tag `v0.5.4` sobre `bef679b`**~~: Charlie lo puso el mismo día.
+- [x] ~~**Respuesta del sitio al aviso de la `0.5.4`**~~: llegó el mismo día.
+      La documentan en su `dev` (`fee3732`); pasarla a su `prod` lo decide
+      Charlie. Verificaron `latest`, el shasum y la provenance, y leyeron CHG-018
+      en el código, sin probarlo con entrevista. Sumaron el segundo caso en las
+      dos páginas donde ya explicaban el de la skill enlazada, sin documentar el
+      workspace. Su `prod` ya sirve la `0.5.3`.
 - [ ] **Usar el workspace con repos reales.** Lo que falle ahí es lo próximo a
       construir. Candidatos que hoy no hacen falta: que `AI-FIRST.md` pueda decir
       «soy workspace» o «soy miembro» (pide ADR), y que el detector absorba el
