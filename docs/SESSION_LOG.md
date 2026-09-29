@@ -10,6 +10,73 @@
 
 ---
 
+## 2026-09-23 (sesión 12) — Cuatro correcciones que trajo el sitio, y la 0.5.2 sale con ellas
+
+### Resumen
+Tramo de cinco commits (`74e3003`..`6772e8e`) que quedó sin cierre: cuatro
+correcciones por `protocolo-cambios`, casi todas halladas por el sitio al
+documentar el paquete, y el publish de la `0.5.2`. El publish salió de un commit
+posterior al del bump. Esta entrada se escribió el 2026-09-28, a partir de git,
+de `docs/changes/CHANGE_LOG.md` y del registro de npm.
+
+### Las correcciones
+- **CHG-011**: la ayuda y el README enseñan `npx @falcux/ai-first@latest init`.
+  Sin versión, npx reutilizaba su copia en caché: a Charlie le respondió la 0.1.0
+  cuando el registro ya iba en la 0.5.1. Se descartó que el CLI avise de
+  versiones nuevas, porque sería una llamada de red (ADR-019).
+- **CHG-012**: las skills son once y no diez, y las que asumen el ADR del
+  capítulo «Gobierno del contexto» son cinco. El sitio contaba seis porque su
+  `grep` encontraba «adr» dentro de «cuadran». Solo cambia prosa, incluida la de
+  dos archivos dentro de `skills/`.
+- **CHG-013**: el `pre-push` deja pasar el push cuando `audit` sale con 2, que es
+  el código de error de uso. Antes heredaba ese código y frenaba igual que un P0,
+  contra ADR-022. Cambió tanto la plantilla como la copia de este repo.
+- **CHG-014**: una opción mal escrita responde con un error en español y código
+  2, sin la traza de Node. `leerOpciones` traduce los tres errores de
+  `parseArgs`.
+
+### La `0.5.2` en npm
+- Charlie la publicó con `npm publish` desde `prod` en `cc776eb`, el
+  2026-09-23 a las 14:55:31 UTC. `latest` apunta a ella.
+- El bump y el tag estaban en `0a4e831`, así que el tarball trae también
+  CHG-011, CHG-013 y CHG-014. **CHG-015** lo comprobó bajando el tarball: es
+  idéntico a `cc776eb`. El `CHANGELOG.md` del repo ya cuenta esos cambios. El del
+  tarball conserva el texto viejo, porque el registro no deja reemplazarlo.
+- `dev`, `prod` y los dos remotos quedaron en `6772e8e`.
+
+### Lo que esto enseña
+- **Lo que se publica es la punta de la rama, no el commit del bump.** Si entra
+  algo entre los dos, `version-bump` se vuelve a correr antes de publicar.
+- **`npm publish` no lee el `publishBranch` de pnpm.** Esa compuerta de rama solo
+  existe con `pnpm publish`.
+- **Un tramo sin cierre deja la cronología cinco días atrás.** Los CHG quedaron
+  documentados uno por uno, pero nadie corrió `protocolo-cierre` al final.
+
+### Validación
+Corrida el 2026-09-28, al escribir esta entrada, sobre `6772e8e`:
+- typecheck → PASS (dentro de `pnpm test`)
+- lint      → no ejecutado (el repo no tiene lint configurado)
+- tests     → PASS, 107 / 107 por código de salida
+- `audit:self` → 0 / 100, por código de salida
+
+### Pendiente para la siguiente sesión
+Siguen los de las sesiones 7 a 10. El de la sesión 11, publicar la `0.5.2`, se
+cierra acá. Se suman:
+- [ ] **Mover el tag `v0.5.2` de `0a4e831` a `cc776eb`**, que es el commit que se
+      publicó. Lo hace Charlie; la skill nunca toca tags. Ojo: `version-bump`
+      arranca desde el último tag, así que hay que moverlo antes del próximo bump.
+- [x] ~~**Avisar al sitio por la `0.5.2`.**~~ Se envió el 2026-09-28 a la
+      sesión `site-update`, que contestó el mismo día. Lo documentaron en su
+      `dev` (`ca8cd82`); pasarlo a su `prod` lo decide Charlie. Probaron la
+      versión publicada por su cuenta: CHG-013 y CHG-014 se comportan como dice
+      el aviso. **CHG-008 sí les afectaba**, al revés de lo que se había dado
+      por hecho en la sesión 11: su página de verificaciones decía que los
+      archivos sin extensión no se podían declarar. Ya está corregida. Su botón
+      de portada usaba `@latest init` desde el 2026-09-23. CHG-009 y CHG-012 no
+      les pidieron cambios.
+
+---
+
 ## 2026-09-23 (sesión 11) — La 0.5.2 sale a `dev`, y el sitio corrige una suposición nuestra
 
 ### Resumen

@@ -1131,3 +1131,21 @@ La lección de acá es sobre nosotros: **se afirmó dos veces, en el handoff y e
 avisos, algo del manual que no se podía verificar desde este repo**. No fue un
 dato que caducó, fue una suposición presentada como hecho. Cuando el aviso
 dependa de lo que diga el otro repo, se pregunta, no se afirma.
+
+### La `0.5.2` sale a npm, desde un commit posterior al del bump (2026-09-23, CHG-015)
+
+Charlie la publicó con `npm publish` desde `prod` en `cc776eb`, a las 14:55:31
+UTC. Es la novena versión publicada a mano, y `latest` apunta a ella. El bump y
+el tag estaban en `0a4e831`, así que el tarball trae también CHG-011, CHG-013 y
+CHG-014. CHG-015 lo comprobó bajando el tarball: sus archivos son idénticos a
+`cc776eb`. El `CHANGELOG.md` del repo los cuenta; el del tarball no, porque el
+registro no deja reemplazarlo.
+
+**Quedan dos cosas abiertas.** Charlie tiene que mover el tag `v0.5.2` a
+`cc776eb` antes del próximo bump, porque `version-bump` arranca desde el último
+tag. El aviso al sitio salió y fue respondido el 2026-09-28: lo documentaron en su `dev`, y CHG-008 sí los afectaba, al contrario de lo que se había dado por hecho.
+
+**Esto también refuerza el pendiente 4.** `npm publish` no lee el
+`publishBranch` de pnpm, así que en este publish la compuerta de rama no actuó.
+No hizo falta porque se publicó desde `prod`, pero un workflow disparado por el
+push a `prod` elimina tanto este riesgo como el del commit que no es el del bump.
