@@ -79,15 +79,22 @@ local. Falta que Charlie configure el trusted publisher en npmjs.com.
       `/usr/local/bin`. Se corrigió con **CHG-016**; falta el segundo intento.
       GitHub avisa además que `checkout`, `setup-node` y `action-setup` en `@v4`
       corren sobre Node 20, que está obsoleto. No frena nada todavía.
-- [ ] **La primera versión que publique el flujo** es la prueba real del paso
-      OIDC. Hay que verificarla contra el registro, incluida la provenance, que
-      ninguna versión anterior tiene.
+- [x] ~~**La primera versión que publique el flujo**~~ fue la `0.5.3`, el
+      mismo día: corrida 36593401445 sobre `e62e0d2`. Se verificó contra el
+      registro: `latest`, el shasum `7510ef30…` y la provenance SLSA v1. El
+      detalle está en `docs/HANDOFF.md`.
+- [x] ~~**Tag `v0.5.3` sobre `e62e0d2`**~~: Charlie lo puso el mismo día.
+- [ ] **Esperar la respuesta del sitio al aviso de la `0.5.3`.** Se envió el
+      2026-09-29 a `site-update`: la plantilla de CI con Node 24, que el paquete
+      ahora sale con provenance, y la pregunta de si su texto dice que se publica
+      a mano. No se da por recibido hasta que contesten.
+- [ ] **Cerrar el acceso por token en npm** («Require two-factor
+      authentication and disallow tokens»), ahora que el flujo publicó bien.
 - [x] ~~**El flujo `ai-first.yml` de este repo sólo corre en `pull_request`**~~
       Resuelto con CHG-017. Su primera corrida en un push a `dev`, la
       36592563626 sobre `9dde97c`, quedó en verde: 112 pruebas y 1 omitida,
       rango `8a413b9...HEAD` en 0 / 100, y ya sin el aviso de Node 20.
-- [ ] **La plantilla nueva viaja en el próximo PATCH.** El CHANGELOG ya la
-      cuenta bajo «Sin publicar»; `version-bump` la tiene que ver.
+- [x] ~~**La plantilla nueva viaja en el próximo PATCH.**~~ Salió en la `0.5.3`.
 - [ ] **El `pre-push` con tags**: al empujar un tag, el hook recibe la ref del
       tag y audita `HEAD` contra el sha remoto del tag, no el tag. No frena nada
       útil ni inútil; se mira si molesta.

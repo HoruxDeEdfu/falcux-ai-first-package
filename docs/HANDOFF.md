@@ -1176,3 +1176,31 @@ que no existe se detecta. La prueba de invariantes falla si el flujo se abre a
 paso OIDC**: el primero se ve con el próximo push a `prod`, que debe terminar en
 «ya publicada». El segundo, recién con la siguiente versión. `actionlint` no
 está instalado y no se corrió.
+
+### La `0.5.3` sale sola: primera versión publicada por el flujo (2026-09-29, ADR-024)
+
+Charlie avanzó `prod` a `e62e0d2` con `git push origin dev:prod`, y el flujo
+publicó sin ningún paso manual (corrida 36593401445). Es la décima versión
+publicada, y la primera que no salió a mano. Trae un solo cambio para quien
+instala: la plantilla de CI que escribe `init` usa `checkout@v7` y
+`setup-node@v7`, que corren sobre Node 24 (CHG-017).
+
+Verificado contra el registro, no en el log:
+
+- `latest` apunta a `0.5.3`, publicada a las 15:54:49 UTC. Tardó unos tres
+  minutos en aparecer después de que el flujo terminara: npm avisa que procesa.
+- El shasum que declara el registro, `7510ef30…`, coincide con el del log y con
+  el del tarball bajado.
+- **Es la primera versión con provenance**: el registro trae las atestaciones de
+  publicación y SLSA v1, firmadas desde GitHub Actions.
+- `npx @falcux/ai-first@0.5.3 init --sin-entrevista` sobre una carpeta vacía
+  escribe el flujo con las acciones `@v7`, y el `audit` que sigue da 0 / 100.
+
+**Un tropiezo al verificar, que no es defecto.** Después de publicar, `npm
+view` y `npm pack` locales decían que la `0.5.3` no existía, por el caché de
+metadatos de npm en esta máquina. Con `--prefer-online` respondió. Quien
+verifique una versión recién publicada tiene que forzar esa opción.
+
+**Lo que queda.** El tag `v0.5.3` ya está sobre `e62e0d2`. El aviso al sitio
+se envió el mismo día; falta que contesten. Y, cuando convenga, cerrar el acceso por token en npm, ahora que el
+flujo publicó bien.
