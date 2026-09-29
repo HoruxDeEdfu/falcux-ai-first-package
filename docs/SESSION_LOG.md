@@ -10,6 +10,74 @@
 
 ---
 
+## 2026-09-29 (sesión 14) — El paquete ante un workspace de polirepos, y la 0.5.4
+
+### Resumen
+Charlie quiere que el paquete sirva a un workspace que agrupa varios repos. Se
+armó la plantilla en otro repo, se probó el paquete adentro, y lo que falló se
+corrigió en los dos lados. La corrección del paquete salió en la `0.5.4`,
+publicada por el flujo.
+
+### La plantilla de workspace (otro repo)
+- Vive en Autentic-Latam-SAS/atc-develop-workspace, marcada como plantilla, con
+  ramas `main` y `dev` y la identidad de AutenTIC. Generaliza el
+  atc-comercial-portal-workspace: un manifiesto por repo hijo, un script que
+  clona y los agrega al `.gitignore`, y otro que reparte documentos y skills y
+  verifica con `--check`.
+- Le suma dos protecciones: nunca pisa un archivo que el repo creó por su cuenta,
+  y el `AGENTS.md` de cada hijo es del hijo.
+- Se probó en copias desechables, con espacios en la ruta: 19 casos, más 6 de la
+  adopción de archivos idénticos.
+- **Decisión de Charlie:** versionar y subir cada repo no se programa. Lo hace
+  el agente siguiendo reglas escritas en el `AGENTS.md` del workspace, con
+  confirmación repo por repo.
+
+### El laboratorio: el paquete dentro del workspace
+- `audit` da 0 / 100 en los hijos y en el workspace, e `init` en la raíz no
+  entra en los repos hijos.
+- **Choque 1:** `init` y el sync escriben en la misma carpeta de skills. Con
+  `init` primero, el sync tomaba como propias unas skills idénticas a las del
+  catálogo, y `--check` quedaba en rojo sin salida. Se corrigió en la plantilla:
+  un archivo idéntico se adopta como copia.
+- **Choque 2 (CHG-018):** la entrevista adaptaba una skill que era copia del
+  workspace, y el siguiente sync borraba la adaptación. Se corrigió en el
+  paquete: se reporta como sugerida, igual que una skill enlazada. No se pudo
+  correr con entrevista en el laboratorio porque exige una terminal; lo cubre
+  una prueba que falla si se quita la protección.
+
+### La `0.5.4`
+- PATCH, por CHG-018. Commit `bef679b`, publicado por el flujo en la corrida
+  36639996133, a las 22:32:25 UTC, sin pasos manuales.
+- Verificado contra el registro: `latest` en `0.5.4`, el shasum `6be5296f…`
+  coincide con el del log, y trae provenance SLSA v1.
+- Aviso al sitio enviado a `site-update`.
+
+### Lo que esto enseña
+- **Usar el paquete dentro de un caso nuevo encuentra lo que las pruebas no
+  buscan.** Los dos choques salieron en la primera corrida del laboratorio.
+- **Una protección que mira la forma y no la causa se repite.** ADR-020 miraba
+  «es un enlace»; lo que importaba era «acá no está la fuente».
+
+### Validación
+- typecheck → PASS (dentro de `pnpm test`)
+- lint      → no ejecutado (el repo no tiene lint configurado)
+- tests     → PASS, 114 / 114 por código de salida
+- `audit:self` → 0 / 100
+- Revisión de CI en `dev` y flujo de publish, en verde.
+
+### Pendiente para la siguiente sesión
+- [ ] **Tag `v0.5.4` sobre `bef679b`**: lo pone Charlie.
+- [ ] **Esperar la respuesta del sitio** al aviso de la `0.5.4`.
+- [ ] **Usar el workspace con repos reales.** Lo que falle ahí es lo próximo a
+      construir. Candidatos que hoy no hacen falta: que `AI-FIRST.md` pueda decir
+      «soy workspace» o «soy miembro» (pide ADR), y que el detector absorba el
+      `--check` de copias editadas.
+- [ ] **El paquete reconoce un texto de otro repo**: la cabecera
+      «COPIA DE SOLO LECTURA» de la plantilla. Si la plantilla la cambia, CHG-018
+      deja de funcionar sin error.
+
+---
+
 ## 2026-09-29 (sesión 13) — El flujo de publish: `prod` con versión nueva publica sola
 
 ### Resumen

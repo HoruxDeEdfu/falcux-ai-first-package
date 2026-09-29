@@ -1206,3 +1206,20 @@ se envió y fue respondido el mismo día: lo documentan en su `dev`, y solo
 cambiaron la guía que citaba las acciones `@v4`. El acceso por token en npm se cerró el mismo día: Charlie eligió «disallow
 bypass 2fa tokens». Desde entonces se publica por el flujo, o a mano con el
 código de 2FA; ningún token guardado sirve para publicar.
+
+### El paquete ante un workspace de polirepos, y la `0.5.4` (2026-09-29, CHG-018)
+
+Charlie armó una plantilla de workspace que agrupa varios repos independientes.
+Vive en otro repo de GitHub, atc-develop-workspace, de la organización de
+AutenTIC. **El paquete no maneja workspaces**: la plantilla clona, ignora,
+reparte y verifica; el paquete sigue trabajando repo por repo. Lo único que los
+une es que el paquete ya no pisa lo que la plantilla reparte (CHG-018).
+
+**La `0.5.4` salió sola por el flujo**, desde `bef679b`, con provenance, y está
+verificada contra el registro. El tag lo pone Charlie. El aviso al sitio se
+envió.
+
+**Qué haría falta para que el paquete sí piense en workspace**, cuando el uso
+real lo pida: que `AI-FIRST.md` pueda declarar «soy workspace» o «soy miembro»,
+con su ADR; y que el detector absorba el `--check` de copias editadas de la
+plantilla. Hoy ninguno de los dos hace falta.
