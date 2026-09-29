@@ -512,3 +512,28 @@ en las dos ramas, la segunda simulando un node alcanzable. El hook no cambió.
    primera vez que la suite corrió en otra máquina fue en el flujo de publish.
 2. **Una prueba que depende del entorno se omite con su razón, no se aprueba
    ni se borra.** Es la misma regla que el detector aplica a sus checks.
+
+## CHG-017 — La revisión de CI corre en cada push a `dev`, y las acciones pasan a Node 24
+
+- **Fecha:** 2026-09-29 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo completo, sin schema ni decisión de ADR
+- **Archivos:** `.github/workflows/ai-first.yml`, `.github/workflows/publish.yml`, `plantillas/ai-first.yml`, `CHANGELOG.md`
+
+**Resumen.** El `ai-first.yml` de este repo solo corría en `pull_request`, y
+acá no hay PRs: no había corrido nunca. Por eso el defecto de CHG-016 recién
+apareció en la última compuerta antes de npm. Ahora corre también en cada push
+a `dev`, auditando `before...HEAD` con `--estricto` y la misma comprobación de
+base que `publish.yml`. La lógica se ensayó en local en sus cuatro casos: PR,
+rama nueva, rango válido y base inexistente. Las acciones pasan de `@v4`, que
+corren sobre Node 20, a `checkout@v7`, `setup-node@v7` y `pnpm/action-setup@v6`,
+que corren sobre Node 24. Antes se leyeron sus notas de versión, y ningún cambio
+incompatible afecta este uso. La plantilla que reparte `init` recibe las dos
+acciones que usa, con `package-manager-cache: false`, y queda anotada en el
+CHANGELOG para el próximo PATCH. Su disparador no cambia: es decisión de quien
+adopta el paquete.
+
+**Lección.** Con un CHG abierto en `pending/`, auditar localmente un rango de
+commits anteriores cobra como «fuera de alcance» archivos que ese CHG nunca
+declaró, porque el check 3 lee el cambio en curso. En CI no pasa, porque el CHG
+se borra en el mismo commit que lo cierra, pero confunde al ensayar: se
+confirmó sacando el documento un momento.

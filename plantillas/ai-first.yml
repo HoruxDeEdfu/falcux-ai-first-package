@@ -12,12 +12,15 @@ jobs:
   auditar:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # El detector compara contra la rama base: sin historia no hay rango.
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          # Acá no se instalan dependencias —el detector llega con npx—, así que
+          # el caché automático no aporta, y sin lockfile de npm puede fallar.
+          package-manager-cache: false
       - name: Entropía documental
         run: npx --yes @falcux/ai-first audit --base "origin/${{ github.base_ref }}" --estricto

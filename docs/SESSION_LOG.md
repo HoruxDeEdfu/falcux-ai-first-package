@@ -36,6 +36,17 @@ local. Falta que Charlie configure el trusted publisher en npmjs.com.
   abrirlo a `dev` y pasar a `pnpm publish` hacen fallar cuatro de las seis
   pruebas.
 
+### Después del feature: CHG-016 y CHG-017
+- **CHG-016**: la primera corrida de publish falló en una prueba que suponía una
+  máquina sin node en `/usr/local/bin`. Ahora esa prueba se omite, con su razón,
+  donde el hook alcanza un node. La segunda corrida quedó en verde.
+- **CHG-017**: `ai-first.yml` corre también en cada push a `dev`, porque solo con
+  PRs no había corrido nunca. Las acciones pasan a Node 24: `checkout@v7`,
+  `setup-node@v7` y `pnpm/action-setup@v6`. La plantilla que reparte `init`
+  recibe el mismo cambio, así que el CHANGELOG lo anota bajo «Sin publicar».
+- Charlie movió el tag `v0.5.2` a `cc776eb`. Al empujarlo, el `pre-push` auditó
+  `dev` contra el tag viejo, no el tag. No frenó nada; queda como rareza menor.
+
 ### Docs
 - `docs/ADR.md`: ADR-024.
 - `AGENTS.md`: la sección de ramas y la de publicar ya no dicen que el workflow
@@ -59,8 +70,10 @@ local. Falta que Charlie configure el trusted publisher en npmjs.com.
       permisos `npm publish` y `npm stage publish`. El acceso por token sigue
       abierto a propósito, como respaldo, hasta que el flujo publique bien una
       vez.
-- [ ] **El primer push a `prod` con este flujo** tiene que terminar en verde
-      diciendo «ya publicada» para la `0.5.2`. El primer intento, la corrida
+- [x] ~~**El primer push a `prod` con este flujo**~~ terminó en verde en el
+      segundo intento: la corrida 36591363141 sobre `8a413b9` pasó 112 pruebas
+      con 1 omitida, el detector dio 0 / 100 y el flujo dijo «La 0.5.2 ya está
+      publicada: nada que hacer». El primer intento, la corrida
       36590618023 sobre `27d19b4`, falló en `pnpm test` sin llegar a npm: una
       prueba de CHG-006 suponía que la máquina no tiene node en
       `/usr/local/bin`. Se corrigió con **CHG-016**; falta el segundo intento.
@@ -69,9 +82,14 @@ local. Falta que Charlie configure el trusted publisher en npmjs.com.
 - [ ] **La primera versión que publique el flujo** es la prueba real del paso
       OIDC. Hay que verificarla contra el registro, incluida la provenance, que
       ninguna versión anterior tiene.
-- [ ] **El flujo `ai-first.yml` de este repo sólo corre en `pull_request`**, y
-      acá no hay PRs: no ha corrido nunca. Quedó fuera de alcance; va por
-      `protocolo-cambios` si se decide.
+- [x] ~~**El flujo `ai-first.yml` de este repo sólo corre en `pull_request`**~~
+      Resuelto con CHG-017. Su primera corrida en un push a `dev` es la de ese
+      mismo commit: hay que mirarla.
+- [ ] **La plantilla nueva viaja en el próximo PATCH.** El CHANGELOG ya la
+      cuenta bajo «Sin publicar»; `version-bump` la tiene que ver.
+- [ ] **El `pre-push` con tags**: al empujar un tag, el hook recibe la ref del
+      tag y audita `HEAD` contra el sha remoto del tag, no el tag. No frena nada
+      útil ni inútil; se mira si molesta.
 
 ---
 
@@ -127,7 +145,7 @@ Corrida el 2026-09-28, al escribir esta entrada, sobre `6772e8e`:
 ### Pendiente para la siguiente sesión
 Siguen los de las sesiones 7 a 10. El de la sesión 11, publicar la `0.5.2`, se
 cierra acá. Se suman:
-- [ ] **Mover el tag `v0.5.2` de `0a4e831` a `cc776eb`**, que es el commit que se
+- [x] ~~**Mover el tag `v0.5.2` de `0a4e831` a `cc776eb`**~~ Charlie lo movió el 2026-09-29, que es el commit que se
       publicó. Lo hace Charlie; la skill nunca toca tags. Ojo: `version-bump`
       arranca desde el último tag, así que hay que moverlo antes del próximo bump.
 - [x] ~~**Avisar al sitio por la `0.5.2`.**~~ Se envió el 2026-09-28 a la

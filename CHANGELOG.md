@@ -12,6 +12,19 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
+## [Sin publicar]
+
+### Cambiado
+
+- **El flujo de integración continua que escribe `init` usa las acciones que
+  corren sobre Node 24**: `actions/checkout@v7` y `actions/setup-node@v7`, en
+  lugar de las `@v4`, que corren sobre Node 20. GitHub avisa en cada corrida que
+  Node 20 está obsoleto. El flujo también desactiva el caché automático de
+  `setup-node`, que no le sirve porque no instala dependencias. Un repo que ya
+  corrió `init` conserva su flujo, porque `init` nunca sobreescribe: para
+  recibir el nuevo, se borra el archivo y se vuelve a correr `init`, o se
+  cambian las dos líneas a mano.
+
 ## [0.5.2] — 2026-09-23
 
 ### Corregido

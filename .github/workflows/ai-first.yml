@@ -5,25 +5,51 @@
 # su propio código, no el de la versión publicada en npm, que sería la anterior
 # a los cambios del PR. Por lo mismo corre antes la suite: acá `audit` sólo
 # vale si el código que lo implementa está en verde.
+#
+# Y corre también en cada push a `dev`, porque acá no hay PRs: se empuja directo
+# y `prod` avanza con `--ff-only`. Sólo con `pull_request`, este flujo no corrió
+# nunca, y la suite vio otra máquina recién en el de publish (CHG-016, CHG-017).
+# El push a `prod` no entra: ahí revisa publish.yml.
 name: ai-first
 
 on:
   pull_request:
+  push:
+    branches: [dev]
 
 jobs:
   auditar:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # El detector compara contra la rama base: sin historia no hay rango.
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - name: Entropía documental
-        run: node dist/src/cli.js audit --base "origin/${{ github.base_ref }}" --estricto
+        env:
+          EVENTO: ${{ github.event_name }}
+          BASE_PR: ${{ github.base_ref }}
+          ANTES: ${{ github.event.before }}
+        run: |
+          if [ "$EVENTO" = "pull_request" ]; then
+            base="origin/$BASE_PR"
+          elif [ "$ANTES" = "0000000000000000000000000000000000000000" ]; then
+            echo "El push crea la rama: no hay rango que auditar."
+            exit 0
+          else
+            base="$ANTES"
+          fi
+          # Con una base que no existe, git no da rango y el detector no
+          # encontraría nada que cobrar. Eso sería aprobar sin medir.
+          if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            echo "::error::La base $base no está en la historia (¿push forzado?). No se audita a ciegas."
+            exit 1
+          fi
+          node dist/src/cli.js audit --base "$base" --estricto
