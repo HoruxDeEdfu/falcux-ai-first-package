@@ -1203,5 +1203,6 @@ verifique una versión recién publicada tiene que forzar esa opción.
 
 **Lo que queda.** El tag `v0.5.3` ya está sobre `e62e0d2`. El aviso al sitio
 se envió y fue respondido el mismo día: lo documentan en su `dev`, y solo
-cambiaron la guía que citaba las acciones `@v4`. Y, cuando convenga, cerrar el acceso por token en npm, ahora que el
-flujo publicó bien.
+cambiaron la guía que citaba las acciones `@v4`. El acceso por token en npm se cerró el mismo día: Charlie eligió «disallow
+bypass 2fa tokens». Desde entonces se publica por el flujo, o a mano con el
+código de 2FA; ningún token guardado sirve para publicar.

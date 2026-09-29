@@ -92,8 +92,11 @@ local. Falta que Charlie configure el trusted publisher en npmjs.com.
       `e62e0d2`. Solo tuvieron que cambiar la guía «Auditar en local y en CI»,
       que citaba las acciones `@v4`. Su texto nunca dijo que se publicara a mano.
       Su `prod` ya sirve la `0.5.2`.
-- [ ] **Cerrar el acceso por token en npm** («Require two-factor
-      authentication and disallow tokens»), ahora que el flujo publicó bien.
+- [x] ~~**Cerrar el acceso por token en npm**~~: Charlie eligió «Require
+      two-factor authentication and disallow bypass 2fa tokens» el 2026-09-29.
+      No se pudo comprobar desde la terminal: `npm access` solo informa que el
+      paquete es público. Queda como lo reporta la página de npm. Publicar a
+      mano sigue siendo posible, con `npm publish` y el código de 2FA.
 - [x] ~~**El flujo `ai-first.yml` de este repo sólo corre en `pull_request`**~~
       Resuelto con CHG-017. Su primera corrida en un push a `dev`, la
       36592563626 sobre `9dde97c`, quedó en verde: 112 pruebas y 1 omitida,
