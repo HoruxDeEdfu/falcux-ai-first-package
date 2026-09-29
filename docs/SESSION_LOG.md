@@ -83,8 +83,9 @@ local. Falta que Charlie configure el trusted publisher en npmjs.com.
       OIDC. Hay que verificarla contra el registro, incluida la provenance, que
       ninguna versión anterior tiene.
 - [x] ~~**El flujo `ai-first.yml` de este repo sólo corre en `pull_request`**~~
-      Resuelto con CHG-017. Su primera corrida en un push a `dev` es la de ese
-      mismo commit: hay que mirarla.
+      Resuelto con CHG-017. Su primera corrida en un push a `dev`, la
+      36592563626 sobre `9dde97c`, quedó en verde: 112 pruebas y 1 omitida,
+      rango `8a413b9...HEAD` en 0 / 100, y ya sin el aviso de Node 20.
 - [ ] **La plantilla nueva viaja en el próximo PATCH.** El CHANGELOG ya la
       cuenta bajo «Sin publicar»; `version-bump` la tiene que ver.
 - [ ] **El `pre-push` con tags**: al empujar un tag, el hook recibe la ref del
