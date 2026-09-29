@@ -489,3 +489,26 @@ mueve Charlie a `cc776eb`.
 2. **`npm publish` no lee el `publishBranch` de pnpm.** Esta vez no importó
    porque se publicó desde `prod`, pero la compuerta de rama sólo existe con
    `pnpm publish`.
+
+## CHG-016 — La prueba «sin node en el PATH» daba por hecho que la máquina no tiene node donde el hook lo busca
+
+- **Fecha:** 2026-09-29 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo corto, una prueba, sin schema ni decisión de ADR
+- **Archivos:** `test/init-punto-de-control.test.ts`
+
+**Resumen.** La primera corrida del flujo de publish (ADR-024) falló en
+`pnpm test`, sin llegar a npm. La prueba de CHG-006 simula una máquina sin node
+recortando el PATH a `/usr/bin:/bin`, pero el hook agrega por su cuenta
+`/opt/homebrew/bin` y `/usr/local/bin`, y el runner de GitHub trae node en la
+segunda. El hook lo encontraba, que es lo correcto, y la prueba esperaba el
+aviso. Ahora la prueba mira primero si hay node en alguna de esas cuatro
+carpetas: si lo hay, se omite y dice cuál; si no, corre como antes. Se verificó
+en las dos ramas, la segunda simulando un node alcanzable. El hook no cambió.
+
+**Lecciones.**
+
+1. **Una suite que nunca corrió fuera de una máquina tiene supuestos de esa
+   máquina.** `ai-first.yml` sólo corre en `pull_request`, y acá no hay PRs: la
+   primera vez que la suite corrió en otra máquina fue en el flujo de publish.
+2. **Una prueba que depende del entorno se omite con su razón, no se aprueba
+   ni se borra.** Es la misma regla que el detector aplica a sus checks.

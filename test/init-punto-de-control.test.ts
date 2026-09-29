@@ -217,7 +217,18 @@ test('con node pero sin ai-first por ningún lado, el hook avisa y deja pasar', 
     }
   }));
 
-test('sin node en el PATH el hook avisa y deja pasar, aunque el detector esté ahí', () =>
+// El hook, si no ve node, lo busca por su cuenta en /opt/homebrew/bin y
+// /usr/local/bin. Donde alguna de esas carpetas lo tiene —el runner de GitHub
+// lo trae en /usr/local/bin—, «sin node» no se puede simular: el hook lo
+// encuentra, que es lo correcto. Ahí la prueba se omite, no se aprueba (CHG-016).
+const NODE_ALCANZABLE = ['/usr/bin', '/bin', '/opt/homebrew/bin', '/usr/local/bin']
+  .map((carpeta) => join(carpeta, 'node'))
+  .find((ruta) => existsSync(ruta));
+
+test(
+  'sin node en el PATH el hook avisa y deja pasar, aunque el detector esté ahí',
+  { skip: NODE_ALCANZABLE ? `el hook alcanza ${NODE_ALCANZABLE}: no se puede simular una máquina sin node` : false },
+  () =>
   conRepo(async (repo) => {
     repo.commit('inicio');
     await iniciar({ raiz: repo.raiz });

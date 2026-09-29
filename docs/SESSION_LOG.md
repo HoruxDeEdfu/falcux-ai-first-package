@@ -60,8 +60,12 @@ local. Falta que Charlie configure el trusted publisher en npmjs.com.
       abierto a propósito, como respaldo, hasta que el flujo publique bien una
       vez.
 - [ ] **El primer push a `prod` con este flujo** tiene que terminar en verde
-      diciendo «ya publicada» para la `0.5.2`. Si falla, el cableado está mal y
-      se corrige antes de subir la versión.
+      diciendo «ya publicada» para la `0.5.2`. El primer intento, la corrida
+      36590618023 sobre `27d19b4`, falló en `pnpm test` sin llegar a npm: una
+      prueba de CHG-006 suponía que la máquina no tiene node en
+      `/usr/local/bin`. Se corrigió con **CHG-016**; falta el segundo intento.
+      GitHub avisa además que `checkout`, `setup-node` y `action-setup` en `@v4`
+      corren sobre Node 20, que está obsoleto. No frena nada todavía.
 - [ ] **La primera versión que publique el flujo** es la prueba real del paso
       OIDC. Hay que verificarla contra el registro, incluida la provenance, que
       ninguna versión anterior tiene.
