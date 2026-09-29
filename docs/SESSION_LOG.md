@@ -84,10 +84,14 @@ local. Falta que Charlie configure el trusted publisher en npmjs.com.
       registro: `latest`, el shasum `7510ef30…` y la provenance SLSA v1. El
       detalle está en `docs/HANDOFF.md`.
 - [x] ~~**Tag `v0.5.3` sobre `e62e0d2`**~~: Charlie lo puso el mismo día.
-- [ ] **Esperar la respuesta del sitio al aviso de la `0.5.3`.** Se envió el
-      2026-09-29 a `site-update`: la plantilla de CI con Node 24, que el paquete
-      ahora sale con provenance, y la pregunta de si su texto dice que se publica
-      a mano. No se da por recibido hasta que contesten.
+- [x] ~~**Aviso al sitio por la `0.5.3`.**~~ Se envió el 2026-09-29 a
+      `site-update` (el primer intento falló porque la sesión cambió de
+      referencia), y contestaron el mismo día. La documentan en su `dev`
+      (`1562920`); pasarla a su `prod` lo decide Charlie. Verificaron por su
+      cuenta la provenance y que `init` escribe la plantilla idéntica a
+      `e62e0d2`. Solo tuvieron que cambiar la guía «Auditar en local y en CI»,
+      que citaba las acciones `@v4`. Su texto nunca dijo que se publicara a mano.
+      Su `prod` ya sirve la `0.5.2`.
 - [ ] **Cerrar el acceso por token en npm** («Require two-factor
       authentication and disallow tokens»), ahora que el flujo publicó bien.
 - [x] ~~**El flujo `ai-first.yml` de este repo sólo corre en `pull_request`**~~

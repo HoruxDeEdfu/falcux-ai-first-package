@@ -1202,5 +1202,6 @@ metadatos de npm en esta máquina. Con `--prefer-online` respondió. Quien
 verifique una versión recién publicada tiene que forzar esa opción.
 
 **Lo que queda.** El tag `v0.5.3` ya está sobre `e62e0d2`. El aviso al sitio
-se envió el mismo día; falta que contesten. Y, cuando convenga, cerrar el acceso por token en npm, ahora que el
+se envió y fue respondido el mismo día: lo documentan en su `dev`, y solo
+cambiaron la guía que citaba las acciones `@v4`. Y, cuando convenga, cerrar el acceso por token en npm, ahora que el
 flujo publicó bien.
