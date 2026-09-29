@@ -12,6 +12,19 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
+## [Sin publicar]
+
+### Corregido
+
+- **La entrevista de `init` ya no escribe dentro de una skill que es copia de un
+  workspace.** En un workspace que agrupa varios repos, el workspace reparte las
+  skills a cada repo como copias de solo lectura, con una cabecera
+  «COPIA DE SOLO LECTURA». Si después se corría `init` con entrevista en ese
+  repo, la adaptación se escribía dentro de la copia: el workspace la daba por
+  editada y su siguiente sincronización la borraba sin avisar. Ahora `init` la
+  reporta como sugerida y la deja como está, igual que a una skill enlazada. La
+  adaptación se hace en el original, en el workspace.
+
 ## [0.5.3] — 2026-09-29
 
 ### Cambiado

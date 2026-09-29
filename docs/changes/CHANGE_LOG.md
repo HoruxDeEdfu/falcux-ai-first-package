@@ -537,3 +537,31 @@ commits anteriores cobra como «fuera de alcance» archivos que ese CHG nunca
 declaró, porque el check 3 lee el cambio en curso. En CI no pasa, porque el CHG
 se borra en el mismo commit que lo cierra, pero confunde al ensayar: se
 confirmó sacando el documento un momento.
+
+## CHG-018 — La entrevista no adapta una skill que es copia de un workspace
+
+- **Fecha:** 2026-09-29 (abierto y cerrado el mismo día)
+- **Tipo:** corrección, flujo completo, sin schema ni decisión de ADR: extiende la regla de ADR-020
+- **Archivos:** `src/init.ts`, `test/init.test.ts`, `CHANGELOG.md`, `AGENTS.md`
+
+**Resumen.** Lo destapó el laboratorio de la plantilla de workspace de polirepos
+(`Autentic-Latam-SAS/atc-develop-workspace`). Su `sync-context.sh` reparte las
+skills del catálogo a cada repo hijo como copias con la cabecera
+«<!-- COPIA DE SOLO LECTURA». `init` saltaba su instalación porque ya existían,
+pero la entrevista las adaptaba igual. Después, el `--check` del workspace las
+daba por editadas, y el siguiente sync borraba la adaptación sin avisar.
+`adaptarSkill` gana un cuarto caso: si la `SKILL.md` lleva esa cabecera en sus
+primeras 60 líneas, la reporta como sugerida y no escribe. Nueva prueba en
+`test/init.test.ts`, que falla si se quita la protección. El caso con
+entrevista no se pudo correr en el laboratorio porque exige una terminal; lo
+prueba la suite con un entrevistador de mentira.
+
+**Lecciones.**
+
+1. **Una regla que protege un caso protege la causa, no el síntoma.** ADR-020
+   miró «es un enlace», cuando lo que había que mirar era «acá no está la
+   fuente». Un segundo dueño de la misma carpeta repite el defecto con otra
+   forma.
+2. **El paquete ahora reconoce un texto que define otro repo**, la cabecera de
+   la plantilla de workspace. Si la plantilla la cambia, esto deja de funcionar
+   sin error: cambiarla obliga a cambiar `esCopiaDeWorkspace`.

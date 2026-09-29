@@ -228,7 +228,9 @@ tildes**; el resto, con ellas.
 - **No hagas que la entrevista adapte una skill enlazada.** Con `--enlazar`, lo
   que hay en `.agents/skills/` apunta a `skills/`: escribir ahí cambia la fuente
   publicada y el cambio viaja al siguiente que instale el paquete. Se reporta
-  como sugerida y se deja (ADR-020).
+  como sugerida y se deja (ADR-020). Lo mismo con una skill que lleva la
+  cabecera «COPIA DE SOLO LECTURA» de un workspace: su sync la reescribiría
+  (CHG-018).
 - **No añadas un modelo, una API ni una llamada de red** al detector, ni al
   `init`. Lo generativo lo conduce una skill, que ejecuta el agente del
   adoptante; el paquete entrega el procedimiento, no la inferencia (ADR-019).

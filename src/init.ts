@@ -806,9 +806,16 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
   };
 }
 
+/** ¿La repartió un workspace? Ver CHG-018 y `adaptarSkill`. */
+function esCopiaDeWorkspace(texto: string): boolean {
+  // La cabecera va después del frontmatter, que puede ser largo: se mira más allá
+  // de las primeras líneas. El texto es la convención de la plantilla de workspace.
+  return texto.split('\n', 60).some((l) => l.startsWith('<!-- COPIA DE SOLO LECTURA'));
+}
+
 /**
- * Escribe la adaptación de una skill entre sus marcas. Tres casos en los que no
- * se toca, y los tres se reportan:
+ * Escribe la adaptación de una skill entre sus marcas. Cuatro casos en los que
+ * no se toca, y los cuatro se reportan:
  *
  *   - **La skill es un enlace.** Escribir ahí modificaría la carpeta `skills/`
  *     del paquete, que es la fuente de verdad publicada y la que el sitio sirve
@@ -816,6 +823,11 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
  *     del paquete adaptaría el paquete a sí mismo, y el cambio viajaría al
  *     siguiente que lo instalara.
  *   - **No hay SKILL.md** donde debería: no es una skill, no se inventa una.
+ *   - **Es copia de un workspace** (CHG-018): el sync del workspace de polirepos
+ *     la reparte con una cabecera y la reescribe desde su catálogo, así que
+ *     adaptarla acá se perdería en el próximo sync y, antes, su `--check` la
+ *     daría por editada. Mismo defecto que el enlace: escribir donde no está la
+ *     fuente.
  *   - **La entrevista no aporta nada** para esa skill.
  */
 function adaptarSkill(carpetaSkills: string, nombre: string, respuestas: Respuestas, escaneo: Escaneo): ItemInstalado {
@@ -828,10 +840,14 @@ function adaptarSkill(carpetaSkills: string, nombre: string, respuestas: Respues
   const archivo = join(carpeta, 'SKILL.md');
   if (!existsSync(archivo)) return { ruta, estado: 'saltado', razon: 'no tiene SKILL.md' };
 
+  const antes = readFileSync(archivo, 'utf8');
+  if (esCopiaDeWorkspace(antes)) {
+    return { ruta, estado: 'sugerido', razon: 'es copia de solo lectura de un workspace; se adapta en su original' };
+  }
+
   const bloque = bloqueDeSkill(nombre, respuestas, escaneo);
   if (bloque === undefined) return { ruta, estado: 'saltado', razon: 'la entrevista no aporta nada para esta skill' };
 
-  const antes = readFileSync(archivo, 'utf8');
   const despues = ponerBloqueMarcado(antes, bloque, { archivo: ruta, trasEncabezado: ENCABEZADO_ADAPTACION });
   if (antes === despues) return { ruta, estado: 'saltado', razon: 'la adaptación ya está al día' };
   writeFileSync(archivo, despues, 'utf8');

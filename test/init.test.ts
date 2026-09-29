@@ -466,6 +466,42 @@ test('una skill enlazada nunca se adapta: se cambiaría la fuente del paquete, n
     assert.equal(readFileSync(join(carpetaSkillsDelPaquete(), 'protocolo-features/SKILL.md'), 'utf8'), antes, 'la fuente del paquete, intacta');
   }));
 
+test('una skill que es copia de un workspace nunca se adapta: el sync la reescribiría (CHG-018)', () =>
+  conRepo(async (repo) => {
+    // Lo que deja el sync-context.sh de la plantilla de workspace: el frontmatter
+    // arriba y la cabecera de copia justo después.
+    const copia = [
+      '---',
+      'name: protocolo-features',
+      'description: copia repartida',
+      '---',
+      '<!-- COPIA DE SOLO LECTURA — la genera sync-context.sh.',
+      '     Original: mi-workspace · docs/repo-context/skills/protocolo-features/SKILL.md',
+      '     Para corregir: edita el original allá y corre ./scripts/sync-context.sh -->',
+      '',
+      '# Protocolo de features',
+      '',
+      '## Adaptación a tu proyecto',
+      '',
+    ].join('\n');
+    repo.escribir('.agents/skills/protocolo-features/SKILL.md', copia);
+    repo.commit('inicio');
+
+    const { items } = await iniciar({
+      raiz: repo.raiz,
+      entrevistar: respondiendo({ producto: 'api', secuencia: 'contenido' }),
+    });
+
+    const item = items.find((i) => i.ruta === '.agents/skills/protocolo-features/SKILL.md');
+    assert.equal(item?.estado, 'sugerido');
+    assert.match(item?.razon ?? '', /copia de solo lectura de un workspace/);
+    assert.equal(readFileSync(join(repo.raiz, '.agents/skills/protocolo-features/SKILL.md'), 'utf8'), copia, 'la copia, intacta');
+
+    // Las que init sí instaló en esta corrida se siguen adaptando.
+    const cambios = readFileSync(join(repo.raiz, '.agents/skills/protocolo-cambios/SKILL.md'), 'utf8');
+    assert.ok(cambios.includes(MARCA_INICIO), 'una skill sin la cabecera se adapta como siempre');
+  }));
+
 test('la entrevista es idempotente: mismas respuestas, ningún cambio: criterio 6', () =>
   conRepo(async (repo) => {
     repo.commit('inicio');
