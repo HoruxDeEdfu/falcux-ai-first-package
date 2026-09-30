@@ -10,6 +10,42 @@
 
 ---
 
+## 2026-09-30 (sesión 15) — El tag de una versión publicada crea su Release
+
+### Resumen
+Se cerró el pendiente chico del handoff: el repo no tenía ningún Release en
+GitHub. Ahora el push del tag `vX.Y.Z` crea el Release (CHG-019, `b0a071e`).
+
+### CHG-019
+- El handoff proponía crear el Release desde el flujo de publish. Se descartó:
+  a esa hora todavía no hay tag y `gh release create` lo pondría, contra la
+  regla de que el tag lo pone Charlie. Charlie pidió la opción más limpia en la
+  práctica, y fue el flujo aparte disparado por el tag.
+- `.github/workflows/release.yml`: exige que el manifiesto diga la versión del
+  tag y que npm la tenga, toma la entrada del CHANGELOG como cuerpo, no toca un
+  Release que ya existe y crea con `--verify-tag`. Usa `contents: write` y el
+  token del flujo, sin secretos.
+- Cuatro invariantes en `test/publicacion.test.ts`. Spec, handoff y AGENTS.md
+  al día.
+- **Decisión de Charlie:** las versiones hasta la `0.5.4` se quedan sin Release.
+
+### Validación
+- typecheck → PASS (lo corre `pnpm test` al compilar)
+- lint      → no aplica: el repo no tiene linter
+- tests     → PASS, 118 pruebas, por exit code
+- `audit:self` → 0 / 100
+- Ensayo local de la extracción del CHANGELOG y de la consulta a npm: PASS
+- `actionlint` → no ejecutado, no está instalado
+- GitHub Actions → no ejecutado: sale con el próximo tag
+
+### Pendiente para la siguiente sesión
+- [ ] Con el próximo tag, comprobar en GitHub que se creó el Release, con su
+      cuerpo tomado del CHANGELOG y marcado como «Latest». Si falla porque npm
+      todavía no tenía la versión, es el caso previsto: se relanza la corrida
+      desde la pestaña Actions.
+
+---
+
 ## 2026-09-29 (sesión 14) — El paquete ante un workspace de polirepos, y la 0.5.4
 
 ### Resumen
