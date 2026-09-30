@@ -1220,7 +1220,22 @@ verificada contra el registro. El tag `v0.5.4` ya está sobre `bef679b`. El
 aviso al sitio se envió y fue respondido: lo documentan en su `dev`, con el
 segundo caso junto al de la skill enlazada.
 
-**Qué haría falta para que el paquete sí piense en workspace**, cuando el uso
-real lo pida: que `AI-FIRST.md` pueda declarar «soy workspace» o «soy miembro»,
-con su ADR; y que el detector absorba el `--check` de copias editadas de la
-plantilla. Hoy ninguno de los dos hace falta.
+**El paquete y la plantilla quedan desconectados** (Charlie, 2026-09-30). El
+paquete es una dependencia de la plantilla, como cualquier otra, y no se enfoca
+en ella: su README dice qué kit se instala en una sola sección, para cambiarlo
+ahí. Si algún día se repite armar workspaces, el paquete podría sumar un comando
+adicional y opcional para eso, con su ADR. El único punto de contacto que queda
+es CHG-018, que reconoce la cabecera de copia para no pisarla.
+
+**Pendiente, general y sin workspace: actualizar lo que `init` ya instaló.** Hoy
+no hay forma limpia. `init` nunca sobreescribe (ADR-003), así que volver a
+correrlo con `@latest` no actualiza las skills, el hook ni el flujo de CI que ya
+están en el repo: solo instala lo que falta. Para recibir una skill nueva hay
+que borrarla y volver a correr `init`, y la adaptación de la entrevista se
+rehace. Haría falta un comando aparte, no `init`, que actualice lo que el
+adoptante no modificó y avise de lo que sí modificó. Pide su ADR. Se construye
+cuando lo pida un repo real.
+
+**Pendiente chico: Releases en GitHub.** El repo del paquete es público y no
+tiene ninguno, así que nadie puede suscribirse a las versiones nuevas. El flujo
+de publish podría crear el Release al publicar, con la entrada del CHANGELOG.
