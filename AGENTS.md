@@ -107,6 +107,7 @@ después del cierre, ninguno por el protocolo; ver `docs/SESSION_LOG.md`.
 
 Las versiones publicadas llevan tag `vX.Y.Z` sobre el commit que las publicó;
 `version-bump` arranca desde el último. El tag lo pone Charlie, nunca la skill.
+Empujarlo crea el Release de GitHub con la entrada del CHANGELOG (CHG-019).
 
 ## Reglas críticas
 

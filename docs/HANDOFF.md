@@ -1236,6 +1236,11 @@ rehace. Haría falta un comando aparte, no `init`, que actualice lo que el
 adoptante no modificó y avise de lo que sí modificó. Pide su ADR. Se construye
 cuando lo pida un repo real.
 
-**Pendiente chico: Releases en GitHub.** El repo del paquete es público y no
-tiene ninguno, así que nadie puede suscribirse a las versiones nuevas. El flujo
-de publish podría crear el Release al publicar, con la entrada del CHANGELOG.
+~~**Pendiente chico: Releases en GitHub.**~~ **Hecho el 2026-09-30**
+(CHG-019), pero no por el flujo de publish: `.github/workflows/release.yml`
+crea el Release cuando Charlie empuja el tag, con la entrada del CHANGELOG, y
+sólo si la versión ya está en npm. Crearlo al publicar habría obligado al flujo
+a poner el tag. Las versiones hasta la `0.5.4` se quedan sin Release, por
+decisión de Charlie. **No se verificó en GitHub Actions**: el primer Release
+sale con el próximo tag. Si el tag se empuja antes de que el publish termine,
+la corrida falla porque npm todavía no tiene la versión, y se vuelve a lanzar.

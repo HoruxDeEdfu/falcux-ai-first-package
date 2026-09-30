@@ -143,3 +143,23 @@ interfaz. Se hacen los pasos 4 (el flujo), 7 (la prueba), 8 (la suite) y 10
 (la verificación final), en ese orden. La verificación es `pnpm test` en verde
 por su código de salida, y `audit:self` en 0 / 100. `actionlint` se corre si
 está instalado. Si no, se dice que no se corrió.
+
+## El Release de GitHub (CHG-019, 2026-09-30)
+
+El flujo de publish no crea el Release: lo crea `.github/workflows/release.yml`
+cuando Charlie empuja el tag `vX.Y.Z`. Crearlo al publicar habría puesto el tag
+desde el flujo, porque a esa hora todavía no existe. El flujo del Release:
+
+1. Corre sólo con el push de un tag `v*.*.*`, con `contents: write` y sin
+   `id-token`.
+2. Falla si el `package.json` del commit del tag dice otra versión, o si la
+   versión no está en npm. Un tag que nunca llegó al registro, como `v0.5.0`,
+   no gana Release. Si el tag llega antes de que el publish termine, se vuelve
+   a lanzar la corrida.
+3. Toma como cuerpo la entrada de la versión en `CHANGELOG.md`, sin su
+   cabecera, y falla si no está, si está vacía o si dice «sin publicar».
+4. Si el Release ya existe, no lo toca: mover un tag no lo duplica.
+5. Crea el Release con `--verify-tag`, que nunca crea un tag.
+
+Las versiones hasta la `0.5.4` no tienen Release, y no se van a crear
+(Charlie, 2026-09-30). La prueba de invariantes cubre también este flujo.

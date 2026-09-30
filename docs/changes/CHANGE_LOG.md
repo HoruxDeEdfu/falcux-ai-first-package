@@ -565,3 +565,27 @@ prueba la suite con un entrevistador de mentira.
 2. **El paquete ahora reconoce un texto que define otro repo**, la cabecera de
    la plantilla de workspace. Si la plantilla la cambia, esto deja de funcionar
    sin error: cambiarla obliga a cambiar `esCopiaDeWorkspace`.
+
+## CHG-019 — El tag de una versión publicada crea su Release en GitHub
+
+- **Fecha:** 2026-09-30 (abierto y cerrado el mismo día)
+- **Tipo:** cambio de requerimiento, flujo completo, sin decisión de ADR: extiende ADR-024 sin superarlo
+- **Archivos:** `.github/workflows/release.yml`, `test/publicacion.test.ts`, `docs/specs/publicacion.md`, `docs/HANDOFF.md`, `AGENTS.md`
+
+**Resumen.** El repo es público y no tenía ningún Release, así que nadie podía
+suscribirse a las versiones nuevas. El handoff proponía crearlo desde el flujo
+de publish, pero a esa hora el tag todavía no existe y `gh release create` lo
+habría puesto por su cuenta, contra la regla de que el tag lo pone Charlie. Lo
+crea un flujo aparte, disparado por el push del tag: comprueba que el
+manifiesto diga la misma versión y que npm la tenga, toma la entrada del
+CHANGELOG como cuerpo y no toca un Release que ya existe. Se descartó también
+un borrador desde publish, porque sumaba un paso manual por versión. Las
+versiones hasta la `0.5.4` se quedan sin Release, por decisión de Charlie.
+Cuatro invariantes nuevas en `test/publicacion.test.ts`. Se ensayaron en local
+la extracción del CHANGELOG (la `0.5.4` da su entrada y una versión ausente da
+vacío) y la consulta al registro (la `0.5.4` está y la `0.5.0` no). No se
+verificó en GitHub Actions, y `actionlint` no está instalado.
+
+**Lección.** Lo que el handoff proponía como el camino obvio chocaba con una
+regla de AGENTS.md que no mencionaba. Antes de implementar un pendiente escrito
+como sugerencia, hay que leerlo contra las reglas del repo.

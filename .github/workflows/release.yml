@@ -1,0 +1,68 @@
+# Crea el Release de GitHub cuando Charlie empuja el tag de una versión ya
+# publicada (CHG-019; spec en docs/specs/publicacion.md). Es lo que deja
+# suscribirse a las versiones nuevas con «Watch → Releases».
+#
+# Lo dispara el tag y no publish.yml porque el tag lo pone Charlie, después de
+# publicar: si lo creara el flujo que publica, `gh release create` pondría el
+# tag por su cuenta. Acá nunca se crea ni se mueve un tag.
+name: release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: El tag es la versión del manifiesto, y está en npm
+        run: |
+          version="${TAG#v}"
+          manifiesto=$(node -p "require('./package.json').version")
+          if [ "$manifiesto" != "$version" ]; then
+            echo "::error::El tag $TAG está sobre un commit cuyo package.json dice $manifiesto."
+            exit 1
+          fi
+          # Un Release de algo que no se puede instalar engaña: es el caso de la
+          # 0.5.0, que tiene tag y nunca llegó al registro.
+          if [ "$(npm view "@falcux/ai-first@$version" version)" != "$version" ]; then
+            echo "::error::La $version no está en npm. Si el flujo de publish sigue corriendo, se vuelve a lanzar esta corrida cuando termine."
+            exit 1
+          fi
+
+      - name: La entrada del CHANGELOG
+        run: |
+          version="${TAG#v}"
+          linea=$(grep -E "^## \[${version//./\\.}\] — [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md || true)
+          if [ -z "$linea" ] || echo "$linea" | grep -q "sin publicar"; then
+            echo "::error::CHANGELOG.md no tiene una entrada publicada de la $version: ${linea:-ninguna}"
+            exit 1
+          fi
+          # Desde la cabecera de la versión hasta la siguiente, sin incluirlas.
+          awk -v cabecera="## [$version] — " '
+            index($0, cabecera) == 1 { dentro = 1; next }
+            dentro && /^## \[/ { exit }
+            dentro { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/notas.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/notas.md"; then
+            echo "::error::La entrada de la $version en CHANGELOG.md está vacía."
+            exit 1
+          fi
+
+      - name: Crear el Release
+        run: |
+          # Mover un tag, como se movió v0.5.2, vuelve a disparar el flujo: el
+          # Release que ya existe no se duplica ni se pisa.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "El Release $TAG ya existe: nada que hacer."
+            exit 0
+          fi
+          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$RUNNER_TEMP/notas.md"

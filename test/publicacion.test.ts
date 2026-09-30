@@ -56,3 +56,37 @@ test('publicar depende de que la versión sea nueva', () => {
   const publicar = PASOS.find((p) => /^npm publish/m.test(p.run ?? ''));
   assert.equal(publicar?.if, "steps.version.outputs.nueva == 'si'");
 });
+
+// El Release lo dispara el tag que pone Charlie (CHG-019). Lo que se fija: que
+// no corra con otra cosa, que no pueda crear tags y que no publique a npm.
+const TEXTO_RELEASE = readFileSync(new URL('../../.github/workflows/release.yml', import.meta.url), 'utf8');
+const RELEASE = parse(TEXTO_RELEASE) as {
+  on: Record<string, { tags?: string[] }>;
+  permissions: Record<string, string>;
+  jobs: { release: { steps: Paso[] } };
+};
+const COMANDOS_RELEASE = RELEASE.jobs.release.steps.map((p) => p.run ?? '').join('\n');
+
+test('el Release corre sólo con el push de un tag de versión', () => {
+  assert.deepEqual(Object.keys(RELEASE.on), ['push']);
+  assert.deepEqual(RELEASE.on.push, { tags: ['v*.*.*'] });
+});
+
+test('el Release escribe en el repo, no en npm, y sin secretos', () => {
+  assert.deepEqual(RELEASE.permissions, { contents: 'write' });
+  assert.doesNotMatch(TEXTO_RELEASE, /secrets\./);
+  assert.doesNotMatch(COMANDOS_RELEASE, /npm publish|pnpm publish/);
+});
+
+test('el Release nunca crea el tag', () => {
+  assert.match(COMANDOS_RELEASE, /gh release create "\$TAG" --verify-tag /);
+  assert.doesNotMatch(COMANDOS_RELEASE, /git tag|git push/);
+});
+
+test('el Release exige la versión en npm y en el CHANGELOG antes de crearse', () => {
+  const pasos = RELEASE.jobs.release.steps;
+  const indice = (patron: RegExp) => pasos.findIndex((p) => patron.test(p.run ?? ''));
+  const crear = indice(/gh release create/);
+  assert.ok(indice(/npm view "@falcux\/ai-first@\$version" version/) < crear);
+  assert.ok(indice(/sin publicar/) < crear);
+});
