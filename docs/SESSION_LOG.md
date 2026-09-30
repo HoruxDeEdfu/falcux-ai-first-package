@@ -10,11 +10,12 @@
 
 ---
 
-## 2026-09-30 (sesión 15) — El tag de una versión publicada crea su Release
+## 2026-09-30 (sesión 15) — El tag crea su Release, y la entrevista deja elegir qué se instala
 
 ### Resumen
-Se cerró el pendiente chico del handoff: el repo no tenía ningún Release en
-GitHub. Ahora el push del tag `vX.Y.Z` crea el Release (CHG-019, `b0a071e`).
+Dos cambios. El push del tag `vX.Y.Z` crea el Release de GitHub (CHG-019,
+`b0a071e`, ya en `prod`). Y la entrevista de `init` deja elegir las skills, el
+hook y el CI (CHG-020, `abf1ce2`, en `dev` y sin publicar).
 
 ### CHG-019
 - El handoff proponía crear el Release desde el flujo de publish. Se descartó:
@@ -38,7 +39,30 @@ GitHub. Ahora el push del tag `vX.Y.Z` crea el Release (CHG-019, `b0a071e`).
 - `actionlint` → no ejecutado, no está instalado
 - GitHub Actions → no ejecutado: sale con el próximo tag
 
+### CHG-020 — La entrevista deja elegir qué se instala
+- Charlie preguntó por qué hacía falta `init` y por qué la instalación no
+  mostraba opciones. Con `criterio`, la respuesta fue que `init` es la
+  instalación, porque el agente lee el repo y no `node_modules`, y un
+  `postinstall` sería la mala práctica. Lo que faltaba eran opciones en la
+  entrevista.
+- Tipo de pregunta nuevo, `seleccion`. La entrevista ofrece las skills
+  opcionales con las del perfil marcadas, y los tres protocolos van siempre.
+  Después pregunta por el hook y el CI. Una bandera gana y no se pregunta.
+  Con Enter en todo se instala lo mismo que antes.
+- ADR-025 supera la parte de ADR-019 donde el perfil decidía. CHANGELOG en
+  «Sin publicar», README y `skills/README.md` al día.
+- Validación: `pnpm test` en verde por su exit code, con 125 pruebas (7 nuevas).
+  Dos de ellas fallan si se quitan los protocolos fijos, y se comprobó.
+  `audit:self` da 0 / 100. Corrida real en una pseudo-terminal sobre una
+  carpeta vacía: instaló lo elegido y respetó el «no» al hook.
+
 ### Pendiente para la siguiente sesión
+- [ ] **Publicar CHG-020**: es un MINOR, así que sale como `0.6.0`. Toca
+      `version-bump`, avanzar `prod` (lo decide Charlie) y avisar al sitio,
+      que documenta la entrevista y ahora tiene tres preguntas más.
+- [ ] Un repo ya documentado se sigue saltando la entrevista por defecto, y
+      ahí las opciones solo aparecen con `--entrevista`. Si molesta en la
+      práctica, es otro cambio.
 - [ ] Con el próximo tag, comprobar en GitHub que se creó el Release, con su
       cuerpo tomado del CHANGELOG y marcado como «Latest». Si falla porque npm
       todavía no tenía la versión, es el caso previsto: se relanza la corrida
