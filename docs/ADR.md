@@ -1121,3 +1121,45 @@ push que lo corrija; como se compara contra el registro, ese push la publica.
 `publishBranch` queda como defensa para quien corra `pnpm publish` a mano. El
 paso de OIDC recién se prueba con la primera versión después de este flujo: no
 se puede ensayar sin publicar. Si falla, falla cerrado, con 404 y sin publicar.
+
+---
+
+## ADR-025 — En la entrevista, el perfil sugiere las skills y el adoptante elige; los tres protocolos van siempre
+
+- **Fecha:** 2026-09-30
+- **Estado:** aceptada. Supera el punto 3 de ADR-019 en lo que dice que el
+  perfil «decide qué skills se instalan». Lo demás de ADR-019 sigue en pie.
+
+**Contexto.** Con entrevista, las skills las decidía el perfil en
+`skillsDelPerfil`, y el adoptante no veía la lista hasta el reporte final. Para
+cambiarla había que conocer `--skills` de antemano. El hook y el CI solo se
+apagaban con `--sin-hook` y `--sin-ci`, igual de invisibles. Como `init` nunca
+sobreescribe (ADR-003), corregir después exigía borrar y volver a correr. Charlie
+lo planteó el 2026-09-30: la instalación tendría que mostrar opciones.
+
+**Decisión.** Tres preguntas nuevas en la entrevista, después de la secuencia
+(CHG-020):
+
+1. *Las skills*, en una selección múltiple. Las del perfil y `protocolo-arranque`
+   vienen marcadas. `protocolo-features`, `protocolo-cambios` y
+   `protocolo-cierre` no se ofrecen: van siempre, porque sin ellas no hay CHG,
+   ni cierre, ni secuencia.
+2. *El hook de git*, sí o no.
+3. *El flujo de CI*, sí o no.
+
+Una bandera es una respuesta dada de antemano: lo que ya vino decidido no se
+pregunta, y `--skills` puede dejar fuera un protocolo porque quien la escribe
+lo decidió. Con Enter en todo se instala lo mismo que antes. Sin entrevista
+nada cambia.
+
+**Alternativas.** *Un asistente de pantalla completa, con flechas y casillas*:
+pide una dependencia de dibujo en terminal, y la lista numerada hace lo mismo
+con `node:readline`. *Una confirmación por skill*: ocho seguidas cansan, y la
+mayoría ya viene bien marcada. *Dejar que el perfil decida*: es el estado que
+escondía la decisión más visible de la instalación.
+
+**Consecuencias.** La entrevista pasa de 10 preguntas más las zonas a 13 más las
+zonas. `--skills` y las banderas del punto de control siguen valiendo igual. El
+sitio documenta la entrevista, y hay que avisarle con la versión que lo publique.
+Un repo ya documentado se sigue saltando la entrevista por defecto, así que ahí
+las opciones aparecen solo con `--entrevista`.

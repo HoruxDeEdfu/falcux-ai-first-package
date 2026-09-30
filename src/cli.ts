@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { ErrorAiFirst } from './ai-first-md.js';
 import { auditar } from './audit.js';
 import { iniciar, type Escaneo, type ItemInstalado } from './init.js';
-import { cuantasPreguntas, entrevistar, esAfirmativo, formatearPregunta, type Respuestas } from './entrevista.js';
+import { cuantasPreguntas, entrevistar, esAfirmativo, formatearPregunta, type AlcanceEntrevista, type Respuestas } from './entrevista.js';
 import { reporteHumano, reporteJson } from './reporte.js';
 
 const AYUDA = `ai-first — gobierno del contexto para proyectos AI-First
@@ -53,7 +53,9 @@ sugerido.
 La entrevista pregunta lo que no se puede deducir —fase, perfil del producto,
 comandos, secuencia de implementación— y escribe las respuestas en AI-FIRST.md
 y en la sección «Adaptación a tu proyecto» de cada skill instalada, también
-entre marcas. Un proyecto sin documentación se entrevista; uno que ya la tiene
+entre marcas. Pregunta también qué skills instalar, con las del perfil ya
+marcadas y los tres protocolos siempre, y si van el hook y el flujo de CI; lo
+que ya vino decidido por bandera no se pregunta. Un proyecto sin documentación se entrevista; uno que ya la tiene
 recibe la oferta y por defecto se salta. Sin terminal interactiva no se
 entrevista nunca. Para definir el producto —PRD, arquitectura, specs— el
 paquete instala la skill protocolo-arranque, que corre tu agente.
@@ -66,7 +68,7 @@ Opciones de init:
   --skills <lista> Cuáles instalar, separadas por comas, o «todas». Por defecto,
                    las cinco sin interfaz: protocolo-features, protocolo-cambios,
                    protocolo-cierre, version-bump, test-fix; con entrevista, las
-                   que el perfil del producto pida.
+                   que se elijan en ella.
   --entrevista     Entrevista aunque el proyecto ya esté documentado.
   --sin-entrevista No entrevista nunca, ni en un repo vacío.
   --sin-hook       No escribe el hook de git ni toca core.hooksPath.
@@ -121,7 +123,7 @@ function hayTerminal(): boolean {
  *     escritas— no se entrevista salvo que lo pidan: se dice qué se encontró y
  *     se ofrece, con saltar como valor por defecto.
  */
-async function entrevistaEnTerminal(escaneo: Escaneo, documentado: string[]): Promise<Respuestas | undefined> {
+async function entrevistaEnTerminal(escaneo: Escaneo, documentado: string[], alcance: AlcanceEntrevista): Promise<Respuestas | undefined> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   // Ctrl+C, Ctrl+D o una entrada que se acaba a media entrevista: readline
   // lanza un AbortError, y sin esto el adoptante vería un stack trace de Node
@@ -147,7 +149,7 @@ async function entrevistaEnTerminal(escaneo: Escaneo, documentado: string[]): Pr
     }
 
     process.stdout.write(
-      `\n${cuantasPreguntas(escaneo)} preguntas, todas con un valor por defecto entre corchetes: Enter lo acepta.\n` +
+      `\n${cuantasPreguntas(escaneo, alcance)} preguntas, todas con un valor por defecto entre corchetes: Enter lo acepta.\n` +
         'Se escriben en AI-FIRST.md y en la sección «Adaptación a tu proyecto» de cada skill.\n\n',
     );
     return await entrevistar(escaneo, async (p) => {
@@ -155,7 +157,7 @@ async function entrevistaEnTerminal(escaneo: Escaneo, documentado: string[]): Pr
       const respuesta = await preguntar('> ');
       process.stdout.write('\n');
       return respuesta;
-    });
+    }, alcance);
   } finally {
     rl.close();
   }
@@ -264,7 +266,7 @@ async function main(argv: string[]): Promise<number> {
     const puedeEntrevistar = !values['sin-entrevista'] && hayTerminal();
     if (puedeEntrevistar) {
       opcionesInit.entrevistar = values.entrevista
-        ? (escaneo) => entrevistaEnTerminal(escaneo, [])
+        ? (escaneo, _documentado, alcance) => entrevistaEnTerminal(escaneo, [], alcance)
         : entrevistaEnTerminal;
     }
 

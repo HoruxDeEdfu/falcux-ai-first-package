@@ -84,7 +84,7 @@ El enlace viaja bien en git (se versiona como enlace, no como copia). Si tu equi
 
 Luego **adapta cada skill a tu proyecto**. Todas traen una sección «Adaptación a tu proyecto» al final que indica exactamente qué cambiar. Una skill copiada sin adaptar es peor que no tenerla: ocupa presupuesto de carga y da instrucciones que no aplican.
 
-**Eso lo hace la entrevista de `init`**, y sólo hay que hacerlo a mano en lo que la entrevista no cubre. Pregunta la fase, qué clase de producto es, con qué comando se verifica, en qué orden se implementa una feature y qué archivo lleva la versión, y escribe las respuestas dentro de cada skill instalada, entre `<!-- ai-first:inicio -->` y `<!-- ai-first:fin -->`. Fuera de esas marcas no toca una letra, así que lo que agregues sobrevive a la siguiente corrida. Un proyecto que ya llega documentado recibe la oferta y por defecto la salta; sin terminal interactiva no se entrevista nunca.
+**Eso lo hace la entrevista de `init`**, y sólo hay que hacerlo a mano en lo que la entrevista no cubre. Pregunta la fase, qué clase de producto es, con qué comando se verifica, en qué orden se implementa una feature, qué archivo lleva la versión y qué skills instalar —con las de tu clase de producto ya marcadas y los tres protocolos siempre—, y escribe las respuestas dentro de cada skill instalada, entre `<!-- ai-first:inicio -->` y `<!-- ai-first:fin -->`. Fuera de esas marcas no toca una letra, así que lo que agregues sobrevive a la siguiente corrida. Un proyecto que ya llega documentado recibe la oferta y por defecto la salta; sin terminal interactiva no se entrevista nunca.
 
 **Una skill instalada con `--enlazar` no se adapta**, y el reporte lo dice: escribir ahí cambiaría la carpeta `skills/` del paquete en vez de tu copia.
 

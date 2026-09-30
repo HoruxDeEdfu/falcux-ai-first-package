@@ -8,12 +8,16 @@ import {
   esAfirmativo,
   formatearPregunta,
   interpretarOpcion,
+  interpretarSeleccion,
   perfilDe,
   preguntaDeSecuencia,
+  preguntaDeSkills,
   preguntasBase,
   secuenciasDe,
   skillsDelPerfil,
   SKILLS_BASE,
+  SKILLS_FIJAS,
+  type AlcanceEntrevista,
   type Pregunta,
   type Respuestas,
 } from '../src/entrevista.js';
@@ -191,4 +195,64 @@ test('cada pregunta se dibuja con su valor por defecto a la vista', () => {
   const dibujada = formatearPregunta(fase!);
   assert.ok(dibujada.includes('1) '), 'las opciones van numeradas, que es como se contestan');
   assert.ok(dibujada.includes('por defecto'));
+});
+
+// ---------------------------------------------------------------------------
+// Qué se instala: las skills, el hook y el CI (CHG-020, ADR-025)
+// ---------------------------------------------------------------------------
+
+const DISPONIBLES = [
+  'i18n', 'information-architecture', 'protocolo-arranque', 'protocolo-cambios', 'protocolo-cierre',
+  'protocolo-features', 'protocolo-ux', 'test-fix', 'ux-audit', 'ux-writer', 'version-bump',
+];
+const ALCANCE: AlcanceEntrevista = { skills: DISPONIBLES, hook: true, ci: true };
+
+test('los protocolos no se ofrecen para desmarcar; el perfil marca las demás', () => {
+  const pregunta = preguntaDeSkills(DISPONIBLES, { producto: 'cli', repositorio: 'unico' });
+  const ofrecidas = (pregunta.opciones ?? []).map((o) => o.valor);
+
+  for (const fija of SKILLS_FIJAS) assert.ok(!ofrecidas.includes(fija), `${fija} no se ofrece`);
+  for (const fija of SKILLS_FIJAS) assert.ok(pregunta.ayuda?.includes(fija), `la ayuda dice que ${fija} va siempre`);
+  assert.equal(pregunta.porDefecto, 'version-bump,test-fix,protocolo-arranque', 'sin interfaz, nada de UX');
+
+  const dibujada = formatearPregunta(pregunta);
+  assert.match(dibujada, /\d\) \[x\] test-fix — /, 'lo marcado se ve marcado, con su etiqueta');
+  assert.match(dibujada, /\d\) \[ \] ux-writer — /);
+});
+
+test('una selección se contesta con números o nombres, y Enter deja lo marcado', () => {
+  const pregunta = preguntaDeSkills(DISPONIBLES, { producto: 'cli', repositorio: 'unico' });
+  const numero = (n: string) => String((pregunta.opciones ?? []).findIndex((o) => o.valor === n) + 1);
+
+  assert.equal(interpretarSeleccion(pregunta, ''), pregunta.porDefecto);
+  assert.equal(interpretarSeleccion(pregunta, 'ninguna'), '');
+  assert.equal(interpretarSeleccion(pregunta, `${numero('ux-writer')}, i18n`), 'i18n,ux-writer', 'en el orden de la lista');
+  assert.equal(interpretarSeleccion(pregunta, `test-fix ${numero('test-fix')}`), 'test-fix', 'sin repetir');
+  // «ux» casa con dos: se ignora, como el número fuera de rango.
+  assert.equal(interpretarSeleccion(pregunta, 'ux 99 i18n'), 'i18n');
+  assert.equal(interpretarSeleccion(pregunta, 'qué'), pregunta.porDefecto, 'si no casa nada, vuelve lo marcado');
+});
+
+test('con alcance, Enter en todo da lo mismo que el perfil daba antes', async () => {
+  const e = escaneo();
+  assert.equal(cuantasPreguntas(e, ALCANCE), cuantasPreguntas(e) + 3, 'skills, hook y CI');
+
+  const respuestas = await entrevistar(e, async () => '', ALCANCE);
+  const perfil = perfilDe(respuestas);
+  const antes = [...skillsDelPerfil(perfil), 'protocolo-arranque'].filter((n) => !SKILLS_FIJAS.includes(n));
+  assert.deepEqual(respuestas['skills']!.split(',').sort(), antes.sort());
+  assert.equal(respuestas['hook'], 'si');
+  assert.equal(respuestas['ci'], 'si');
+});
+
+test('lo que vino decidido por bandera no se pregunta', async () => {
+  const claves: string[] = [];
+  await entrevistar(escaneo(), async (p) => { claves.push(p.clave); return ''; }, { hook: false, ci: true });
+  assert.ok(!claves.includes('skills'), 'con --skills no se ofrecen');
+  assert.ok(!claves.includes('hook'), 'con --sin-hook o --hook-local no se pregunta');
+  assert.ok(claves.includes('ci'));
+
+  const sinAlcance: string[] = [];
+  await entrevistar(escaneo(), async (p) => { sinAlcance.push(p.clave); return ''; });
+  assert.ok(!sinAlcance.some((c) => ['skills', 'hook', 'ci'].includes(c)), 'sin alcance, la entrevista de antes');
 });

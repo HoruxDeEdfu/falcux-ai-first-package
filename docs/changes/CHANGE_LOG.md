@@ -589,3 +589,27 @@ verificó en GitHub Actions, y `actionlint` no está instalado.
 **Lección.** Lo que el handoff proponía como el camino obvio chocaba con una
 regla de AGENTS.md que no mencionaba. Antes de implementar un pendiente escrito
 como sugerencia, hay que leerlo contra las reglas del repo.
+
+## CHG-020 — La entrevista deja elegir las skills, el hook y el CI
+
+- **Fecha:** 2026-09-30 (abierto y cerrado el mismo día)
+- **Tipo:** cambio de requerimiento, flujo completo
+- **Decisión:** ADR-025, que supera la parte de ADR-019 donde el perfil decidía las skills
+- **Archivos:** `src/entrevista.ts`, `src/init.ts`, `src/cli.ts`, `test/entrevista.test.ts`, `test/init.test.ts`, `docs/ADR.md`, `CHANGELOG.md`, `README.md`, `skills/README.md`, `docs/HANDOFF.md`
+
+**Resumen.** Nuevo tipo de pregunta `seleccion`, que se contesta con números o
+nombres. Enter deja lo marcado y «ninguna» no deja nada. Con ella, la
+entrevista ofrece las skills opcionales con las del perfil y `protocolo-arranque`
+marcadas; los tres protocolos (`SKILLS_FIJAS`) no se ofrecen y van siempre.
+Luego pregunta por el hook y el CI. `iniciar` calcula un `AlcanceEntrevista`
+con lo que ninguna bandera decidió y se lo pasa al entrevistador; el CLI lo
+pasa a la terminal. Sin alcance, `entrevistar` es la de antes, así que las
+pruebas previas no cambiaron. Siete pruebas nuevas, entre ellas una que falla
+si Enter cambia lo instalado respecto de antes y otra que falla si una bandera
+deja de ganar. Se comprobó que dos fallan al quitar los protocolos fijos. La
+corrida real en una pseudo-terminal, sobre una carpeta vacía, instaló lo
+elegido y respetó el «no» al hook.
+
+**Lección.** `script` de macOS no reenvía el fin de la entrada a un programa
+interactivo, y la corrida se cuelga. Para probar una entrevista de verdad
+sirvió `pty` de Python, contando los prompts antes de responder.

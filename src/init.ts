@@ -23,7 +23,7 @@ import { NOMBRE_ARCHIVO, interpretar, ErrorAiFirst, type Perfil } from './ai-fir
 import { esRepoGit, fijarHooksPath, hooksPathConfigurado, inicializarRepo, listarArchivos } from './git.js';
 import { coincide } from './glob.js';
 import { bloqueDeSkill, ENCABEZADO_ADAPTACION } from './adaptacion.js';
-import { perfilDe, skillsDelPerfil, SKILL_ARRANQUE, type Respuestas } from './entrevista.js';
+import { perfilDe, skillsDelPerfil, SKILL_ARRANQUE, SKILLS_FIJAS, type AlcanceEntrevista, type Respuestas } from './entrevista.js';
 
 export interface Sugerencia {
   ruta: string;
@@ -372,7 +372,7 @@ function esEnlace(ruta: string): boolean {
 /**
  * Resuelve `--skills`: `todas`, una lista con comas, o nada. Sin selección se
  * instala `porDefecto`, que son las cinco de siempre salvo que la entrevista
- * haya fijado un perfil, en cuyo caso el perfil manda.
+ * haya respondido: entonces, lo que eligió el adoptante.
  */
 export function elegirSkills(
   seleccion: string[] | 'todas' | undefined,
@@ -600,7 +600,7 @@ export interface OpcionesInit {
    * `undefined` si no hubo entrevista. El CLI pasa la terminal; la suite, una
    * función que devuelve respuestas fijas.
    */
-  entrevistar?: (escaneo: Escaneo, documentado: string[]) => Promise<Respuestas | undefined>;
+  entrevistar?: (escaneo: Escaneo, documentado: string[], alcance: AlcanceEntrevista) => Promise<Respuestas | undefined>;
   /** `--sin-hook`: no escribir el hook de git. */
   sinHook?: boolean;
   /** `--sin-ci`: no escribir el flujo de integración continua. */
@@ -648,16 +648,31 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
   const agentsAntes = existsSync(rutaAgents) ? readFileSync(rutaAgents, 'utf8') : undefined;
   ponerBloqueAgents(agentsAntes, '', '');
 
+  // La entrevista pregunta lo que ninguna bandera decidió: la bandera es una
+  // respuesta dada de antemano, y preguntar encima sería pedirla dos veces.
+  const alcance: AlcanceEntrevista = { hook: !opciones.sinHook && !opciones.hookLocal, ci: !opciones.sinCi };
+  if (opciones.skills === undefined) alcance.skills = disponibles;
+
   const escaneoCrudo = escanear(raiz);
-  const respuestas = opciones.entrevistar ? await opciones.entrevistar(escaneoCrudo, proyectoDocumentado(raiz)) : undefined;
+  const respuestas = opciones.entrevistar ? await opciones.entrevistar(escaneoCrudo, proyectoDocumentado(raiz), alcance) : undefined;
   const escaneo = respuestas ? aplicarRespuestas(escaneoCrudo, respuestas) : escaneoCrudo;
 
-  // Con perfil, el perfil decide qué se instala; sin él, las cinco de siempre.
-  // `protocolo-arranque` entra sólo cuando se entrevistó: es la skill que se usa
-  // una vez, al principio, y en un repo ya definido sobra.
+  // Con entrevista, los tres protocolos más lo que el adoptante eligió, con las
+  // del perfil marcadas de entrada (ADR-025). Si el entrevistador no respondió
+  // la pregunta, el perfil sugiere y se instala lo sugerido; sin entrevista,
+  // las cinco de siempre. `protocolo-arranque` sólo se marca al entrevistar: es
+  // la skill que se usa una vez, al principio, y en un repo ya definido sobra.
   const perfil = respuestas ? perfilDe(respuestas) : undefined;
-  const porDefecto = perfil ? [...skillsDelPerfil(perfil), SKILL_ARRANQUE] : SKILLS_POR_DEFECTO;
+  const elegidasEnEntrevista = respuestas?.['skills'];
+  const porDefecto =
+    elegidasEnEntrevista !== undefined
+      ? [...SKILLS_FIJAS, ...elegidasEnEntrevista.split(',').filter(Boolean)]
+      : perfil
+        ? [...skillsDelPerfil(perfil), SKILL_ARRANQUE]
+        : SKILLS_POR_DEFECTO;
   const elegidas = elegirSkills(opciones.skills, disponibles, porDefecto);
+  const sinHook = opciones.sinHook || respuestas?.['hook'] === 'no';
+  const sinCi = opciones.sinCi || respuestas?.['ci'] === 'no';
   // AGENTS.md va a existir al terminar esta corrida, igual que el ADR: se
   // declara. El registro de sesión y el de cambios no entran: son cronología
   // que nombra lo ya retirado y el check 4 lo cobraría para siempre (ADR-015).
@@ -750,7 +765,7 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
   // 6. El punto de control: el mismo detector en dos sitios con tolerancias
   // distintas —el hook avisa y sólo un P0 frena; el flujo de integración
   // continua corta con `--estricto`—. docs/specs/punto-de-control.md.
-  if (!opciones.sinHook) {
+  if (!sinHook) {
     const cuerpo = leerPlantilla(NOMBRE_HOOK);
     if (opciones.hookLocal) {
       const ruta = `.git/hooks/${NOMBRE_HOOK}`;
@@ -776,7 +791,7 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
       }
     }
   }
-  if (!opciones.sinCi) escribirSiFalta(RUTA_CI, leerPlantilla('ai-first.yml'));
+  if (!sinCi) escribirSiFalta(RUTA_CI, leerPlantilla('ai-first.yml'));
 
   // 7. El bloque de AGENTS.md, con lo que de verdad quedó instalado.
   const instaladas = existsSync(carpetaSkills)

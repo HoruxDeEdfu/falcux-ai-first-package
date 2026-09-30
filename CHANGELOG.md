@@ -12,6 +12,19 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
+## [Sin publicar]
+
+### Añadido
+
+- **La entrevista de `init` te deja elegir qué se instala.** Muestra las skills
+  opcionales con las que sugiere tu clase de producto ya marcadas: Enter las
+  deja, y una lista de números las cambia. `protocolo-features`,
+  `protocolo-cambios` y `protocolo-cierre` van siempre, porque la metodología
+  se apoya en ellas. Después pregunta si quieres el hook de git y el flujo de
+  CI. Con Enter en todo se instala lo mismo que antes, y lo que ya decidiste
+  con `--skills`, `--sin-hook`, `--hook-local` o `--sin-ci` no se pregunta. Sin
+  entrevista nada cambia.
+
 ## [0.5.4] — 2026-09-29
 
 ### Corregido

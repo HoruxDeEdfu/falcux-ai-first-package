@@ -1244,3 +1244,22 @@ a poner el tag. Las versiones hasta la `0.5.4` se quedan sin Release, por
 decisión de Charlie. **No se verificó en GitHub Actions**: el primer Release
 sale con el próximo tag. Si el tag se empuja antes de que el publish termine,
 la corrida falla porque npm todavía no tiene la versión, y se vuelve a lanzar.
+
+### La entrevista deja elegir qué se instala (2026-09-30, CHG-020, ADR-025)
+
+Charlie preguntó por qué la instalación no mostraba opciones. `init` sigue
+siendo la instalación, porque el agente lee el repo y no `node_modules`, y un
+`postinstall` que escribiera archivos sería la mala práctica. Lo que cambió es
+la entrevista. Después de la secuencia pregunta qué skills instalar, con las
+del perfil ya marcadas y los tres protocolos siempre, y si van el hook y el CI.
+Lo que ya vino decidido por bandera no se pregunta, y con Enter en todo se
+instala lo mismo que antes. Probado en una terminal real sobre una carpeta
+vacía.
+
+**Está en `dev`, sin publicar**: el CHANGELOG lo trae en «Sin publicar», como
+MINOR para la próxima versión. **Aviso al sitio**, cuando salga: documenta la
+entrevista, que ahora tiene tres preguntas más.
+
+**Lo que no cubre.** Un repo ya documentado se sigue saltando la entrevista por
+defecto, así que ahí las opciones solo aparecen con `--entrevista`. Si eso
+molesta en la práctica, es otro cambio.

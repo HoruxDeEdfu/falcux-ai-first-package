@@ -13,7 +13,7 @@
 import { PRODUCTOS, REPOSITORIOS, type Perfil, type Producto, type Repositorio } from './ai-first-md.js';
 import type { Escaneo } from './init.js';
 
-export type TipoPregunta = 'texto' | 'opcion' | 'confirmacion';
+export type TipoPregunta = 'texto' | 'opcion' | 'confirmacion' | 'seleccion';
 
 export interface Opcion {
   valor: string;
@@ -24,9 +24,12 @@ export interface Pregunta {
   clave: string;
   enunciado: string;
   tipo: TipoPregunta;
-  /** Obligatorias en las de tipo «opcion»; el resto no las usa. */
+  /** Obligatorias en las de tipo «opcion» y «seleccion»; el resto no las usa. */
   opciones?: Opcion[];
-  /** Lo que queda si el adoptante contesta con Enter. Siempre hay uno. */
+  /**
+   * Lo que queda si el adoptante contesta con Enter. Siempre hay uno. En una
+   * «seleccion» son los valores marcados, separados por comas.
+   */
   porDefecto: string;
   /** Una línea de contexto, para que la respuesta no se adivine. */
   ayuda?: string;
@@ -103,6 +106,13 @@ export const SKILLS_BASE = ['protocolo-features', 'protocolo-cambios', 'protocol
 /** La skill que conduce la definición. Se instala sólo cuando se entrevista. */
 export const SKILL_ARRANQUE = 'protocolo-arranque';
 
+/**
+ * Los tres protocolos que sostienen la metodología. La entrevista no los
+ * ofrece para desmarcar: sin ellos no hay CHG, ni cierre, ni secuencia
+ * (ADR-025). `--skills` sí puede dejarlos fuera; quien la escribe lo decidió.
+ */
+export const SKILLS_FIJAS = ['protocolo-features', 'protocolo-cambios', 'protocolo-cierre'];
+
 const SKILLS_UX = ['protocolo-ux', 'ux-writer', 'ux-audit'];
 
 /** Qué skills tiene sentido instalar para este perfil, antes de aplicar `--skills`. */
@@ -161,6 +171,18 @@ export function tieneInterfaz(producto: Producto): boolean {
 // El catálogo de preguntas
 // ---------------------------------------------------------------------------
 
+/** Una línea por skill, para elegir sin abrir cada SKILL.md. */
+const ETIQUETA_SKILL: Record<string, string> = {
+  'version-bump': 'propone el número de versión según SemVer',
+  'test-fix': 'corre las pruebas de lo tocado y corrige lo mecánico',
+  'protocolo-arranque': 'define el producto: PRD, arquitectura y specs',
+  'protocolo-ux': 'reglas de interacción: modales, formularios, estados',
+  'ux-writer': 'tono, glosario y textos de la interfaz',
+  'ux-audit': 'auditoría de la interfaz ya construida',
+  'information-architecture': 'qué es cada cosa, cómo se llama y dónde vive',
+  i18n: 'internacionalización en interfaz, correos y datos',
+};
+
 const ETIQUETA_PRODUCTO: Record<Producto, string> = {
   saas: 'Producto SaaS o aplicación web con sesión',
   landing: 'Landing o sitio de contenido',
@@ -207,7 +229,7 @@ export function preguntasBase(e: Escaneo): Pregunta[] {
       tipo: 'opcion',
       opciones: PRODUCTOS.map((p) => ({ valor: p, etiqueta: ETIQUETA_PRODUCTO[p] })),
       porDefecto: 'saas',
-      ayuda: 'Decide qué skills se instalan y qué artefactos pide la fase de definición.',
+      ayuda: 'Sugiere qué skills instalar y decide qué artefactos pide la fase de definición.',
     },
     {
       clave: 'repositorio',
@@ -265,6 +287,49 @@ export function preguntaDeSecuencia(producto: Producto): Pregunta {
   };
 }
 
+/**
+ * Las skills que se pueden elegir, con las que el perfil sugiere ya marcadas.
+ * Las fijas no se ofrecen: la ayuda dice que van siempre.
+ */
+export function preguntaDeSkills(disponibles: string[], perfil: Perfil): Pregunta {
+  const opcionales = disponibles.filter((n) => !SKILLS_FIJAS.includes(n));
+  const sugeridas = [...skillsDelPerfil(perfil), SKILL_ARRANQUE].filter((n) => opcionales.includes(n));
+  return {
+    clave: 'skills',
+    enunciado: '¿Qué skills instalo, además de los protocolos?',
+    tipo: 'seleccion',
+    opciones: opcionales.map((n) => ({ valor: n, etiqueta: ETIQUETA_SKILL[n] ? `${n} — ${ETIQUETA_SKILL[n]}` : n })),
+    porDefecto: sugeridas.join(','),
+    ayuda:
+      `Siempre van ${SKILLS_FIJAS.join(', ')}. Las marcadas las sugiere el producto.\n` +
+      '  Enter las deja; escribe los números de las que quieras, o «ninguna».',
+  };
+}
+
+/** El punto de control: una confirmación por cada pieza que no vino decidida por bandera. */
+export function preguntasDePuntoDeControl(alcance: AlcanceEntrevista): Pregunta[] {
+  const salida: Pregunta[] = [];
+  if (alcance.hook) {
+    salida.push({
+      clave: 'hook',
+      enunciado: '¿Instalo el hook de git?',
+      tipo: 'confirmacion',
+      porDefecto: 'si',
+      ayuda: 'Un pre-push en .githooks/ que corre el detector antes de publicar y sólo frena ante un P0.',
+    });
+  }
+  if (alcance.ci) {
+    salida.push({
+      clave: 'ci',
+      enunciado: '¿Escribo el flujo de integración continua?',
+      tipo: 'confirmacion',
+      porDefecto: 'si',
+      ayuda: '.github/workflows/ai-first.yml, que corre el detector con --estricto en cada pull request.',
+    });
+  }
+  return salida;
+}
+
 /** Una confirmación por cada zona que el escaneo sugirió. */
 export function preguntasDeZonas(e: Escaneo): Pregunta[] {
   return e.zonas.map((z) => ({
@@ -308,6 +373,27 @@ export function interpretarOpcion(pregunta: Pregunta, respuesta: string): string
   return pregunta.porDefecto;
 }
 
+/**
+ * La respuesta a una selección: números o nombres separados por comas o
+ * espacios, en cualquier orden. Vacío deja lo marcado; «ninguna» no deja nada.
+ * Lo que no casa se ignora, y si no casa nada vuelve lo marcado.
+ */
+export function interpretarSeleccion(pregunta: Pregunta, respuesta: string): string {
+  const texto = respuesta.trim().toLowerCase();
+  if (texto === '') return pregunta.porDefecto;
+  if (texto === 'ninguna' || texto === '0') return '';
+
+  const opciones = pregunta.opciones ?? [];
+  const elegidas = new Set<string>();
+  for (const parte of texto.split(/[\s,]+/).filter(Boolean)) {
+    const valor = interpretarOpcion({ ...pregunta, porDefecto: '' }, parte);
+    if (valor !== '') elegidas.add(valor);
+  }
+  if (elegidas.size === 0) return pregunta.porDefecto;
+  // En el orden de la lista, no en el que se escribió: así la respuesta se lee igual siempre.
+  return opciones.filter((o) => elegidas.has(o.valor)).map((o) => o.valor).join(',');
+}
+
 export function perfilDe(respuestas: Respuestas): Perfil {
   return {
     producto: (respuestas['producto'] ?? 'saas') as Producto,
@@ -323,22 +409,38 @@ export function perfilDe(respuestas: Respuestas): Perfil {
 export type Lector = (pregunta: Pregunta) => Promise<string>;
 
 /**
+ * Lo que `init` todavía no tiene decidido por bandera, y por eso se pregunta.
+ * Sin alcance, la entrevista no pregunta nada de esto.
+ */
+export interface AlcanceEntrevista {
+  /** Las skills del paquete. Ausente cuando vino `--skills`. */
+  skills?: string[];
+  /** Falso cuando vino `--sin-hook` o `--hook-local`. */
+  hook: boolean;
+  /** Falso cuando vino `--sin-ci`. */
+  ci: boolean;
+}
+
+/**
  * Recorre la entrevista entera y devuelve las respuestas ya interpretadas. El
  * orden importa: la secuencia se pregunta después del producto, porque sus
  * opciones dependen de él.
  */
-export async function entrevistar(escaneo: Escaneo, leer: Lector): Promise<Respuestas> {
+export async function entrevistar(escaneo: Escaneo, leer: Lector, alcance?: AlcanceEntrevista): Promise<Respuestas> {
   const respuestas: Respuestas = {};
 
   const responder = async (p: Pregunta) => {
     const cruda = await leer(p);
     if (p.tipo === 'opcion') respuestas[p.clave] = interpretarOpcion(p, cruda);
+    else if (p.tipo === 'seleccion') respuestas[p.clave] = interpretarSeleccion(p, cruda);
     else if (p.tipo === 'confirmacion') respuestas[p.clave] = cruda.trim() === '' ? p.porDefecto : esAfirmativo(cruda) ? 'si' : 'no';
     else respuestas[p.clave] = cruda.trim() === '' ? p.porDefecto : cruda.trim();
   };
 
   for (const p of preguntasBase(escaneo)) await responder(p);
   await responder(preguntaDeSecuencia(perfilDe(respuestas).producto));
+  if (alcance?.skills) await responder(preguntaDeSkills(alcance.skills, perfilDe(respuestas)));
+  if (alcance) for (const p of preguntasDePuntoDeControl(alcance)) await responder(p);
   for (const p of preguntasDeZonas(escaneo)) await responder(p);
 
   return respuestas;
@@ -368,10 +470,17 @@ export function formatearPregunta(p: Pregunta): string {
       l.push(`  ${i + 1}) ${o.etiqueta}${o.valor === p.porDefecto ? '  ·  por defecto' : ''}`);
     });
   }
+  if (p.tipo === 'seleccion') {
+    const marcadas = p.porDefecto.split(',');
+    (p.opciones ?? []).forEach((o, i) => {
+      l.push(`  ${i + 1}) [${marcadas.includes(o.valor) ? 'x' : ' '}] ${o.etiqueta}`);
+    });
+  }
   return l.join('\n');
 }
 
 /** Cuántas preguntas tiene la entrevista completa, para anunciarlo antes de empezar. */
-export function cuantasPreguntas(escaneo: Escaneo): number {
-  return preguntasBase(escaneo).length + 1 + preguntasDeZonas(escaneo).length;
+export function cuantasPreguntas(escaneo: Escaneo, alcance?: AlcanceEntrevista): number {
+  const extra = alcance ? (alcance.skills ? 1 : 0) + preguntasDePuntoDeControl(alcance).length : 0;
+  return preguntasBase(escaneo).length + 1 + extra + preguntasDeZonas(escaneo).length;
 }

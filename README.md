@@ -43,8 +43,10 @@ En una carpeta que todavía no es repositorio, `init` la inicializa y sigue. Si
 el proyecto no tiene documentación, **entrevista**: pregunta la fase, qué clase
 de producto es, con qué comando se verifica y en qué orden se implementa una
 feature, y escribe las respuestas en `AI-FIRST.md` y dentro de cada skill
-instalada. Si ya llegas con tu PRD y tus specs escritas, lo dice y te ofrece
-saltarla.
+instalada. También te deja elegir qué skills instalar, con las que sugiere tu
+clase de producto ya marcadas, y si quieres el hook de git y el flujo de CI.
+Los tres protocolos —features, cambios y cierre— van siempre. Si ya llegas con
+tu PRD y tus specs escritas, lo dice y te ofrece saltarla.
 
 Para definir el producto —PRD, arquitectura, specs, decisión de stack— el
 paquete instala la skill `protocolo-arranque` y la conduce tu propio agente. El
@@ -104,7 +106,7 @@ ai-first --version                  # la versión instalada
 ```bash
 ai-first init --entrevista          # entrevista aunque el proyecto ya esté documentado
 ai-first init --sin-entrevista      # no pregunta nunca
-ai-first init --skills todas        # las once, en vez de las que el perfil pida
+ai-first init --skills todas        # las once, sin preguntar cuáles
 ai-first init --enlazar             # enlaces simbólicos en vez de copias
 ```
 

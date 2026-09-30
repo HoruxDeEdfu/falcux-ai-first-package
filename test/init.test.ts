@@ -16,7 +16,7 @@ import {
   skillsDelPaquete,
   type Escaneo,
 } from '../src/init.js';
-import { entrevistar } from '../src/entrevista.js';
+import { entrevistar, SKILLS_FIJAS, type AlcanceEntrevista } from '../src/entrevista.js';
 import { crearRepo, type Repo } from './ayuda.js';
 
 /** Lo que init deja además de AI-FIRST.md y el ADR, en el orden en que lo escribe. */
@@ -521,4 +521,80 @@ test('la entrevista es idempotente: mismas respuestas, ningún cambio: criterio 
     assert.match(features, /infraestructura backend/, 'la secuencia nueva');
     assert.ok(!features.includes('interfaz de línea de comandos'), 'y la vieja se fue');
     assert.match(features, /Capítulo de referencia/, 'lo de fuera de las marcas sigue intacto');
+  }));
+
+// ---------------------------------------------------------------------------
+// Qué se instala lo elige la entrevista (CHG-020, ADR-025)
+// ---------------------------------------------------------------------------
+
+/** Como `respondiendo`, pero pasa el alcance que init calcula, igual que el CLI. */
+function respondiendoConAlcance(valores: Record<string, string>) {
+  return (escaneo: Escaneo, _documentado: string[], alcance: AlcanceEntrevista) =>
+    entrevistar(escaneo, async (p) => valores[p.clave] ?? '', alcance);
+}
+
+const instaladas = (raiz: string) => skillsDelPaquete(join(raiz, '.agents/skills'));
+
+test('lo elegido en la entrevista es lo que se instala: los protocolos siempre, el hook y el CI si se quieren', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    await iniciar({
+      raiz: repo.raiz,
+      hoy: '2026-09-30',
+      entrevistar: respondiendoConAlcance({ producto: 'saas', skills: 'i18n', hook: 'no', ci: 'no' }),
+    });
+
+    assert.deepEqual(instaladas(repo.raiz), [...SKILLS_FIJAS, 'i18n'].sort(), 'ni lo que el perfil sugería ni las base');
+    for (const ruta of PUNTO_DE_CONTROL.filter((r) => r !== 'core.hooksPath')) {
+      assert.ok(!existsSync(join(repo.raiz, ruta)), `${ruta} no se escribe`);
+    }
+
+    // «ninguna» deja sólo los protocolos: la entrevista no puede quitarlos.
+    const otro = crearRepo();
+    try {
+      otro.commit('inicio');
+      await iniciar({ raiz: otro.raiz, hoy: '2026-09-30', entrevistar: respondiendoConAlcance({ skills: 'ninguna' }) });
+      assert.deepEqual(instaladas(otro.raiz), [...SKILLS_FIJAS].sort());
+      assert.ok(existsSync(join(otro.raiz, '.githooks/pre-push')), 'Enter en el hook lo instala, como sin entrevista');
+    } finally {
+      otro.limpiar();
+    }
+  }));
+
+test('con Enter en las preguntas nuevas se instala lo mismo que el perfil instalaba antes', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    const valores = { producto: 'landing', secuencia: 'contenido' };
+    await iniciar({ raiz: repo.raiz, hoy: '2026-09-30', entrevistar: respondiendoConAlcance(valores) });
+
+    const antes = crearRepo();
+    try {
+      antes.commit('inicio');
+      await iniciar({ raiz: antes.raiz, hoy: '2026-09-30', entrevistar: respondiendo(valores) });
+      assert.deepEqual(instaladas(repo.raiz), instaladas(antes.raiz));
+      assert.deepEqual(Object.keys(foto(repo.raiz)).sort(), Object.keys(foto(antes.raiz)).sort());
+    } finally {
+      antes.limpiar();
+    }
+  }));
+
+test('lo que una bandera ya decidió no llega a la entrevista', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    const vistos: AlcanceEntrevista[] = [];
+    await iniciar({
+      raiz: repo.raiz,
+      hoy: '2026-09-30',
+      skills: ['test-fix'],
+      hookLocal: true,
+      entrevistar: (escaneo, documentado, alcance) => {
+        vistos.push(alcance);
+        return respondiendoConAlcance({ skills: 'i18n', ci: 'no' })(escaneo, documentado, alcance);
+      },
+    });
+
+    assert.deepEqual(vistos, [{ hook: false, ci: true }], 'sin skills que ofrecer ni hook que preguntar');
+    assert.deepEqual(instaladas(repo.raiz), ['test-fix'], '--skills gana a la respuesta');
+    assert.ok(existsSync(join(repo.raiz, '.git/hooks/pre-push')), '--hook-local sigue valiendo');
+    assert.ok(!existsSync(join(repo.raiz, '.github/workflows/ai-first.yml')), 'el «no» al CI sí cuenta');
   }));
