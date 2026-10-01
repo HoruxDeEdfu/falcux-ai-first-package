@@ -12,7 +12,7 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
-## [0.6.0] — 2026-09-30
+## [0.6.0] — 2026-10-01
 
 ### Añadido
 
