@@ -54,9 +54,13 @@ vengan.
 
 ### Pendiente para la siguiente sesión
 - [x] **El Release de `v0.6.0`**: creado tras el re-run, como «Latest».
-- [ ] Su cuerpo tiene los cortes de línea de antes de CHG-022. Se corrige con
-      `gh release edit v0.6.0 --notes-file`, usando el texto unido, si
-      Charlie lo aprueba.
+- [x] Su cuerpo tenía los cortes de línea de antes de CHG-022. Charlie lo
+      corrigió con `gh release edit`, usando el texto del `awk` del flujo, y el
+      HTML ya no lleva ningún `<br>`.
+- [ ] **`ubuntu-latest` pasa a Ubuntu 26 a partir del 2026-10-19**, según un
+      aviso de GitHub en las corridas. La usan `publish.yml`, `release.yml`,
+      `ai-first.yml` y la plantilla de CI que escribe `init`. Mirar la primera
+      corrida después de esa fecha.
 - [ ] La respuesta del sitio al aviso de la `0.6.0`.
 
 ---

@@ -1280,5 +1280,12 @@ dice 2026-10-05, igual que el sitio. Es el mismo caso que la `0.5.2`.
 de `prod`, y el flujo falló con E404 antes de que npm tuviera la versión.
 CHG-021 hace que el flujo espere, pero eso no arregla esta corrida. Para
 relanzarla hacen falta permisos de admin, y la cuenta activa de `gh` en esta
-máquina es `CharlieDesigner`, no `HoruxDeEdfu`. Charlie la relanza desde
-Actions con «Re-run jobs».
+máquina era `CharlieDesigner`, no `HoruxDeEdfu`. **Hecho**: Charlie la relanzó
+y el Release existe desde las 19:20 UTC, como «Latest». Salió con un corte en
+cada línea, CHG-022 lo corrige para los siguientes, y el de `v0.6.0` se editó
+a mano con el texto unido.
+
+**`ubuntu-latest` pasa a Ubuntu 26 a partir del 2026-10-19**, según un aviso
+que GitHub deja en las corridas. La usan los tres flujos del repo y la
+plantilla de CI que reparte `init`. Hay que mirar la primera corrida después
+de esa fecha.
