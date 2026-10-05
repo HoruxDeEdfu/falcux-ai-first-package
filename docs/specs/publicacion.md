@@ -158,7 +158,9 @@ desde el flujo, porque a esa hora todavía no existe. El flujo del Release:
    espera hasta 10 minutos a que npm sirva la versión, consultando cada 30
    segundos (CHG-021).
 3. Toma como cuerpo la entrada de la versión en `CHANGELOG.md`, sin su
-   cabecera, y falla si no está, si está vacía o si dice «sin publicar».
+   cabecera, y falla si no está, si está vacía o si dice «sin publicar». Une
+   en una línea cada párrafo y cada viñeta, porque un Release convierte cada
+   salto en un corte visible. Los títulos y el código no se unen (CHG-022).
 4. Si el Release ya existe, no lo toca: mover un tag no lo duplica.
 5. Crea el Release con `--verify-tag`, que nunca crea un tag.
 

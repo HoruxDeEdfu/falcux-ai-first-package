@@ -632,3 +632,21 @@ invariante nueva en la prueba.
 comprobar quién podía relanzarla. Hacen falta permisos de admin, y la cuenta
 activa de `gh` en esta máquina no los tiene. Si un paso manual queda como
 salida de un fallo previsto, hay que probar antes que alguien pueda darlo.
+
+## CHG-022 — El cuerpo del Release une las líneas de cada párrafo
+
+- **Fecha:** 2026-10-05 (abierto y cerrado el mismo día)
+- **Tipo:** corrección de CHG-019, flujo corto, sin decisión de ADR
+- **Archivos:** `.github/workflows/release.yml`, `test/publicacion.test.ts`, `docs/specs/publicacion.md`
+
+**Resumen.** El primer Release, el de `v0.6.0`, salió con un `<br>` al final
+de cada línea: un Release, a diferencia de un `.md`, muestra cada salto, y el
+CHANGELOG está cortado a 80 columnas. El `awk` que extrae la entrada ahora une
+las líneas de continuación a la anterior. No une las que están en blanco, los
+títulos, los marcadores de lista ni el código. La prueba extrae el programa del
+flujo y lo ejecuta sobre un CHANGELOG de muestra con viñetas, párrafo, código y
+lista numerada, así que se prueba el `awk` real, no una copia.
+
+**Lección.** CHG-019 verificó el texto que se extraía, pero no cómo se veía
+una vez publicado. En una superficie que renderiza otro, hay que mirar el HTML
+resultante: la API lo da con `Accept: application/vnd.github.html+json`.

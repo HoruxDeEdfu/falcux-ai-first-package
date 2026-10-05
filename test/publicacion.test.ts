@@ -3,6 +3,7 @@
 // cómo se autentica y con qué publica.
 
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { parse } from 'yaml';
@@ -95,4 +96,58 @@ test('el Release espera a npm en vez de fallar si el tag llega antes que la vers
   const paso = RELEASE.jobs.release.steps.find((p) => /npm view/.test(p.run ?? ''))?.run ?? '';
   assert.match(paso, /for intento in \$\(seq 1 20\)/, 'hasta 20 intentos');
   assert.match(paso, /sleep 30/, 'separados por 30 segundos: 10 minutos en total');
+});
+
+test('el cuerpo del Release une las líneas de cada párrafo, no las del código (CHG-022)', () => {
+  const paso = RELEASE.jobs.release.steps.find((p) => /awk -v cabecera/.test(p.run ?? ''))?.run ?? '';
+  const programa = /awk -v cabecera="[^"]+" '([\s\S]*?)' CHANGELOG\.md/.exec(paso)?.[1];
+  assert.ok(programa, 'el programa awk del flujo');
+
+  const changelog = [
+    '## [1.0.0] — 2026-10-05',
+    '',
+    '### Añadido',
+    '',
+    '- **Una viñeta** cortada',
+    '  a 80 columnas.',
+    '- Otra viñeta.',
+    '',
+    'Un párrafo',
+    'en dos líneas.',
+    '',
+    '```bash',
+    'ai-first init',
+    '  --raiz x',
+    '```',
+    '',
+    '1. Un paso',
+    '   numerado.',
+    '',
+    '## [0.9.0] — 2026-10-01',
+    '',
+    '- No entra.',
+    '',
+  ].join('\n');
+  const salida = spawnSync('awk', ['-v', 'cabecera=## [1.0.0] — ', programa!], { input: changelog, encoding: 'utf8' });
+  assert.equal(salida.status, 0, salida.stderr);
+  assert.equal(
+    salida.stdout,
+    [
+      '',
+      '### Añadido',
+      '',
+      '- **Una viñeta** cortada a 80 columnas.',
+      '- Otra viñeta.',
+      '',
+      'Un párrafo en dos líneas.',
+      '',
+      '```bash',
+      'ai-first init',
+      '  --raiz x',
+      '```',
+      '',
+      '1. Un paso numerado.',
+      '',
+    ].join('\n') + '\n',
+  );
 });

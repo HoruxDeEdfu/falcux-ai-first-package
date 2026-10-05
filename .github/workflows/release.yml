@@ -55,10 +55,19 @@ jobs:
             exit 1
           fi
           # Desde la cabecera de la versión hasta la siguiente, sin incluirlas.
+          # El CHANGELOG corta las líneas a 80 columnas, y un Release convierte
+          # cada salto en un <br>: cada párrafo y cada viñeta van en una línea
+          # (CHG-022). Los títulos, las viñetas y el código no se unen.
           awk -v cabecera="## [$version] — " '
             index($0, cabecera) == 1 { dentro = 1; next }
             dentro && /^## \[/ { exit }
-            dentro { print }
+            !dentro { next }
+            /^[[:space:]]*```/ { if (linea != "") print linea; linea = ""; print; codigo = !codigo; next }
+            codigo { print; next }
+            /^[[:space:]]*$/ { if (linea != "") print linea; linea = ""; print; next }
+            /^#/ || /^[[:space:]]*([-*]|[0-9]+\.)[[:space:]]/ { if (linea != "") print linea; linea = $0; next }
+            { sub(/^[[:space:]]+/, ""); linea = (linea == "" ? $0 : linea " " $0) }
+            END { if (linea != "") print linea }
           ' CHANGELOG.md > "$RUNNER_TEMP/notas.md"
           if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/notas.md"; then
             echo "::error::La entrada de la $version en CHANGELOG.md está vacía."
