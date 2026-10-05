@@ -36,19 +36,27 @@ vengan.
 - `release.yml` espera hasta 10 minutos, consultando cada 30 segundos. Una
   invariante nueva en la prueba.
 
+### El Release de `v0.6.0`, y CHG-022
+- Charlie relanzó la corrida y el Release se creó a las 19:20:10 UTC, como
+  «Latest». Pero el HTML que da la API muestra un `<br>` en cada línea: el
+  cuerpo sale cortado a 80 columnas, como el CHANGELOG.
+- CHG-022: el `awk` une cada párrafo y cada viñeta en una línea, y deja
+  intactos los títulos y el código. La prueba ejecuta el programa extraído del
+  flujo.
+
 ### Validación
 - typecheck → PASS (lo corre `pnpm test` al compilar)
 - lint      → no aplica
-- tests     → PASS, 126 pruebas, por exit code
+- tests     → PASS, 127 pruebas, por exit code
 - `audit:self` → 0 / 100
 - Bucle de espera ensayado en local: PASS
 - GitHub Actions con el flujo nuevo → no ejecutado: sale con el próximo tag
 
 ### Pendiente para la siguiente sesión
-- [ ] **El Release de `v0.6.0`**: Charlie lo relanza desde Actions con
-      «Re-run jobs». La corrida usa el flujo viejo, pero npm ya tiene la
-      versión, así que pasa. Después, comprobar el cuerpo y que quede como
-      «Latest».
+- [x] **El Release de `v0.6.0`**: creado tras el re-run, como «Latest».
+- [ ] Su cuerpo tiene los cortes de línea de antes de CHG-022. Se corrige con
+      `gh release edit v0.6.0 --notes-file`, usando el texto unido, si
+      Charlie lo aprueba.
 - [ ] La respuesta del sitio al aviso de la `0.6.0`.
 
 ---
