@@ -20,7 +20,8 @@ vengan.
 ### La `0.6.0`
 - Antes de empujar, la fecha del CHANGELOG se corrigió a 2026-10-01
   (`e7e6724`). La publicación se hizo el 2026-10-05, así que el tarball lleva
-  una fecha cuatro días anterior. Queda anotado en el handoff.
+  una fecha cuatro días anterior. El CHANGELOG del repo se corrigió a
+  2026-10-05 después de que el sitio lo señalara.
 - Al primer intento, el modo automático bloqueó avanzar `prod`. Lo hizo
   Charlie, junto con el tag.
 - Publicado a las 17:30:16 UTC (corrida 37348849723) y servido a las 17:32:43.

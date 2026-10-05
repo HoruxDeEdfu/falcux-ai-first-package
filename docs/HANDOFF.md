@@ -1272,9 +1272,9 @@ El flujo publicó a las 17:30:16 UTC, con el shasum `fb1db1c9…`, y npm la sirv
 a las 17:32:43, con provenance SLSA v1. `latest` apunta a `0.6.0`. El aviso al
 sitio se envió a la sesión `package-sync`.
 
-**La fecha del CHANGELOG dice 2026-10-01**, el día en que se corrigió, pero la
-versión salió el 2026-10-05. Viaja así en el tarball y npm no deja
-reemplazarlo. Es el mismo caso que la `0.5.2`.
+**El tarball fecha la versión el 2026-10-01**, el día en que se corrigió, pero
+salió el 2026-10-05. npm no deja reemplazarlo. El `CHANGELOG.md` del repo ya
+dice 2026-10-05, igual que el sitio. Es el mismo caso que la `0.5.2`.
 
 **El Release de `v0.6.0` no existe todavía.** El tag llegó 9 segundos después
 de `prod`, y el flujo falló con E404 antes de que npm tuviera la versión.
