@@ -32,11 +32,19 @@ jobs:
             exit 1
           fi
           # Un Release de algo que no se puede instalar engaña: es el caso de la
-          # 0.5.0, que tiene tag y nunca llegó al registro.
-          if [ "$(npm view "@falcux/ai-first@$version" version)" != "$version" ]; then
-            echo "::error::La $version no está en npm. Si el flujo de publish sigue corriendo, se vuelve a lanzar esta corrida cuando termine."
-            exit 1
-          fi
+          # 0.5.0, que tiene tag y nunca llegó al registro. Pero el tag suele
+          # llegar junto con `prod`, antes de que el publish termine, y npm
+          # tarda unos 3 minutos en servir lo publicado: se espera hasta 10
+          # (CHG-021). La v0.6.0 falló por no esperar.
+          for intento in $(seq 1 20); do
+            if [ "$(npm view "@falcux/ai-first@$version" version 2>/dev/null || true)" = "$version" ]; then
+              echo "La $version está en npm (intento $intento)."
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::La $version no apareció en npm en 10 minutos. Si el publish falló, no hay nada que anunciar."
+          exit 1
 
       - name: La entrada del CHANGELOG
         run: |

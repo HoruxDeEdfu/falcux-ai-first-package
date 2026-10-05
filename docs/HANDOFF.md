@@ -1243,7 +1243,8 @@ sólo si la versión ya está en npm. Crearlo al publicar habría obligado al fl
 a poner el tag. Las versiones hasta la `0.5.4` se quedan sin Release, por
 decisión de Charlie. **No se verificó en GitHub Actions**: el primer Release
 sale con el próximo tag. Si el tag se empuja antes de que el publish termine,
-la corrida falla porque npm todavía no tiene la versión, y se vuelve a lanzar.
+el flujo espera hasta 10 minutos a que npm sirva la versión (CHG-021, después
+de que el Release de `v0.6.0` fallara por no esperar).
 
 ### La entrevista deja elegir qué se instala (2026-09-30, CHG-020, ADR-025)
 
@@ -1263,3 +1264,21 @@ entrevista, que ahora tiene tres preguntas más.
 **Lo que no cubre.** Un repo ya documentado se sigue saltando la entrevista por
 defecto, así que ahí las opciones solo aparecen con `--entrevista`. Si eso
 molesta en la práctica, es otro cambio.
+
+### La `0.6.0` sale a npm, y su Release queda pendiente (2026-10-05)
+
+Charlie avanzó `prod` y empujó el tag `v0.6.0` sobre `e7e6724` el 2026-10-05.
+El flujo publicó a las 17:30:16 UTC, con el shasum `fb1db1c9…`, y npm la sirvió
+a las 17:32:43, con provenance SLSA v1. `latest` apunta a `0.6.0`. El aviso al
+sitio se envió a la sesión `package-sync`.
+
+**La fecha del CHANGELOG dice 2026-10-01**, el día en que se corrigió, pero la
+versión salió el 2026-10-05. Viaja así en el tarball y npm no deja
+reemplazarlo. Es el mismo caso que la `0.5.2`.
+
+**El Release de `v0.6.0` no existe todavía.** El tag llegó 9 segundos después
+de `prod`, y el flujo falló con E404 antes de que npm tuviera la versión.
+CHG-021 hace que el flujo espere, pero eso no arregla esta corrida. Para
+relanzarla hacen falta permisos de admin, y la cuenta activa de `gh` en esta
+máquina es `CharlieDesigner`, no `HoruxDeEdfu`. Charlie la relanza desde
+Actions con «Re-run jobs».

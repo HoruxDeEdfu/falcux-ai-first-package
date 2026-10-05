@@ -613,3 +613,22 @@ elegido y respetó el «no» al hook.
 **Lección.** `script` de macOS no reenvía el fin de la entrada a un programa
 interactivo, y la corrida se cuelga. Para probar una entrevista de verdad
 sirvió `pty` de Python, contando los prompts antes de responder.
+
+## CHG-021 — El flujo del Release espera a que npm sirva la versión
+
+- **Fecha:** 2026-10-05 (abierto y cerrado el mismo día)
+- **Tipo:** corrección de CHG-019, flujo corto, sin decisión de ADR
+- **Archivos:** `.github/workflows/release.yml`, `test/publicacion.test.ts`, `docs/specs/publicacion.md`, `docs/HANDOFF.md`
+
+**Resumen.** El primer Release, el de `v0.6.0`, falló con E404: el tag llegó
+9 segundos después de `prod` y npm tardó unos 2,5 minutos en servir la
+versión. Con un solo `npm view`, empujar el tag junto con `prod` fallaba
+siempre. Ahora el paso consulta cada 30 segundos, hasta 10 minutos, y solo
+falla si en ese tiempo la versión no aparece. Se ensayó el bucle en local: con
+la `0.6.0` sale al primer intento, y con una versión inexistente falla. Una
+invariante nueva en la prueba.
+
+**Lección.** CHG-019 dejó la carrera anotada como «se relanza la corrida», sin
+comprobar quién podía relanzarla. Hacen falta permisos de admin, y la cuenta
+activa de `gh` en esta máquina no los tiene. Si un paso manual queda como
+salida de un fallo previsto, hay que probar antes que alguien pueda darlo.

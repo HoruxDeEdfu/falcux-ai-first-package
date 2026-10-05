@@ -154,8 +154,9 @@ desde el flujo, porque a esa hora todavía no existe. El flujo del Release:
    `id-token`.
 2. Falla si el `package.json` del commit del tag dice otra versión, o si la
    versión no está en npm. Un tag que nunca llegó al registro, como `v0.5.0`,
-   no gana Release. Si el tag llega antes de que el publish termine, se vuelve
-   a lanzar la corrida.
+   no gana Release. Como el tag suele llegar antes de que el publish termine,
+   espera hasta 10 minutos a que npm sirva la versión, consultando cada 30
+   segundos (CHG-021).
 3. Toma como cuerpo la entrada de la versión en `CHANGELOG.md`, sin su
    cabecera, y falla si no está, si está vacía o si dice «sin publicar».
 4. Si el Release ya existe, no lo toca: mover un tag no lo duplica.

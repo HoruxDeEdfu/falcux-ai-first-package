@@ -90,3 +90,9 @@ test('el Release exige la versión en npm y en el CHANGELOG antes de crearse', (
   assert.ok(indice(/npm view "@falcux\/ai-first@\$version" version/) < crear);
   assert.ok(indice(/sin publicar/) < crear);
 });
+
+test('el Release espera a npm en vez de fallar si el tag llega antes que la versión (CHG-021)', () => {
+  const paso = RELEASE.jobs.release.steps.find((p) => /npm view/.test(p.run ?? ''))?.run ?? '';
+  assert.match(paso, /for intento in \$\(seq 1 20\)/, 'hasta 20 intentos');
+  assert.match(paso, /sleep 30/, 'separados por 30 segundos: 10 minutos en total');
+});
