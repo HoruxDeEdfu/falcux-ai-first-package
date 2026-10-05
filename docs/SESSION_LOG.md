@@ -10,6 +10,48 @@
 
 ---
 
+## 2026-10-05 (sesión 16) — La 0.6.0 sale a npm, y el Release aprende a esperar
+
+### Resumen
+Charlie avanzó `prod` y empujó `v0.6.0`. El flujo publicó la `0.6.0`. Su
+Release falló por una carrera con npm, y CHG-021 la corrige para los tags que
+vengan.
+
+### La `0.6.0`
+- Antes de empujar, la fecha del CHANGELOG se corrigió a 2026-10-01
+  (`e7e6724`). La publicación se hizo el 2026-10-05, así que el tarball lleva
+  una fecha cuatro días anterior. Queda anotado en el handoff.
+- Al primer intento, el modo automático bloqueó avanzar `prod`. Lo hizo
+  Charlie, junto con el tag.
+- Publicado a las 17:30:16 UTC (corrida 37348849723) y servido a las 17:32:43.
+  `latest` en `0.6.0`, el shasum `fb1db1c9…` coincide con el del log, y lleva
+  provenance SLSA v1.
+- Aviso al sitio enviado a la sesión `package-sync`.
+
+### CHG-021
+- La corrida del Release (37348869239) falló con E404: el tag llegó 9 s
+  después de `prod`. Relanzarla pide permisos de admin, y la cuenta activa de
+  `gh` es `CharlieDesigner`.
+- `release.yml` espera hasta 10 minutos, consultando cada 30 segundos. Una
+  invariante nueva en la prueba.
+
+### Validación
+- typecheck → PASS (lo corre `pnpm test` al compilar)
+- lint      → no aplica
+- tests     → PASS, 126 pruebas, por exit code
+- `audit:self` → 0 / 100
+- Bucle de espera ensayado en local: PASS
+- GitHub Actions con el flujo nuevo → no ejecutado: sale con el próximo tag
+
+### Pendiente para la siguiente sesión
+- [ ] **El Release de `v0.6.0`**: Charlie lo relanza desde Actions con
+      «Re-run jobs». La corrida usa el flujo viejo, pero npm ya tiene la
+      versión, así que pasa. Después, comprobar el cuerpo y que quede como
+      «Latest».
+- [ ] La respuesta del sitio al aviso de la `0.6.0`.
+
+---
+
 ## 2026-09-30 (sesión 15) — El tag crea su Release, y la entrevista deja elegir qué se instala
 
 ### Resumen
@@ -57,7 +99,7 @@ hook y el CI (CHG-020, `abf1ce2`, en `dev` y sin publicar).
   carpeta vacía: instaló lo elegido y respetó el «no» al hook.
 
 ### Pendiente para la siguiente sesión
-- [ ] **Publicar CHG-020**: es un MINOR, así que sale como `0.6.0`. Toca
+- [x] **Publicar CHG-020**: salió como `0.6.0` el 2026-10-05, ver sesión 16. Toca
       `version-bump`, avanzar `prod` (lo decide Charlie) y avisar al sitio,
       que documenta la entrevista y ahora tiene tres preguntas más.
 - [ ] Un repo ya documentado se sigue saltando la entrevista por defecto, y
