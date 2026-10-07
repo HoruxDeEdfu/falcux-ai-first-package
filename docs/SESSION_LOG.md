@@ -10,6 +10,41 @@
 
 ---
 
+## 2026-10-07 (sesión 17) — Los flujos dejan `ubuntu-latest` antes de Ubuntu 26
+
+### Resumen
+Los tres flujos y la plantilla de CI que reparte `init` piden `ubuntu-24.04`
+(CHG-023, `ad56487`). Sale en un PATCH porque la plantilla viaja en el tarball.
+
+### CHG-023
+- GitHub avisó en las corridas de la `0.6.0` que `ubuntu-latest` pasa a
+  Ubuntu 26 desde el 2026-10-19. El pendiente decía mirar la primera corrida
+  después de esa fecha. Se descartó esperar, porque esa corrida podía ser un
+  publish.
+- Charlie eligió fijar los cuatro archivos, la plantilla incluida, y sacarlo
+  en un PATCH. Quien ya tiene la plantilla escrita conserva la suya: `init`
+  nunca sobreescribe.
+- Una prueba nueva en `test/publicacion.test.ts` lee los cuatro archivos.
+  Se comprobó que falla al restaurar `ubuntu-latest` en la plantilla.
+- Sin fila de ADR: se revierte con un `git revert`.
+
+### Validación
+- typecheck → PASS (lo corre `pnpm test` al compilar)
+- lint      → no aplica
+- tests     → PASS, 128 pruebas, por exit code
+- `audit:self` → 0 / 100
+- GitHub Actions en `ubuntu-24.04` → no ejecutado: corre con el próximo push a `dev`
+
+### Pendiente para la siguiente sesión
+- [ ] Publicar la `0.6.1` (bump hecho): avanzar `prod` y poner el tag lo decide Charlie.
+      Después hay que avisar al sitio. Si alguna página muestra la plantilla de
+      CI, ahora dice `ubuntu-24.04`.
+- [ ] Mirar la corrida de `ai-first` del push a `dev`, y después la de publish
+      y la de Release. Es la primera prueba en GitHub de CHG-021 y CHG-022.
+- [ ] La respuesta del sitio al aviso de la `0.6.0` sigue pendiente.
+
+---
+
 ## 2026-10-05 (sesión 16) — La 0.6.0 sale a npm, y el Release aprende a esperar
 
 ### Resumen
@@ -57,7 +92,7 @@ vengan.
 - [x] Su cuerpo tenía los cortes de línea de antes de CHG-022. Charlie lo
       corrigió con `gh release edit`, usando el texto del `awk` del flujo, y el
       HTML ya no lleva ningún `<br>`.
-- [ ] **`ubuntu-latest` pasa a Ubuntu 26 a partir del 2026-10-19**, según un
+- [x] **`ubuntu-latest` pasa a Ubuntu 26 a partir del 2026-10-19**: fijado en `ubuntu-24.04`, CHG-023 en la sesión 17., según un
       aviso de GitHub en las corridas. La usan `publish.yml`, `release.yml`,
       `ai-first.yml` y la plantilla de CI que escribe `init`. Mirar la primera
       corrida después de esa fecha.

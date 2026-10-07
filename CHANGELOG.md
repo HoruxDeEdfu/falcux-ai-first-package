@@ -12,6 +12,15 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
+## [0.6.1] — 2026-10-07
+
+### Cambiado
+
+- **El flujo de CI que escribe `init` corre en `ubuntu-24.04`**, no en
+  `ubuntu-latest`, que pasa a Ubuntu 26 desde el 2026-10-19. Así la imagen no
+  cambia sin que nadie la toque. Si ya tienes el flujo escrito, `init` no lo
+  reemplaza: cambia la línea `runs-on` a mano si quieres lo mismo.
+
 ## [0.6.0] — 2026-10-05
 
 ### Añadido
