@@ -1290,3 +1290,12 @@ que GitHub deja en las corridas. La usan los tres flujos del repo y la
 plantilla de CI que reparte `init`. **Resuelto el 2026-10-07 (CHG-023)**: los
 cuatro piden `ubuntu-24.04`, y una prueba impide que vuelva `ubuntu-latest`.
 Pasar a Ubuntu 26 es un cambio aparte, que se decide y se prueba.
+
+### La `0.6.1` sale a npm (2026-10-07, CHG-023)
+
+Charlie avanzó `prod` a `d9f16b1` y empujó `v0.6.1`. npm la fecha a las
+16:11:53 UTC, con provenance SLSA v1, y `latest` está en `0.6.1`. Trae la
+plantilla de CI en `ubuntu-24.04`. Es la primera versión con CHG-021 y CHG-022
+probados en GitHub. El Release salió solo, con el texto de cada párrafo en
+una línea, pero en el último intento de los 20 que da la espera: npm tardó
+unos 8 minutos en servir la versión. Ampliar la espera queda pendiente.

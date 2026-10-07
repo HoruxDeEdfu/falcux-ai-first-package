@@ -35,12 +35,26 @@ Los tres flujos y la plantilla de CI que reparte `init` piden `ubuntu-24.04`
 - `audit:self` → 0 / 100
 - GitHub Actions en `ubuntu-24.04` → no ejecutado: corre con el próximo push a `dev`
 
+### La `0.6.1` sale
+- Charlie avanzó `prod` a `d9f16b1` y empujó `v0.6.1`. Antes había empujado
+  `v.0.6.1`, con un punto de más. Su Release falló como debía: el tag no era
+  la versión del manifiesto. Ese tag ya no está en el remoto.
+- Las tres corridas usaron `ubuntu-24.04`: `ai-first` en `dev`, publish y
+  Release.
+- El publish empaquetó a las 16:04:38 UTC, pero npm fecha la versión a las
+  16:11:53. `latest` está en `0.6.1`, con provenance SLSA v1.
+- **El Release salió en el intento 20 de 20**, a las 16:12:33. El tag llegó
+  antes que `prod`, y npm tardó unos 8 minutos en servir la versión. La espera
+  de CHG-021 funcionó, pero sin margen.
+- El cuerpo del Release no lleva ningún `<br>` en el HTML de la API: CHG-022
+  probado en GitHub. Está marcado como «Latest».
+
 ### Pendiente para la siguiente sesión
-- [ ] Publicar la `0.6.1` (bump hecho): avanzar `prod` y poner el tag lo decide Charlie.
-      Después hay que avisar al sitio. Si alguna página muestra la plantilla de
-      CI, ahora dice `ubuntu-24.04`.
-- [ ] Mirar la corrida de `ai-first` del push a `dev`, y después la de publish
-      y la de Release. Es la primera prueba en GitHub de CHG-021 y CHG-022.
+- [x] **El aviso al sitio de la `0.6.1`**: enviado a la sesión `package-sync`.
+      Falta su respuesta.
+- [ ] **Ampliar la espera del Release**, de 10 a unos 30 minutos. Con la
+      `0.6.1` alcanzó justo, y si npm tarda un poco más, el Release falla y
+      relanzarlo pide permisos de admin. Sería otro CHG corto.
 - [ ] La respuesta del sitio al aviso de la `0.6.0` sigue pendiente.
 
 ---
