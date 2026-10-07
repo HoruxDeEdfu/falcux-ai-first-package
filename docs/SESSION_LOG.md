@@ -51,12 +51,17 @@ Los tres flujos y la plantilla de CI que reparte `init` piden `ubuntu-24.04`
 
 ### Pendiente para la siguiente sesión
 - [x] **El aviso al sitio de la `0.6.1`**: enviado a la sesión `package-sync`.
-      Falta su respuesta.
+      Respondió el mismo día: aplicó la `0.6.1` en su `dev`, sin commit hasta
+      que Charlie lo apruebe. La plantilla con `runs-on` aparece en una sola
+      página, la guía de auditar en local y en CI. Ahí ya dice `ubuntu-24.04`,
+      con una nota para cambiar la línea a mano. El número de versión está al
+      día, y las salidas de la portada, corridas con la `0.6.1`, no cambian.
 - [x] **Ampliar la espera del Release**, de 10 a 30 minutos: CHG-024, en
       `dev` y sin publicar. Viaja con el próximo `prod`, sin versión propia.
       Con 10 minutos, la `0.6.1` alcanzó justo, y relanzar un Release fallido
       pide permisos de admin.
-- [ ] La respuesta del sitio al aviso de la `0.6.0` sigue pendiente.
+- [x] La respuesta del sitio al aviso de la `0.6.0`: la mandó el 2026-10-05 a
+      la sesión `package-update`, que no pidió nada más. Faltaba anotarla acá.
 
 ---
 
@@ -111,7 +116,7 @@ vengan.
       aviso de GitHub en las corridas. La usan `publish.yml`, `release.yml`,
       `ai-first.yml` y la plantilla de CI que escribe `init`. Mirar la primera
       corrida después de esa fecha.
-- [ ] La respuesta del sitio al aviso de la `0.6.0`.
+- [x] La respuesta del sitio al aviso de la `0.6.0`: ver sesión 17.
 
 ---
 
