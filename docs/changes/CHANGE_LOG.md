@@ -650,3 +650,21 @@ lista numerada, así que se prueba el `awk` real, no una copia.
 **Lección.** CHG-019 verificó el texto que se extraía, pero no cómo se veía
 una vez publicado. En una superficie que renderiza otro, hay que mirar el HTML
 resultante: la API lo da con `Accept: application/vnd.github.html+json`.
+
+## CHG-023 — Los flujos corren en `ubuntu-24.04`, no en `ubuntu-latest`
+
+- **Fecha:** 2026-10-07 (abierto y cerrado el mismo día)
+- **Tipo:** ajuste, sin decisión de ADR
+- **Archivos:** `.github/workflows/publish.yml`, `.github/workflows/release.yml`, `.github/workflows/ai-first.yml`, `plantillas/ai-first.yml`, `test/publicacion.test.ts`
+
+**Resumen.** GitHub avisó en las corridas de la `0.6.0` que `ubuntu-latest`
+pasa a Ubuntu 26 a partir del 2026-10-19. Ese cambio habría llegado sin commit,
+y la primera corrida en la imagen nueva podía ser un publish. Los tres flujos y
+la plantilla de CI que escribe `init` piden ahora `ubuntu-24.04`, la imagen en
+la que corrieron hasta hoy. Una prueba lee los cuatro archivos y falla si
+vuelve `ubuntu-latest`; se comprobó restaurando la línea en la plantilla. La
+plantilla viaja en un PATCH. Quien ya la tiene escrita conserva la suya,
+porque `init` nunca sobreescribe.
+
+**Lección.** Un alias como `-latest` es una dependencia sin versión: cambia
+sin pasar por el repo. Pasar a Ubuntu 26 queda como cambio con su propio CHG.

@@ -1287,5 +1287,6 @@ a mano con el texto unido.
 
 **`ubuntu-latest` pasa a Ubuntu 26 a partir del 2026-10-19**, según un aviso
 que GitHub deja en las corridas. La usan los tres flujos del repo y la
-plantilla de CI que reparte `init`. Hay que mirar la primera corrida después
-de esa fecha.
+plantilla de CI que reparte `init`. **Resuelto el 2026-10-07 (CHG-023)**: los
+cuatro piden `ubuntu-24.04`, y una prueba impide que vuelva `ubuntu-latest`.
+Pasar a Ubuntu 26 es un cambio aparte, que se decide y se prueba.

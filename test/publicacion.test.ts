@@ -151,3 +151,19 @@ test('el cuerpo del Release une las líneas de cada párrafo, no las del código
     ].join('\n') + '\n',
   );
 });
+
+test('los flujos y la plantilla de CI piden una imagen fija, no ubuntu-latest (CHG-023)', () => {
+  // Con `ubuntu-latest`, GitHub cambia la imagen sin commit: desde el 2026-10-19 pasa
+  // a Ubuntu 26. Subir de versión es un cambio que se decide y se prueba.
+  const archivos = [
+    '.github/workflows/publish.yml',
+    '.github/workflows/release.yml',
+    '.github/workflows/ai-first.yml',
+    'plantillas/ai-first.yml',
+  ];
+  for (const archivo of archivos) {
+    const texto = readFileSync(new URL(`../../${archivo}`, import.meta.url), 'utf8');
+    assert.match(texto, /^\s+runs-on: ubuntu-\d+\.\d+$/m, archivo);
+    assert.doesNotMatch(texto, /ubuntu-latest/, archivo);
+  }
+});
