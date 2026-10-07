@@ -52,9 +52,10 @@ Los tres flujos y la plantilla de CI que reparte `init` piden `ubuntu-24.04`
 ### Pendiente para la siguiente sesión
 - [x] **El aviso al sitio de la `0.6.1`**: enviado a la sesión `package-sync`.
       Falta su respuesta.
-- [ ] **Ampliar la espera del Release**, de 10 a unos 30 minutos. Con la
-      `0.6.1` alcanzó justo, y si npm tarda un poco más, el Release falla y
-      relanzarlo pide permisos de admin. Sería otro CHG corto.
+- [x] **Ampliar la espera del Release**, de 10 a 30 minutos: CHG-024, en
+      `dev` y sin publicar. Viaja con el próximo `prod`, sin versión propia.
+      Con 10 minutos, la `0.6.1` alcanzó justo, y relanzar un Release fallido
+      pide permisos de admin.
 - [ ] La respuesta del sitio al aviso de la `0.6.0` sigue pendiente.
 
 ---

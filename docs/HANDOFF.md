@@ -1298,4 +1298,5 @@ Charlie avanzó `prod` a `d9f16b1` y empujó `v0.6.1`. npm la fecha a las
 plantilla de CI en `ubuntu-24.04`. Es la primera versión con CHG-021 y CHG-022
 probados en GitHub. El Release salió solo, con el texto de cada párrafo en
 una línea, pero en el último intento de los 20 que da la espera: npm tardó
-unos 8 minutos en servir la versión. Ampliar la espera queda pendiente.
+unos 8 minutos en servir la versión. **Ampliada el mismo día (CHG-024)**: la
+espera llega ahora a 30 minutos.

@@ -92,10 +92,10 @@ test('el Release exige la versión en npm y en el CHANGELOG antes de crearse', (
   assert.ok(indice(/sin publicar/) < crear);
 });
 
-test('el Release espera a npm en vez de fallar si el tag llega antes que la versión (CHG-021)', () => {
+test('el Release espera a npm en vez de fallar si el tag llega antes que la versión (CHG-021, CHG-024)', () => {
   const paso = RELEASE.jobs.release.steps.find((p) => /npm view/.test(p.run ?? ''))?.run ?? '';
-  assert.match(paso, /for intento in \$\(seq 1 20\)/, 'hasta 20 intentos');
-  assert.match(paso, /sleep 30/, 'separados por 30 segundos: 10 minutos en total');
+  assert.match(paso, /for intento in \$\(seq 1 60\)/, 'hasta 60 intentos');
+  assert.match(paso, /sleep 30/, 'separados por 30 segundos: 30 minutos en total');
 });
 
 test('el cuerpo del Release une las líneas de cada párrafo, no las del código (CHG-022)', () => {

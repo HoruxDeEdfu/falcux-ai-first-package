@@ -668,3 +668,18 @@ porque `init` nunca sobreescribe.
 
 **Lección.** Un alias como `-latest` es una dependencia sin versión: cambia
 sin pasar por el repo. Pasar a Ubuntu 26 queda como cambio con su propio CHG.
+
+## CHG-024 — El Release espera a npm hasta 30 minutos, no 10
+
+- **Fecha:** 2026-10-07 (abierto y cerrado el mismo día)
+- **Tipo:** corrección de CHG-021, flujo corto, sin decisión de ADR
+- **Archivos:** `.github/workflows/release.yml`, `test/publicacion.test.ts`, `docs/specs/publicacion.md`
+
+**Resumen.** El Release de `v0.6.1` encontró su versión en npm en el intento 20
+de 20. El tag llegó antes que `prod`, y npm tardó unos 7 minutos en servir lo
+publicado, contra los ~2,5 de la `0.6.0`. El bucle pasa a 60 consultas cada 30
+segundos, y la prueba fija los 60 intentos.
+
+**Lección.** CHG-021 calibró la espera con una sola muestra, la de la `0.6.0`.
+La siguiente casi la agotó. Un tope que depende de un servicio ajeno necesita
+margen sobre lo peor que se ha visto, no sobre lo que se vio una vez.
