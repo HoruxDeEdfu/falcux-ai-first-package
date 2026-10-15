@@ -1310,3 +1310,54 @@ como cuando lo corre un agente, o con `--sin-entrevista`— queda sin
 comando para instalarla y una línea de cierre en el reporte. Está escrito, con
 las decisiones tomadas, en la carpeta de cambios pendientes. **Falta
 implementarlo**, en un PATCH.
+
+### CHG-026 abierto: agregar una skill después de `init`, y skills sueltas (2026-10-15, ADR-026)
+
+`init --skills X` en un repo ya configurado instala la skill sin adaptar,
+porque la adaptación sólo corre con entrevista y las respuestas no se guardan.
+Tampoco hay forma de instalar una skill sin toda la metodología. CHG-026 guarda
+las respuestas en un mapa `adaptacion` del frontmatter de `AI-FIRST.md`, adapta
+sin entrevista lo que la corrida escribe y agrega `--solo-skills`. Las
+decisiones están tomadas en el CHG. **Falta implementarlo**: empieza por el
+análisis de impacto. Cambia el formato de `AI-FIRST.md` y la CLI, así que se
+avisa al sitio con la versión que lo publique.
+
+### Pendiente: `changeset-review`, para monorepos con Changesets (2026-10-15)
+
+En un monorepo que versiona con Changesets, `version-bump` choca en todo:
+escribe la misma versión en todos los manifiestos, sube la versión por sesión,
+busca tags `v*` y fecha un CHANGELOG que escribe `changeset version`. Se
+decidió una **skill aparte**, `changeset-review`, y no un modo de
+`version-bump`: no comparten ninguno de los pasos, sólo las reglas SemVer, y la
+descripción de `version-bump` la haría cargar en el repo equivocado. Lo que
+revisa: los changesets pendientes contra el diff de cada paquete, el código sin
+changeset, cuándo conviene uno vacío y si conviene mergear el PR de versiones.
+Sólo reporta.
+
+`init` la detecta por `.changeset/config.json`, sin pregunta nueva: la marca en
+lugar de `version-bump` y se salta la pregunta de `manifiesto`. El Paso 6 de
+`protocolo-cierre` se resuelve por su bloque de adaptación, no bifurcando el
+cuerpo. Tocar ese cuerpo, aunque sea una línea, obliga a avisar al sitio. La
+forma del tag se lee del repo en vez de suponerla, porque en un repo de un
+solo paquete no lleva el nombre. Va por `protocolo-features` y después de
+CHG-026, para que se pueda agregar adaptada a un repo ya iniciado.
+
+Se parte de la versión local que funcionó, en el repo del sistema de diseño
+Marimba: atc-platform-marimba-designsystem, bajo AutenTIC/CRM_Compliance/v2.0,
+en .agents/skills/changeset-review. Son 116 líneas y seis pasos: pendientes,
+diff por paquete, tipo contra diff, major, si el lote amerita publicarse y el
+reporte. Lo que es de Marimba y en el paquete pasa a la adaptación:
+
+- los nombres de los paquetes, el scope de los tags y el título del PR de
+  versiones;
+- la tabla de señales: las de props, tokens y variables CSS son de un sistema
+  de diseño. Quedan genéricas las de exports, `peerDependencies` y `name`;
+- las rutas de la guía de migración, de las historias y de `skills/`;
+- la política de cuándo publicar, que remite a su `.changeset/README.md`.
+
+Le falta lo que la propuesta pedía para `protocolo-cierre`: verificar el
+changeset de la sesión.
+
+Aparte, y sin resolver: la regla «NO desincronizar versiones» de
+`version-bump` también falla en un monorepo con versiones independientes que
+no usa Changesets.

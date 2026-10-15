@@ -10,6 +10,54 @@
 
 ---
 
+## 2026-10-15 (sesión 19) — CHG-026 abierto: agregar una skill después de `init`, y skills sueltas
+
+### Resumen
+Charlie preguntó cómo se instala una sola skill y cómo se agrega una olvidada.
+Se abrió CHG-026 con las decisiones tomadas y ADR-026. Sin código: el CHG queda
+en `docs/changes/pending/` para una sesión limpia.
+
+### Lo que se encontró
+- `init --skills X` en un repo ya iniciado instala X, pero sin adaptar: la
+  adaptación sólo corre con entrevista en la misma corrida
+  (`src/init.ts:742`), y en un repo documentado se salta por defecto.
+- De la entrevista sobreviven en `AI-FIRST.md` sólo `fase`, `perfil` y
+  `verificacion`; se pierden `secuencia`, `agentes`, `typecheck`, `lint` y
+  `manifiesto`.
+- El lector del frontmatter ignora claves desconocidas: una clave nueva no
+  rompe a un detector viejo ni obliga a cambiar `formato: 1`.
+- No había forma de instalar una skill sin la metodología entera.
+
+### CHG-026 y ADR-026
+- Se agrega con `init --skills X`, sin comando nuevo.
+- Las respuestas que faltan se guardan en un mapa `adaptacion` del frontmatter.
+- Sin entrevista, se adapta sólo lo que la corrida escribió.
+- `--solo-skills`: sólo skills y enlace, sin git, sin `AGENTS.md`; con
+  terminal, una entrevista filtrada por lo que leen las skills elegidas, sin
+  persistir.
+- Criterio de Charlie para las decisiones: la solución más limpia, no la más
+  rápida.
+
+### Lo que se dejó para después
+- Una propuesta para monorepos con Changesets. Se decidió una skill aparte,
+  `changeset-review`, y no un modo de `version-bump`. Va por
+  `protocolo-features`, después de CHG-026.
+
+### Validación
+- typecheck → no ejecutado (no hubo cambios de código)
+- lint      → no aplica
+- tests     → no ejecutado (no hubo cambios de código)
+- audit:self → 0 / 100 con CHG-026 en `pending/` y ADR-026 escrita
+
+### Pendiente para la siguiente sesión
+- [ ] Implementar CHG-025 y CHG-026 en sesiones limpias. CHG-026 empieza por
+      el análisis de impacto (§7), que tiene que resolver de dónde salen los
+      valores por defecto de la entrevista reducida sin git.
+- [ ] Abrir `changeset-review` con `protocolo-features`, partiendo de la skill
+      local que Charlie tiene funcionando en un monorepo con Changesets.
+
+---
+
 ## 2026-10-15 (sesión 18) — CHG-025 abierto: avisar cuando falta `protocolo-arranque`
 
 ### Resumen

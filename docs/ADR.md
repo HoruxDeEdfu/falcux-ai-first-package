@@ -1163,3 +1163,46 @@ zonas. `--skills` y las banderas del punto de control siguen valiendo igual. El
 sitio documenta la entrevista, y hay que avisarle con la versión que lo publique.
 Un repo ya documentado se sigue saltando la entrevista por defecto, así que ahí
 las opciones aparecen solo con `--entrevista`.
+
+---
+
+## ADR-026 — `init` guarda las respuestas de la entrevista en `AI-FIRST.md`, y puede instalar skills sueltas
+
+- **Fecha:** 2026-10-15
+- **Estado:** aceptada. Extiende ADR-019 (la entrevista adapta las skills) y
+  ADR-025 (la selección de skills). Implementación en CHG-026.
+
+**Contexto.** La adaptación de una skill sólo corría con entrevista en la misma
+corrida. Una skill agregada después con `init --skills X` quedaba sin adaptar,
+porque en un repo documentado la entrevista se salta por defecto y de las
+respuestas sólo sobrevivían `fase`, `perfil` y `verificacion`. Y quien quería
+una sola skill sin la metodología no tenía cómo: `init` escribía siempre
+`AI-FIRST.md`, `docs/` y el bloque de `AGENTS.md`.
+
+**Decisión.**
+
+1. Al entrevistar, `generarAiFirst` escribe un mapa opcional `adaptacion` en
+   el frontmatter con lo que no se deduce del repo: `secuencia`, `agentes`,
+   `typecheck`, `lint` y `manifiesto`. Una respuesta vacía se guarda vacía.
+   Sigue siendo `formato: 1`: el lector ignora claves que no conoce, así que
+   una versión anterior no se rompe. `audit` no lo lee.
+2. Sin entrevista, `init` reconstruye las respuestas desde `AI-FIRST.md` y
+   adapta **sólo las skills que escribió en esa corrida**. Sin `perfil`, la
+   adaptación sale como sugerida.
+3. `--solo-skills`, con `--skills` obligatoria, escribe sólo las skills y el
+   enlace `.claude/skills`: ni `AI-FIRST.md`, ni `docs/`, ni el bloque de
+   `AGENTS.md`, ni hook, ni CI, ni `git init`. Con terminal entrevista sólo lo
+   que las skills elegidas leen, y no lo guarda.
+
+**Alternativas.** *Un comando nuevo para agregar skills*: en un repo iniciado
+`init` ya salta todo lo demás, y sería superficie pública sin ganancia. *Un
+archivo aparte para las respuestas*: otro archivo que viaja y nadie lee, cuando
+`perfil` y `verificacion` ya viven en el frontmatter. *Reconstruir todo del
+escaneo*: `secuencia` y `agentes` no se deducen. *Leerlas de las skills ya
+adaptadas*: es parsear prosa generada que el humano pudo editar. *Dejar la
+skill suelta en la vía manual del README*: Charlie la quiso en el comando.
+
+**Consecuencias.** El formato de `AI-FIRST.md` gana una clave documentada en
+`docs/SPEC-PAQUETE.md` §5, y la CLI una bandera: hay que avisar al sitio con la
+versión que lo publique. Ninguna skill ya instalada se re-adapta sin
+entrevista.
