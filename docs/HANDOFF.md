@@ -1300,3 +1300,13 @@ probados en GitHub. El Release salió solo, con el texto de cada párrafo en
 una línea, pero en el último intento de los 20 que da la espera: npm tardó
 unos 8 minutos en servir la versión. **Ampliada el mismo día (CHG-024)**: la
 espera llega ahora a 30 minutos.
+
+### CHG-025 abierto: `init` avisará cuando falte `protocolo-arranque` (2026-10-15)
+
+Un proyecto sin documentación que corre `init` sin entrevista —sin terminal,
+como cuando lo corre un agente, o con `--sin-entrevista`— queda sin
+`protocolo-arranque`, y la salida no lo dice. Pasa lo mismo si se deja fuera con
+`--skills` o se desmarca en la entrevista. El CHG pide un ítem `sugerido` con el
+comando para instalarla y una línea de cierre en el reporte. Está escrito, con
+las decisiones tomadas, en la carpeta de cambios pendientes. **Falta
+implementarlo**, en un PATCH.

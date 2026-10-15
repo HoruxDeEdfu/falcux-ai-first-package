@@ -10,6 +10,50 @@
 
 ---
 
+## 2026-10-15 (sesión 18) — CHG-025 abierto: avisar cuando falta `protocolo-arranque`
+
+### Resumen
+Se revisó cuándo `init` instala `protocolo-arranque` y se abrió CHG-025, que
+pide avisarlo cuando un proyecto sin documentación termina sin esa skill. Sin
+código: el CHG queda en `docs/changes/pending/` para una sesión limpia.
+
+### Lo que se encontró
+- `init` sólo instala la skill cuando entrevista (`src/init.ts:663`). Sin
+  terminal, con `--sin-entrevista`, con `--skills` sin ella o desmarcada en la
+  entrevista, un proyecto vacío queda sin ella y la salida no lo dice.
+- El caso más probable es que lo corra un agente: no tiene terminal
+  interactiva, así que no hay entrevista.
+- «Documentado» se decide con `AI-FIRST.md`, `AGENTS.md` o un `.md` bajo
+  `docs/`, no con PRD ni arquitectura.
+
+### CHG-025
+- Charlie eligió avisar, no instalarla por defecto.
+- El aviso sale por los cuatro caminos, y en dos lugares: un ítem `sugerido`
+  con la causa y el comando, y una línea de cierre en el bloque de avisos.
+- Sale una sola vez: la primera corrida escribe `AGENTS.md`, y desde ahí el
+  proyecto cuenta como documentado.
+- Sin fila de ADR: se revierte con un `git revert`.
+
+### Validación
+- typecheck → no ejecutado (no hubo cambios de código)
+- lint      → no aplica
+- tests     → no ejecutado (no hubo cambios de código)
+- `audit:self` → 0 / 100
+
+### Versión
+Sin bump. Desde `v0.6.1` sólo cambiaron el flujo de Release (CHG-024) y
+documentos; nada de eso viaja en el tarball. CHG-024 ya está en `prod` desde
+`0b994ca`, aunque la sesión 17 lo dejó como «viaja con el próximo `prod`».
+
+### Pendiente para la siguiente sesión
+- [ ] **Implementar CHG-025** en una sesión limpia, desde
+      `docs/changes/pending/CHG-025_aviso-sin-arranque.md`. No tiene decisiones
+      abiertas. Hay que calcular `proyectoDocumentado` antes de escribir nada,
+      o el `AGENTS.md` de la misma corrida apaga el aviso. Va en un PATCH, porque
+      cambia la salida de `init`.
+
+---
+
 ## 2026-10-07 (sesión 17) — Los flujos dejan `ubuntu-latest` antes de Ubuntu 26
 
 ### Resumen
