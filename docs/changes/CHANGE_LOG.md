@@ -744,3 +744,23 @@ las respuestas empezaron a reconstruirse desde un archivo que puede no tenerlas,
 la misma línea pasó a afirmar cosas falsas. El análisis de impacto lo vio antes
 del código porque leyó qué hace cada adaptación cuando falta un dato, y no sólo
 qué datos lee.
+
+## CHG-027 — `protocolo-cierre` recibe su bloque de Changesets aunque no haya entrevista
+
+- **Fecha:** 2026-10-15 (abierto y cerrado en la sesión 23)
+- **Tipo:** corrección, flujo corto, sin ADR propia (corrige el punto 4 de ADR-028)
+- **Archivos:** `src/adaptacion.ts`, `src/init.ts`, `test/init.test.ts`, `docs/specs/changeset-review.md`, `CHANGELOG.md`, `package.json`
+
+**Resumen.** En la 0.8.0, un repo con Changesets que corría `init` sin
+entrevista recibía `changeset-review` adaptada, pero `protocolo-cierre` sin
+bloque. Su Paso 6 seguía mandando a `version-bump`, que no se instaló. Ahora una
+adaptación puede declarar en qué repos se escribe sin respuestas, y la de cierre
+lo declara con Changesets. Con respuestas guardadas, mandan ellas. Sale en la
+0.8.1.
+
+**Pruebas.** Una nueva: el caso del sitio y su contrario. Suite en 155.
+
+**Lección.** El 4b de `iniciar` decidía con dos condiciones sueltas, y la de «se
+deduce del repo» miraba sólo si una skill leía respuestas, no si en ese repo le
+hacían falta. Un bloque que mezcla lo que sale del repo con lo que no se sabe
+puede escribirse igual, siempre que lo que falta se diga sin inventarlo.

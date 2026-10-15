@@ -884,23 +884,26 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
   // cada skill instalada. Sin entrevista, sólo las que esta corrida escribió y
   // con lo que guardó una entrevista anterior en AI-FIRST.md (ADR-026): una que
   // ya estaba puede tener la mano del humano dentro de las marcas, y esta
-  // corrida no tiene nada nuevo que decirle. Sin AI-FIRST.md previo no hay
-  // entrevista anterior que reconstruir, y sólo se adapta lo que sale entero
-  // del repo, que no necesita respuestas (ADR-028).
+  // corrida no tiene nada nuevo que decirle. Sin respuestas guardadas, sólo se
+  // adapta lo que en este repo sale del repo (ADR-028, CHG-027); lo demás, si
+  // había AI-FIRST.md, se sugiere.
+  const guardadas = !respuestas && previo?.contrato ? respuestasGuardadas(previo.contrato) : undefined;
   if (respuestas) {
     for (const nombre of elegidas) {
       items.push(adaptarSkill(carpetaSkills, nombre, respuestas, escaneo));
     }
+  } else if (guardadas && previo?.contrato) {
+    const delContrato = escaneoDelContrato(escaneo, previo.contrato);
+    // Lo que se deduce del repo y el repo no trae —changeset-review sin
+    // Changesets— no tiene nada que escribir.
+    const conAlgoQueDecir = (n: string) => skillsAdaptables().includes(n) && (!seDeduceDelRepo(n, escaneo) || hayQueDeducir(n, escaneo));
+    for (const nombre of escritas.filter(conAlgoQueDecir)) {
+      items.push(adaptarSkill(carpetaSkills, nombre, guardadas, delContrato));
+    }
   } else {
     for (const nombre of escritas.filter((n) => hayQueDeducir(n, escaneo))) items.push(adaptarSkill(carpetaSkills, nombre, {}, escaneo));
-  }
-  if (!respuestas && previo) {
-    const adaptables = escritas.filter((n) => skillsAdaptables().includes(n) && !seDeduceDelRepo(n));
-    const guardadas = previo.contrato && respuestasGuardadas(previo.contrato);
-    if (guardadas && previo.contrato) {
-      const delContrato = escaneoDelContrato(escaneo, previo.contrato);
-      for (const nombre of adaptables) items.push(adaptarSkill(carpetaSkills, nombre, guardadas, delContrato));
-    } else if (adaptables.length > 0) {
+    const adaptables = escritas.filter((n) => skillsAdaptables().includes(n) && !seDeduceDelRepo(n, escaneo));
+    if (previo && adaptables.length > 0) {
       // Una línea para todas: cinco sugeridos con la misma razón no dicen más.
       items.push({
         ruta: `${NOMBRE_ARCHIVO} (perfil)`,
@@ -1092,7 +1095,7 @@ export async function instalarSkillsSueltas(opciones: OpcionesSkill): Promise<Re
   for (const nombre of escritas) {
     // Lo que se deduce del repo y el repo no trae —changeset-review sin
     // Changesets— no tiene nada que escribir ni que sugerir.
-    if (adaptables.includes(nombre) && (!seDeduceDelRepo(nombre) || hayQueDeducir(nombre, escaneo))) {
+    if (adaptables.includes(nombre) && (!seDeduceDelRepo(nombre, escaneo) || hayQueDeducir(nombre, escaneo))) {
       items.push(
         respuestas || hayQueDeducir(nombre, escaneo)
           ? adaptarSkill(carpetaSkills, nombre, respuestas ?? {}, entrevistadas ? escaneoCrudo : escaneo)
@@ -1117,7 +1120,7 @@ export async function instalarSkillsSueltas(opciones: OpcionesSkill): Promise<Re
 
 /** ¿La skill se adapta sólo con el repo, y el repo trae con qué? (ADR-028) */
 function hayQueDeducir(nombre: string, escaneo: Escaneo): boolean {
-  return seDeduceDelRepo(nombre) && bloqueDeSkill(nombre, {}, escaneo) !== undefined;
+  return seDeduceDelRepo(nombre, escaneo) && bloqueDeSkill(nombre, {}, escaneo) !== undefined;
 }
 
 /** Los archivos de la raíz, sin bajar: lo que ve `escanear` en una carpeta sin git. */

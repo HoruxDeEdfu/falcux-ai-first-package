@@ -1334,6 +1334,8 @@ Es la duodécima skill. `init` la pone en lugar de `version-bump` cuando
 encuentra `.changeset/config.json`, y la adapta con lo que deduce del repo sin
 preguntar: los paquetes, la rama base, la forma del tag y el PR de versiones. El
 Paso 6 de `protocolo-cierre` se resuelve en su bloque, sin tocar su cuerpo.
+Publicada como `0.8.0`. La `0.8.1` (CHG-027) corrige un hueco que encontró el
+sitio: sin entrevista, `protocolo-cierre` quedaba sin su bloque de Changesets.
 Sigue abierto lo del final de esta sección: la regla «NO desincronizar
 versiones» de `version-bump` en un monorepo sin Changesets. Lo que sigue es la
 planificación tal como se escribió.

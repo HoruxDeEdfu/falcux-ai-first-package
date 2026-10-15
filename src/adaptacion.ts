@@ -48,6 +48,12 @@ function verificacionO(c: Contexto, reemplazo: string): string {
  */
 interface Adaptacion {
   lee: string[];
+  /**
+   * Los repos donde el bloque se escribe aunque no haya respuestas: lo que
+   * importa ahí sale del repo, y lo que falta se dice sin inventarlo. Sin
+   * esto, sólo las que no leen nada (CHG-027).
+   */
+  sinRespuestas?: (e: Escaneo) => boolean;
   /** Las líneas del bloque, o `undefined` si la entrevista no aporta nada: entonces no se toca. */
   escribir: (c: Contexto) => string[] | undefined;
 }
@@ -139,7 +145,9 @@ const ADAPTACIONES: Record<string, Adaptacion> = {
     return l;
   } },
 
-  'protocolo-cierre': { lee: ['verificacion', 'manifiesto'], escribir: (c) => {
+  // Con Changesets, el Paso 6 manda a una skill que no se instaló si el bloque
+  // no llega: se escribe aunque no haya entrevista (CHG-027).
+  'protocolo-cierre': { lee: ['verificacion', 'manifiesto'], sinRespuestas: (e) => e.changesets !== undefined, escribir: (c) => {
     const l = ['**Los documentos de este proyecto:**', '', '| El manual dice | Acá es |', '|---|---|'];
     l.push('| Registro de sesión | `docs/SESSION_LOG.md` |');
     l.push(`| Registro de decisiones | \`${c.escaneo.rutaAdr}\` |`);
@@ -277,17 +285,20 @@ export function clavesQueLeen(nombres: string[]): string[] {
 }
 
 /**
+ * ¿La adaptación de esta skill se escribe sin respuestas en este repo? Sí si
+ * no lee ninguna, como `changeset-review`, o si declara que en un repo así lo
+ * que importa sale del repo, como `protocolo-cierre` con Changesets. Es lo
+ * mismo que el bloque de AGENTS.md: no hay nada que inventar (ADR-028, CHG-027).
+ */
+export function seDeduceDelRepo(nombre: string, escaneo: Escaneo): boolean {
+  const adaptacion = ADAPTACIONES[nombre];
+  if (!adaptacion) return false;
+  return adaptacion.lee.length === 0 || adaptacion.sinRespuestas?.(escaneo) === true;
+}
+
+/**
  * Las respuestas que se guardan en `adaptacion` de AI-FIRST.md, en este orden:
  * las que leen las skills y no viven ya en otra clave del frontmatter
  * —`perfil`, `verificacion`, `fase`— (ADR-026).
  */
-/**
- * ¿La adaptación de esta skill sale entera del repo? Entonces se escribe sin
- * entrevista ni respuestas guardadas, como el bloque de AGENTS.md: no hay nada
- * que inventar (ADR-028).
- */
-export function seDeduceDelRepo(nombre: string): boolean {
-  return ADAPTACIONES[nombre]?.lee.length === 0;
-}
-
 export const CLAVES_GUARDADAS = ['secuencia', 'agentes', 'typecheck', 'lint', 'manifiesto'];

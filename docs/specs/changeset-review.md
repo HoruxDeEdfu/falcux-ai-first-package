@@ -165,6 +165,11 @@ equivocado.
 - **La convención de los tags** depende de si hay workspace, no de cuántos
   paquetes hay: un monorepo de un paquete etiqueta `<paquete>@<versión>`. Lo
   mostró la prueba a mano.
+- **`protocolo-cierre` sin entrevista** (CHG-027, 0.8.1). En la 0.8.0, sin
+  respuestas quedaba sin bloque y su Paso 6 mandaba a `version-bump`. Lo
+  encontró la sesión del sitio. Ahora una adaptación puede declarar en qué
+  repos se escribe sin respuestas (`sinRespuestas`), y la de cierre lo declara
+  con Changesets.
 - **Sin git**, `ai-first skill` lee sólo la raíz y no ve `.changeset/config.json`:
   `changeset-review` queda sin bloque. Changesets necesita git para funcionar,
   así que no hay caso real.

@@ -10,6 +10,34 @@
 
 ---
 
+## 2026-10-15 (sesión 23) — CHG-027: `protocolo-cierre` con Changesets sin entrevista, y la `0.8.1`
+
+### Resumen
+Corrección del hueco que encontró la sesión del sitio al verificar la 0.8.0.
+Flujo corto de `protocolo-cambios`, aprobado por Charlie.
+
+### CHG-027
+- `src/adaptacion.ts`: una adaptación puede declarar `sinRespuestas`, que dice
+  en qué repos su bloque se escribe sin entrevista. `protocolo-cierre` lo
+  declara con Changesets. `seDeduceDelRepo` recibe el escaneo.
+- `src/init.ts`: el paso 4b decide en orden. Primero las respuestas de esta
+  corrida, después las guardadas, y sin ninguna, sólo lo que sale del repo.
+- Una prueba nueva con el caso del sitio, y el contrario: sin Changesets, nada
+  cambia.
+
+### Validación
+- typecheck → PASS (`tsc` dentro de `pnpm test`)
+- lint      → no aplica
+- tests     → PASS, 155 / 155 por exit code
+- `audit:self` → 0 / 100
+- Versión: `0.8.0` → `0.8.1` (PATCH)
+
+### Pendiente para la siguiente sesión
+- [ ] Publicar la `0.8.1` y avisar al sitio, que quita su sección de problema
+      conocido de la guía de solución de problemas.
+
+---
+
 ## 2026-10-15 (sesión 22) — `changeset-review`: la duodécima skill, detectada por Changesets
 
 ### Resumen

@@ -930,3 +930,26 @@ test('ai-first skill changeset-review la deja adaptada sin terminal: criterio 6'
     assert.equal(items.find((i) => i.ruta === '.agents/skills/changeset-review/SKILL.md')?.estado, 'escrito');
     assert.match(skillMd(repo.raiz, 'changeset-review'), /`@acme\/tokens@0\.3\.0`/);
   }));
+
+test('con Changesets y sin entrevista, protocolo-cierre recibe su bloque igual: CHG-027', () =>
+  conRepo(async (repo) => {
+    // Lo que encontró el sitio con la 0.8.0: un agente corre init sin terminal.
+    monorepoConChangesets(repo);
+    const { items } = await iniciar({ raiz: repo.raiz, hoy: '2026-10-15' });
+
+    assert.equal(items.find((i) => i.ruta === '.agents/skills/protocolo-cierre/SKILL.md')?.estado, 'escrito');
+    const cierre = skillMd(repo.raiz, 'protocolo-cierre');
+    assert.match(cierre, /versiona con Changesets/);
+    assert.match(cierre, /`la suite del proyecto`/, 'lo que no sabe, lo dice sin inventarlo');
+    assert.ok(!items.some((i) => i.ruta === '.agents/skills/protocolo-features/SKILL.md'), 'lo que necesita respuestas sigue sin tocarse');
+
+    // Sin Changesets, como antes: sin respuestas no hay bloque.
+    const otro = crearRepo();
+    try {
+      otro.commit('inicio');
+      await iniciar({ raiz: otro.raiz });
+      assert.ok(!skillMd(otro.raiz, 'protocolo-cierre').includes(MARCA_INICIO));
+    } finally {
+      otro.limpiar();
+    }
+  }));

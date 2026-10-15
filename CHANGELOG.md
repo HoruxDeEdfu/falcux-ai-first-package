@@ -12,6 +12,18 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
+## [0.8.1] — 2026-10-15
+
+### Corregido
+
+- **En un repo con Changesets, `protocolo-cierre` recibe su adaptación aunque
+  `init` corra sin entrevista**, por ejemplo cuando lo corre un agente sin
+  terminal. En la 0.8.0 quedaba sin ella, y su Paso 6 mandaba a `version-bump`,
+  que en ese repo no se instala. Ahora dice que el número lo sube `changeset
+  version` y que se corra `changeset-review`. Lo que no sabe sin entrevista,
+  como el comando de pruebas, lo deja dicho de forma genérica, sin inventarlo.
+  Si ya instalaste con la 0.8.0, `init --entrevista` lo arregla.
+
 ## [0.8.0] — 2026-10-15
 
 ### Añadido
