@@ -1,6 +1,6 @@
 # Falcux AI-First — el paquete
 
-Repo de `@falcux/ai-first`: los 8 templates, las 11 skills y el
+Repo de `@falcux/ai-first`: los 8 templates, las 12 skills y el
 código del detector de entropía documental. El sitio de la metodología vive en
 otro repo, `falcux-ai-first-docs-web`; este repo, `falcux-ai-first-package`,
 **entrega**; aquél **documenta**.
@@ -24,7 +24,7 @@ src/ai-first-md.ts         El lector del contrato. Único sitio que interpreta e
 src/puntaje.ts             40·P0 + 20·P1 + 8·P2. Calibrado contra la portada del sitio.
 src/git.ts  src/glob.ts  src/markdown.ts   Lo único que se le pregunta a git, a los patrones y al Markdown.
 test/                      node:test sobre repos git desechables. Sin mocks.
-skills/                    Las 11 skills. Acá es su único hogar desde ADR-006. El sitio enlaza a las de `prod`.
+skills/                    Las 12 skills. Acá es su único hogar desde ADR-006. El sitio enlaza a las de `prod`.
 templates/                 Los 8 templates. Acá es su único hogar. El sitio enlaza a los de `prod`.
 plantillas/                Lo que `init` escribe tal cual: el hook de pre-push y el flujo de CI. No son los templates.
 .githooks/                 El punto de control de ESTE repo, puesto por su propio `init` (ADR-022).
@@ -113,7 +113,7 @@ Empujarlo crea el Release de GitHub con la entrada del CHANGELOG (CHG-019).
 
 ### Las skills
 
-- `skills/` es la **fuente de verdad** de las 11 skills desde el 2026-09-17
+- `skills/` es la **fuente de verdad** de las 12 skills desde el 2026-09-17
   (ADR-006). Hasta entonces era una copia que el sitio sobreescribía con
   `rsync --delete`; ese workflow ya no existe y nada regenera la carpeta. Se
   edita acá, y sólo acá.

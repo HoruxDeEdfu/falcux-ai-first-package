@@ -11,3 +11,4 @@ la implementación. Lo que fue decisión difícil de revertir no vive acá: vive
 | `version-flag.md` | Implementada el 2026-09-21 |
 | `punto-de-control.md` | Implementada el 2026-09-22 (ADR-022) |
 | `publicacion.md` | Implementada el 2026-09-29 (ADR-024) |
+| `changeset-review.md` | Implementada el 2026-10-15 (ADR-028) |

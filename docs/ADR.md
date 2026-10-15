@@ -1240,3 +1240,44 @@ subcomando nuevo cubre sólo la suelta.
 y el aviso al sitio lo nombran así. `iniciar` no cambia de forma; la
 instalación y la adaptación de una skill se sacan a funciones que comparten
 los dos comandos.
+
+## ADR-028 — Con Changesets, `changeset-review` reemplaza a `version-bump`, como skill aparte y detectada por el repo
+
+- **Fecha:** 2026-10-15
+- **Estado:** aceptada. Extiende ADR-019 (la entrevista adapta las skills) y
+  ADR-025 (la selección de skills). Spec en `docs/specs/changeset-review.md`.
+
+**Contexto.** En un monorepo que versiona con Changesets, `version-bump` choca en
+todo. Escribe una sola versión en todos los manifiestos y la sube una vez por
+sesión. Busca tags `v*` y fecha el CHANGELOG. En ese repo todo eso lo hace
+`changeset version` al mergear el PR de versiones. Lo que hace falta ahí es
+revisar que el tipo de cada changeset corresponda al diff. Esa revisión ya
+funcionaba como skill local en el sistema de diseño Marimba.
+
+**Decisión.**
+
+1. `changeset-review` es una skill aparte, la duodécima. Sólo reporta.
+2. `init` la detecta por `.changeset/config.json`, sin pregunta nueva. Con ese
+   archivo, la pone en lugar de `version-bump` en las skills por defecto, en
+   las sugeridas por el perfil y en las marcadas de la entrevista, y no
+   pregunta `manifiesto`. `--skills` sigue mandando.
+3. Su adaptación se deduce del repo sin preguntar nada: los paquetes del
+   workspace, la rama base del config, la forma del tag (del último tag o, sin
+   tags, la convención de Changesets) y el PR de versiones (la rama
+   `changeset-release/<base>` y el título del flujo que usa
+   `changesets/action`).
+4. El Paso 6 de `protocolo-cierre` se resuelve en su bloque de adaptación, sin
+   tocar su cuerpo.
+
+**Alternativas.** *Un modo de `version-bump`*: no comparten ningún paso, sólo
+las reglas SemVer, y su descripción haría que se cargara en el repo
+equivocado. *Preguntar en la entrevista si hay Changesets*: el archivo lo dice
+sin margen de error. *Pedir a mano el título del PR*: está en el flujo de CI, y
+leerlo es determinista. *Bifurcar el cuerpo de `protocolo-cierre`*: obligaría
+a revisar su capítulo con el sitio, y el bloque de adaptación ya existe para
+esto.
+
+**Consecuencias.** `init` instala cosas distintas según lo que encuentra en el
+repo; hasta ahora sólo dependía del perfil y de las banderas. El paquete pasa de
+11 a 12 skills, y ese número lo repite el sitio: hay que avisarle con el
+publish.

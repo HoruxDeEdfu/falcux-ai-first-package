@@ -115,9 +115,22 @@ export const SKILLS_FIJAS = ['protocolo-features', 'protocolo-cambios', 'protoco
 
 const SKILLS_UX = ['protocolo-ux', 'ux-writer', 'ux-audit'];
 
+/** La que revisa los changesets. Con Changesets, ocupa el lugar de `version-bump` (ADR-028). */
+export const SKILL_CHANGESETS = 'changeset-review';
+
+/**
+ * Las mismas skills con la que versiona en su sitio: `changeset-review` en vez
+ * de `version-bump` cuando el repo versiona con Changesets, que escribe los
+ * números por su cuenta.
+ */
+export function conVersionador(skills: string[], changesets: boolean): string[] {
+  // Siempre una copia: quien la recibe le agrega las de su perfil.
+  return skills.map((s) => (changesets && s === 'version-bump' ? SKILL_CHANGESETS : s));
+}
+
 /** Qué skills tiene sentido instalar para este perfil, antes de aplicar `--skills`. */
-export function skillsDelPerfil(perfil: Perfil): string[] {
-  const salida = [...SKILLS_BASE];
+export function skillsDelPerfil(perfil: Perfil, changesets = false): string[] {
+  const salida = conVersionador(SKILLS_BASE, changesets);
   if (perfil.producto === 'saas' || perfil.producto === 'movil') {
     salida.push(...SKILLS_UX, 'information-architecture');
   } else if (perfil.producto === 'landing') {
@@ -181,6 +194,7 @@ const ETIQUETA_SKILL: Record<string, string> = {
   'ux-audit': 'auditoría de la interfaz ya construida',
   'information-architecture': 'qué es cada cosa, cómo se llama y dónde vive',
   i18n: 'internacionalización en interfaz, correos y datos',
+  [SKILL_CHANGESETS]: 'revisa los changesets pendientes contra el diff antes de publicar',
 };
 
 const ETIQUETA_PRODUCTO: Record<Producto, string> = {
@@ -208,6 +222,12 @@ const FASES: Opcion[] = [
  * que depende del producto— las arma `preguntasDependientes`.
  */
 export function preguntasBase(e: Escaneo): Pregunta[] {
+  // Con Changesets, los manifiestos los escribe `changeset version`: no hay
+  // un archivo de versión que preguntar (ADR-028).
+  return preguntasDeTodas(e).filter((p) => !(e.changesets && p.clave === 'manifiesto'));
+}
+
+function preguntasDeTodas(e: Escaneo): Pregunta[] {
   return [
     {
       clave: 'proyecto',
@@ -291,9 +311,9 @@ export function preguntaDeSecuencia(producto: Producto): Pregunta {
  * Las skills que se pueden elegir, con las que el perfil sugiere ya marcadas.
  * Las fijas no se ofrecen: la ayuda dice que van siempre.
  */
-export function preguntaDeSkills(disponibles: string[], perfil: Perfil): Pregunta {
+export function preguntaDeSkills(disponibles: string[], perfil: Perfil, changesets = false): Pregunta {
   const opcionales = disponibles.filter((n) => !SKILLS_FIJAS.includes(n));
-  const sugeridas = [...skillsDelPerfil(perfil), SKILL_ARRANQUE].filter((n) => opcionales.includes(n));
+  const sugeridas = [...skillsDelPerfil(perfil, changesets), SKILL_ARRANQUE].filter((n) => opcionales.includes(n));
   return {
     clave: 'skills',
     enunciado: '¿Qué skills instalo, además de los protocolos?',
@@ -443,7 +463,7 @@ export async function entrevistar(escaneo: Escaneo, leer: Lector, alcance?: Alca
 
   for (const p of preguntasBase(escaneo)) await responder(p);
   await responder(preguntaDeSecuencia(perfilDe(respuestas).producto));
-  if (alcance?.skills) await responder(preguntaDeSkills(alcance.skills, perfilDe(respuestas)));
+  if (alcance?.skills) await responder(preguntaDeSkills(alcance.skills, perfilDe(respuestas), escaneo.changesets !== undefined));
   if (alcance) for (const p of preguntasDePuntoDeControl(alcance)) await responder(p);
   for (const p of preguntasDeZonas(escaneo)) await responder(p);
 

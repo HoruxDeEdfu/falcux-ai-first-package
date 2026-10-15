@@ -20,7 +20,7 @@ npx @falcux/ai-first init
 enlace `.claude/skills` para Claude Code y deja además lo que los protocolos
 asumen: `AI-FIRST.md`, el registro de decisiones, el de sesión y la carpeta de
 cambios, más un bloque en `AGENTS.md` que dice dónde escribe cada skill. Con
-`--skills todas` instala las once; con `--skills i18n,ux-writer` eliges. Con
+`--skills todas` instala las doce; con `--skills i18n,ux-writer` eliges. Con
 `--enlazar` deja enlaces simbólicos relativos en vez de copias, para quien
 vendoriza las skills en un monorepo.
 
@@ -101,7 +101,7 @@ Luego **adapta cada skill a tu proyecto**. Todas traen una sección «Adaptació
 
 ## Si un nombre ya está ocupado
 
-Seis de las once llevan nombres de oficio —`i18n`, `test-fix`, `version-bump`,
+Seis de las doce llevan nombres de oficio —`i18n`, `test-fix`, `version-bump`,
 `ux-writer`, `ux-audit`, `information-architecture`— y tu proyecto puede tener ya
 una skill con alguno. El estándar *Agent Skills* no tiene namespacing: el
 directorio es plano y el nombre es la clave. Cada herramienta resuelve el empate
@@ -151,6 +151,7 @@ que deja escrita la equivalencia en tu `AGENTS.md` mientras las dos convivan.
 | `ux-audit` | Auditoría de 4 capas con reporte y severidades | 2 scripts de la Capa 1: análisis estático y fidelidad de skeletons | Antes de mergear frontend |
 | `i18n` | Las 3 capas de internacionalización | 3 referencias, una por capa | Al agregar textos, plantillas o catálogos |
 | `version-bump` | SemVer desde el historial de commits | — | Al cerrar una sesión de implementación |
+| `changeset-review` | En un repo con Changesets, el tipo de cada changeset pendiente contra el diff de su paquete, la major con su guía y si el lote amerita publicarse | — | Antes de mergear el PR de versiones. `init` la pone en lugar de `version-bump` cuando encuentra `.changeset/config.json` |
 | `information-architecture` | Qué es una cosa, cómo se llama en cada capa y dónde vive: naming, navegación vs. configuración, modelo de contenido, relaciones | — | Al crear, mover o renombrar un módulo, ruta, pestaña o ítem de navegación; antes de `protocolo-ux` |
 | `test-fix` | Correr los tests del alcance tocado, clasificar cada falla en mecánica o de negocio, corregir lo mínimo en máximo dos rondas | — | Después de implementar o cambiar algo; E2E sólo bajo decisión explícita |
 
@@ -158,7 +159,7 @@ Los archivos de apoyo viven dentro de la carpeta de cada skill (`references/`, `
 
 ## Lo que estas skills asumen del proyecto
 
-Cinco de las once dan por hecho que el proyecto tiene los instrumentos del
+Cinco de las doce dan por hecho que el proyecto tiene los instrumentos del
 capítulo «Gobierno del contexto» (Parte II del manual). Ninguna falla sin ellos,
 pero rinden menos:
 
@@ -172,7 +173,7 @@ registro de decisiones que arranca en el mes seis nace con seis meses de huecos.
 
 ## Orden de adopción sugerido
 
-No instales las once el primer día. La progresión que funciona:
+No instales las doce el primer día. La progresión que funciona:
 
 0. **Declara tus Zonas Prohibidas y abre un `docs/ADR.md` vacío.** No es una skill, son
    diez minutos, y es lo que hace que los cuatro protocolos tengan dónde escribir.
@@ -195,6 +196,7 @@ protocolo-arranque ──> information-architecture ──> protocolo-ux ──>
                                           └──> test-fix
                      protocolo-cambios ───┘
                      protocolo-cierre ────────> version-bump
+                                      └─────────> changeset-review   (con Changesets)
 ```
 
 Las flechas indican «invoca» o «asume cargada», no un orden de instalación obligatorio: cada skill funciona por separado. La única que se corre **una sola vez** es `protocolo-arranque`: produce la spec que `protocolo-features` da por hecha en su Paso 1.

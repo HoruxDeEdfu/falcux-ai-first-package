@@ -12,6 +12,28 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
+## [0.8.0] — 2026-10-15
+
+### Añadido
+
+- **`changeset-review`, la duodécima skill**, para repos que versionan con
+  Changesets. Revisa cada changeset pendiente contra el diff de su paquete:
+  si su tipo (major, minor, patch o vacío) corresponde a lo que cambió, si una
+  major trae su guía de migración y si el lote ya amerita mergear el PR de
+  versiones. Sólo reporta: no edita changesets ni mergea.
+- **`init` detecta Changesets** por `.changeset/config.json`. Con ese archivo,
+  instala `changeset-review` en lugar de `version-bump` y no pregunta por el
+  manifiesto. La adapta sin preguntar nada, con lo que encuentra en el repo:
+  los paquetes, la rama base, la forma de los tags y el título del PR de
+  versiones. En esos repos, el Paso 6 de `protocolo-cierre` pide comprobar el
+  changeset de la sesión en vez de subir un número. `--skills` sigue mandando.
+
+### Cambiado
+
+- **El aviso al inicio del bloque de adaptación** dice ahora que lo escribió
+  `init` con lo que respondió la entrevista y con lo que encontró en el repo.
+  Cambia dentro de las marcas en la siguiente corrida con entrevista.
+
 ## [0.7.0] — 2026-10-15
 
 ### Añadido

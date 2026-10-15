@@ -3,7 +3,7 @@
 [![npm](https://img.shields.io/npm/v/@falcux/ai-first)](https://www.npmjs.com/package/@falcux/ai-first)
 
 El material de la metodología [Falcux AI-First](https://ai-first.falcux.com),
-listo para llevar a un proyecto: 8 templates de documentos, 11 skills ejecutables
+listo para llevar a un proyecto: 8 templates de documentos, 12 skills ejecutables
 y el detector de entropía documental. Cubre el ciclo entero: desde una idea sin
 escribir hasta un repo gobernado que se audita solo.
 
@@ -17,7 +17,7 @@ escribir hasta un repo gobernado que se audita solo.
 | | Dónde | Estado |
 |---|---|---|
 | 8 templates de documentos (AGENTS.md, PRD, guía de diseño, arquitectura, documentos vivos) | `templates/` | publicados; viajan en el tarball |
-| 11 skills para agentes de código (Claude Code, Codex, Cursor, OpenCode, Kimi Code) | `skills/` | publicadas; `init` las instala — [cómo](skills/README.md) |
+| 12 skills para agentes de código (Claude Code, Codex, Cursor, OpenCode, Kimi Code) | `skills/` | publicadas; `init` las instala — [cómo](skills/README.md) |
 | Detector de entropía (`ai-first audit`) | `src/` | publicado |
 | `ai-first init`: escribe `AI-FIRST.md` y el ADR, instala las skills, crea `docs/` y mantiene su bloque en `AGENTS.md` | `src/init.ts` | publicado |
 | La entrevista de `init`: adapta cada skill instalada a tu proyecto | `src/entrevista.ts` | publicada desde la 0.4.0 |
@@ -72,7 +72,8 @@ node dist/src/cli.js audit --raiz /ruta/a/tu/proyecto
 documentos que ya existen; un `docs/ADR.md` vacío; el registro de sesión y la
 carpeta de cambios que los protocolos asumen; las cinco skills sin interfaz en
 `.agents/skills/` con el enlace para Claude Code (`--skills todas` para las
-once, `--enlazar` para enlaces en vez de copias); y un bloque delimitado en
+doce, `--enlazar` para enlaces en vez de copias; con Changesets,
+`changeset-review` va en lugar de `version-bump`); y un bloque delimitado en
 `AGENTS.md` que dice dónde escribe cada skill. Nunca sobreescribe: lo que ya
 existe lo reporta como saltado y sigue, y fuera de sus marcas en `AGENTS.md` no
 toca nada. Los templates de `templates/` los consume `protocolo-arranque`, que
@@ -106,7 +107,7 @@ ai-first --version                  # la versión instalada
 ```bash
 ai-first init --entrevista          # entrevista aunque el proyecto ya esté documentado
 ai-first init --sin-entrevista      # no pregunta nunca
-ai-first init --skills todas        # las once, sin preguntar cuáles
+ai-first init --skills todas        # las doce, sin preguntar cuáles
 ai-first init --enlazar             # enlaces simbólicos en vez de copias
 ai-first init --skills i18n         # agrega una skill a un repo ya configurado, adaptada
 ai-first skill test-fix             # sólo la skill, sin la metodología ni git

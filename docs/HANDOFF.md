@@ -1,6 +1,6 @@
 # Handoff — `@falcux/ai-first`
 
-El paquete: los 8 templates, las 11 skills y el detector de
+El paquete: los 8 templates, las 12 skills y el detector de
 entropía documental. El sitio de la metodología tiene su propio handoff en el
 repo `falcux-ai-first-docs-web`; acá sólo lo que es del paquete y lo que los
 dos comparten. Este repo se llama `falcux-ai-first-package` desde el
@@ -1327,7 +1327,17 @@ el CHANGE_LOG, y versionado como `0.7.0`. **Falta publicarla**: Charlie avanza
 formato de `AI-FIRST.md`, con las claves `perfil` y `adaptacion` en §5 de la
 spec, y la CLI gana el comando `skill`.
 
-### Pendiente: `changeset-review`, para monorepos con Changesets (2026-10-15)
+### `changeset-review` implementada, para monorepos con Changesets (2026-10-15, ADR-028)
+
+**Implementada en la sesión 22**, con spec en `docs/specs/changeset-review.md`.
+Es la duodécima skill. `init` la pone en lugar de `version-bump` cuando
+encuentra `.changeset/config.json`, y la adapta con lo que deduce del repo sin
+preguntar: los paquetes, la rama base, la forma del tag y el PR de versiones. El
+Paso 6 de `protocolo-cierre` se resuelve en su bloque, sin tocar su cuerpo.
+Sigue abierto lo del final de esta sección: la regla «NO desincronizar
+versiones» de `version-bump` en un monorepo sin Changesets. Lo que sigue es la
+planificación tal como se escribió.
+
 
 En un monorepo que versiona con Changesets, `version-bump` choca en todo:
 escribe la misma versión en todos los manifiestos, sube la versión por sesión,

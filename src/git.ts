@@ -155,3 +155,13 @@ export function cuerposDeCommits(raiz: string, base: string): string[] {
   if (!salida) return [];
   return salida.split(SEPARADOR_COMMITS).map((c) => c.trim()).filter(Boolean);
 }
+
+/**
+ * El tag más reciente del repo, sea cual sea su forma, o `undefined` si no hay
+ * ninguno o no es un repo. Lo usa `init` para leer la forma de los tags en vez
+ * de suponerla: `v1.2.0` en un repo de un paquete, `@acme/ui@1.2.0` con
+ * Changesets en un monorepo.
+ */
+export function ultimoTag(raiz: string): string | undefined {
+  return lineas(gitOpcional(raiz, ['tag', '--list', '--sort=-creatordate']))[0];
+}

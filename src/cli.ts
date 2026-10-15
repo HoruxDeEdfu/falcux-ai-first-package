@@ -90,7 +90,9 @@ Opciones de init:
   --skills <lista> Cuáles instalar, separadas por comas, o «todas». Por defecto,
                    las cinco sin interfaz: protocolo-features, protocolo-cambios,
                    protocolo-cierre, version-bump, test-fix; con entrevista, las
-                   que se elijan en ella.
+                   que se elijan en ella. Si el repo tiene
+                   .changeset/config.json, changeset-review va en lugar de
+                   version-bump.
   --entrevista     Entrevista aunque el proyecto ya esté documentado.
   --sin-entrevista No entrevista nunca, ni en un repo vacío.
   --sin-hook       No escribe el hook de git ni toca core.hooksPath.

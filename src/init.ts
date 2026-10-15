@@ -24,10 +24,11 @@ import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readF
 import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NOMBRE_ARCHIVO, interpretar, ErrorAiFirst, type AiFirst, type Perfil } from './ai-first-md.js';
-import { esRepoGit, fijarHooksPath, hooksPathConfigurado, inicializarRepo, listarArchivos } from './git.js';
+import { parse as parseYaml } from 'yaml';
+import { esRepoGit, fijarHooksPath, hooksPathConfigurado, inicializarRepo, listarArchivos, ultimoTag } from './git.js';
 import { coincide } from './glob.js';
-import { bloqueDeSkill, clavesQueLeen, CLAVES_GUARDADAS, ENCABEZADO_ADAPTACION, skillsAdaptables } from './adaptacion.js';
-import { perfilDe, skillsDelPerfil, SKILL_ARRANQUE, SKILLS_FIJAS, type AlcanceEntrevista, type Respuestas } from './entrevista.js';
+import { bloqueDeSkill, clavesQueLeen, CLAVES_GUARDADAS, ENCABEZADO_ADAPTACION, seDeduceDelRepo, skillsAdaptables } from './adaptacion.js';
+import { conVersionador, perfilDe, skillsDelPerfil, SKILL_ARRANQUE, SKILLS_FIJAS, type AlcanceEntrevista, type Respuestas } from './entrevista.js';
 
 export interface Sugerencia {
   ruta: string;
@@ -50,6 +51,95 @@ export interface Escaneo {
   rutaAdr: string;
   adrExiste: boolean;
   componentesDir?: string;
+  /** Si el repo versiona con Changesets, lo que se deduce para `changeset-review` (ADR-028). */
+  changesets?: Changesets;
+}
+
+export interface Changesets {
+  /** Los paquetes que versiona: los del workspace con `name`, menos los de `ignore`. */
+  paquetes: string[];
+  /** `baseBranch` del config, o `main`. */
+  base: string;
+  /** Si hay workspace. Decide la convención de los tags: `<paquete>@<versión>` aunque haya un solo paquete. */
+  monorepo: boolean;
+  /** El tag más reciente del repo, para leer su forma. Ausente si no hay tags. */
+  ultimoTag?: string;
+  /** El título del PR de versiones, del paso con `changesets/action`. Ausente si no se encontró. */
+  tituloPr?: string;
+}
+
+/** Lee un JSON o YAML del repo; lo que no se puede leer no detiene a init. */
+function leerDato(raiz: string, ruta: string, formato: 'json' | 'yaml'): unknown {
+  try {
+    const texto = readFileSync(join(raiz, ruta), 'utf8');
+    return formato === 'json' ? JSON.parse(texto) : parseYaml(texto);
+  } catch {
+    return undefined;
+  }
+}
+
+const esMapa = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+const cadenas = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+
+/**
+ * Changesets, si `.changeset/config.json` está: es el archivo que crea
+ * `changeset init`, y sin él la herramienta no corre. Un `@changesets/cli` en
+ * las dependencias sin config no cuenta.
+ */
+function detectarChangesets(raiz: string, lista: string[]): Changesets | undefined {
+  if (!lista.includes('.changeset/config.json')) return undefined;
+  const config = leerDato(raiz, '.changeset/config.json', 'json');
+  const base = esMapa(config) && typeof config['baseBranch'] === 'string' ? config['baseBranch'] : 'main';
+  const ignorados = cadenas(esMapa(config) ? config['ignore'] : undefined);
+
+  // Los globs del workspace: pnpm los pone en su archivo; npm, yarn y bun, en `workspaces`.
+  const raizPkg = leerDato(raiz, 'package.json', 'json');
+  let globs: string[] = [];
+  if (lista.includes('pnpm-workspace.yaml')) {
+    const ws = leerDato(raiz, 'pnpm-workspace.yaml', 'yaml');
+    globs = cadenas(esMapa(ws) ? ws['packages'] : undefined);
+  } else if (esMapa(raizPkg)) {
+    const ws = raizPkg['workspaces'];
+    globs = cadenas(esMapa(ws) ? ws['packages'] : ws);
+  }
+
+  // Sin workspace, el único paquete es el de la raíz.
+  const manifiestos = globs.length === 0
+    ? ['package.json']
+    : lista.filter((r) => {
+        if (!r.endsWith('/package.json')) return false;
+        const dentro = (g: string) => coincide(`${g.replace(/\/+$/, '')}/package.json`, r);
+        return globs.some((g) => !g.startsWith('!') && dentro(g)) && !globs.some((g) => g.startsWith('!') && dentro(g.slice(1)));
+      });
+  const paquetes = manifiestos
+    .map((m) => leerDato(raiz, m, 'json'))
+    .map((pkg) => (esMapa(pkg) && typeof pkg['name'] === 'string' ? pkg['name'] : undefined))
+    .filter((n): n is string => n !== undefined && !ignorados.some((i) => i === n || coincide(i, n)))
+    .sort();
+
+  const salida: Changesets = { paquetes, base, monorepo: globs.length > 0 };
+  const tag = ultimoTag(raiz);
+  if (tag) salida.ultimoTag = tag;
+  const titulo = tituloDelPrDeVersiones(raiz, lista);
+  if (titulo) salida.tituloPr = titulo;
+  return salida;
+}
+
+/** El `title` del paso que usa `changesets/action` en algún flujo de `.github/workflows/`. */
+function tituloDelPrDeVersiones(raiz: string, lista: string[]): string | undefined {
+  for (const flujo of lista.filter((r) => coincide('.github/workflows/*.y*ml', r))) {
+    const datos = leerDato(raiz, flujo, 'yaml');
+    const trabajos = esMapa(datos) && esMapa(datos['jobs']) ? Object.values(datos['jobs']) : [];
+    for (const trabajo of trabajos) {
+      const pasos = esMapa(trabajo) && Array.isArray(trabajo['steps']) ? trabajo['steps'] : [];
+      for (const paso of pasos) {
+        if (!esMapa(paso) || typeof paso['uses'] !== 'string' || !paso['uses'].startsWith('changesets/action')) continue;
+        const con = paso['with'];
+        if (esMapa(con) && typeof con['title'] === 'string') return con['title'];
+      }
+    }
+  }
+  return undefined;
 }
 
 // Candidatas, sólo si existen en el repo. La razón la completa el humano; acá
@@ -168,6 +258,8 @@ export function escanear(raiz: string, lista: string[] = listarArchivos(raiz)): 
   if (lint) salida.lint = lint;
   if (manifiesto) salida.manifiesto = manifiesto;
   if (componentesDir) salida.componentesDir = componentesDir;
+  const changesets = detectarChangesets(raiz, lista);
+  if (changesets) salida.changesets = changesets;
   return salida;
 }
 
@@ -735,8 +827,8 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
     elegidasEnEntrevista !== undefined
       ? [...SKILLS_FIJAS, ...elegidasEnEntrevista.split(',').filter(Boolean)]
       : perfil
-        ? [...skillsDelPerfil(perfil), SKILL_ARRANQUE]
-        : SKILLS_POR_DEFECTO;
+        ? [...skillsDelPerfil(perfil, escaneo.changesets !== undefined), SKILL_ARRANQUE]
+        : conVersionador(SKILLS_POR_DEFECTO, escaneo.changesets !== undefined);
   const elegidas = elegirSkills(opciones.skills, disponibles, porDefecto);
   const sinHook = opciones.sinHook || respuestas?.['hook'] === 'no';
   const sinCi = opciones.sinCi || respuestas?.['ci'] === 'no';
@@ -793,13 +885,17 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
   // con lo que guardó una entrevista anterior en AI-FIRST.md (ADR-026): una que
   // ya estaba puede tener la mano del humano dentro de las marcas, y esta
   // corrida no tiene nada nuevo que decirle. Sin AI-FIRST.md previo no hay
-  // entrevista anterior que reconstruir, y nada se toca, como siempre.
+  // entrevista anterior que reconstruir, y sólo se adapta lo que sale entero
+  // del repo, que no necesita respuestas (ADR-028).
   if (respuestas) {
     for (const nombre of elegidas) {
       items.push(adaptarSkill(carpetaSkills, nombre, respuestas, escaneo));
     }
-  } else if (previo) {
-    const adaptables = escritas.filter((n) => skillsAdaptables().includes(n));
+  } else {
+    for (const nombre of escritas.filter((n) => hayQueDeducir(n, escaneo))) items.push(adaptarSkill(carpetaSkills, nombre, {}, escaneo));
+  }
+  if (!respuestas && previo) {
+    const adaptables = escritas.filter((n) => skillsAdaptables().includes(n) && !seDeduceDelRepo(n));
     const guardadas = previo.contrato && respuestasGuardadas(previo.contrato);
     if (guardadas && previo.contrato) {
       const delContrato = escaneoDelContrato(escaneo, previo.contrato);
@@ -994,10 +1090,12 @@ export async function instalarSkillsSueltas(opciones: OpcionesSkill): Promise<Re
   const items: ItemInstalado[] = [];
   const escritas = instalarSkills(carpetaSkills, elegidas, origenSkills, enlazar, items);
   for (const nombre of escritas) {
-    if (adaptables.includes(nombre)) {
+    // Lo que se deduce del repo y el repo no trae —changeset-review sin
+    // Changesets— no tiene nada que escribir ni que sugerir.
+    if (adaptables.includes(nombre) && (!seDeduceDelRepo(nombre) || hayQueDeducir(nombre, escaneo))) {
       items.push(
-        respuestas
-          ? adaptarSkill(carpetaSkills, nombre, respuestas, entrevistadas ? escaneoCrudo : escaneo)
+        respuestas || hayQueDeducir(nombre, escaneo)
+          ? adaptarSkill(carpetaSkills, nombre, respuestas ?? {}, entrevistadas ? escaneoCrudo : escaneo)
           : {
               ruta: `${CARPETA_SKILLS}/${nombre}/SKILL.md`,
               estado: 'sugerido',
@@ -1015,6 +1113,11 @@ export async function instalarSkillsSueltas(opciones: OpcionesSkill): Promise<Re
   }
   items.push(enlazarParaClaude(raiz, carpetaSkills));
   return resultado(escaneo, items);
+}
+
+/** ¿La skill se adapta sólo con el repo, y el repo trae con qué? (ADR-028) */
+function hayQueDeducir(nombre: string, escaneo: Escaneo): boolean {
+  return seDeduceDelRepo(nombre) && bloqueDeSkill(nombre, {}, escaneo) !== undefined;
 }
 
 /** Los archivos de la raíz, sin bajar: lo que ve `escanear` en una carpeta sin git. */

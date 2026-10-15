@@ -10,6 +10,59 @@
 
 ---
 
+## 2026-10-15 (sesión 22) — `changeset-review`: la duodécima skill, detectada por Changesets
+
+### Resumen
+Feature nuevo por `protocolo-features`. Spec escrita, validada por Charlie e
+implementada en la misma sesión que publicó la `0.7.0`.
+
+### Pre-implementación
+- Spec en `docs/specs/changeset-review.md`, a partir de la skill local de
+  Marimba y del HANDOFF. Charlie la validó con las dos recomendaciones: leer el
+  título del PR de versiones del flujo, y escribir ADR-028.
+- Reuso: `escanear` se extiende, `git.ts` gana `ultimoTag`, `adaptacion.ts`
+  suma una entrada y `yaml` lee el workspace y los flujos. No entra ninguna
+  dependencia.
+
+### Implementación
+- `skills/changeset-review/SKILL.md`: los seis pasos de Marimba, con señales
+  genéricas. Las de un sistema de diseño quedaron como ejemplo en la adaptación.
+- `src/init.ts`: `detectarChangesets` deduce los paquetes del workspace sin los
+  de `ignore` ni los excluidos con `!`, la rama base, el último tag, si hay
+  workspace y el título del PR. Lo que sale entero del repo se adapta aunque no
+  haya entrevista.
+- `src/entrevista.ts`: `conVersionador` cambia `version-bump` por
+  `changeset-review`. Con Changesets no se pregunta `manifiesto`.
+- `src/adaptacion.ts`: el bloque de `changeset-review`, la rama Changesets del
+  de `protocolo-cierre` y `seDeduceDelRepo`. El encabezado del bloque nombra
+  también al repo.
+- Conteos de once a doce en README, `skills/README.md`, `AGENTS.md` y HANDOFF.
+  Ayuda del CLI al día.
+- Aparte, por aviso del sitio: `docs/SPEC-PAQUETE.md` §8 nombra los seis
+  comandos, contando `skill`.
+
+### Validación
+- typecheck → PASS (`tsc` dentro de `pnpm test`)
+- lint      → no aplica
+- tests     → PASS, 154 / 154 por exit code (eran 149). Dos rondas:
+  - `conVersionador` devolvía la lista original, y `skillsDelPerfil` la mutaba;
+  - con `--skills todas` y sin Changesets salía un ítem «la entrevista no
+    aporta nada» para `changeset-review`, y ahora no sale.
+- `audit:self` → 0 / 100
+- Versión: `0.7.0` → `0.8.0` (MINOR: una skill nueva y un `init` que instala
+  distinto con Changesets)
+- A mano, sobre un monorepo de un paquete: el bloque daba la convención `v<versión>`.
+  Changesets usa `<paquete>@<versión>` en todo monorepo; se corrigió y se
+  anotó en la spec.
+
+### Pendiente para la siguiente sesión
+- [ ] Publicar y avisar al sitio: el paquete pasa de 11 a 12 skills, y `init`
+      cambia lo que instala con Changesets.
+- [ ] La regla «NO desincronizar versiones» de `version-bump` en monorepos sin
+      Changesets. Sigue abierta en el HANDOFF.
+
+---
+
 ## 2026-10-15 (sesión 21) — CHG-026: una skill agregada después sale adaptada, y `ai-first skill` instala skills sueltas
 
 ### Resumen

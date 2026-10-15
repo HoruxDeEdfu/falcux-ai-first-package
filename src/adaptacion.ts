@@ -152,7 +152,37 @@ const ADAPTACIONES: Record<string, Adaptacion> = {
     const guia = c.escaneo.artefactos['guia_diseno'];
     if (guia) l.push(`| Guía de diseño | \`${guia}\` |`);
     l.push('', `**La verificación previa al cierre:** \`${verificacionO(c, 'la suite del proyecto')}\`.`);
-    if (c.respuestas['manifiesto'] === '') l.push('', '**Este proyecto no versiona:** el Paso 6 no aplica.');
+    if (c.escaneo.changesets) {
+      // El cuerpo de la skill no se toca: asume «Gobierno del contexto» (ADR-028).
+      l.push(
+        '',
+        '**Este proyecto versiona con Changesets.** En el Paso 6 no se sube ningún número: lo sube `changeset version` al mergear el PR de versiones. ' +
+          'Comprueba con `changeset status` que la sesión dejó su changeset, o uno vacío si no cambió nada publicado, y antes de mergear el PR de versiones corre `changeset-review`.',
+      );
+    } else if (c.respuestas['manifiesto'] === '') {
+      l.push('', '**Este proyecto no versiona:** el Paso 6 no aplica.');
+    }
+    return l;
+  } },
+
+  'changeset-review': { lee: [], escribir: (c) => {
+    const cs = c.escaneo.changesets;
+    if (!cs) return undefined;
+    const l: string[] = [];
+    if (cs.paquetes.length > 0) l.push(`**Los paquetes que versiona:** ${cs.paquetes.map((p) => `\`${p}\``).join(', ')}.`, '');
+    l.push(`**La rama base:** \`${cs.base}\`.`, '');
+    l.push(
+      cs.ultimoTag
+        ? `**La forma de los tags**, leída del último: \`${cs.ultimoTag}\`. El último tag de cada paquete sale de \`git tag --list\` con esa forma.`
+        : cs.monorepo
+          ? '**La forma de los tags:** todavía no hay ninguno. La convención de Changesets en un monorepo es `<paquete>@<versión>`.'
+          : '**La forma de los tags:** todavía no hay ninguno. La convención de Changesets en un repo de un solo paquete es `v<versión>`.',
+      '',
+    );
+    l.push(
+      `**El PR de versiones:** la rama \`changeset-release/${cs.base}\`, con el título «${cs.tituloPr ?? 'Version Packages'}»` +
+        (cs.tituloPr ? '.' : ', el que pone `changesets/action` por defecto: no se encontró otro en `.github/workflows/`.'),
+    );
     return l;
   } },
 
@@ -220,8 +250,9 @@ export function bloqueDeSkill(nombre: string, respuestas: Respuestas, escaneo: E
   const lineas = adaptar.escribir({ respuestas, escaneo, perfil: perfilDe(respuestas) });
   if (!lineas || lineas.length === 0) return undefined;
   return [
-    '> Esto lo escribió `ai-first init` con las respuestas de la entrevista. Cada',
-    '> corrida reescribe lo que hay entre las marcas; edita fuera de ellas.',
+    '> Esto lo escribió `ai-first init` con lo que respondió la entrevista y lo que',
+    '> encontró en el repo. Cada corrida reescribe lo que hay entre las marcas;',
+    '> edita fuera de ellas.',
     '',
     ...lineas,
     '',
@@ -250,4 +281,13 @@ export function clavesQueLeen(nombres: string[]): string[] {
  * las que leen las skills y no viven ya en otra clave del frontmatter
  * —`perfil`, `verificacion`, `fase`— (ADR-026).
  */
+/**
+ * ¿La adaptación de esta skill sale entera del repo? Entonces se escribe sin
+ * entrevista ni respuestas guardadas, como el bloque de AGENTS.md: no hay nada
+ * que inventar (ADR-028).
+ */
+export function seDeduceDelRepo(nombre: string): boolean {
+  return ADAPTACIONES[nombre]?.lee.length === 0;
+}
+
 export const CLAVES_GUARDADAS = ['secuencia', 'agentes', 'typecheck', 'lint', 'manifiesto'];

@@ -831,3 +831,102 @@ test('ai-first skill en un repo configurado adapta con lo guardado y no escribe 
     const despues = foto(repo.raiz);
     for (const ruta of Object.keys(antes)) assert.equal(despues[ruta], antes[ruta], ruta);
   }));
+
+// ---------------------------------------------------------------------------
+// Changesets: changeset-review en lugar de version-bump (ADR-028)
+// ---------------------------------------------------------------------------
+
+function monorepoConChangesets(repo: Repo, { tag, titulo }: { tag?: string; titulo?: string } = {}) {
+  repo.escribir('package.json', JSON.stringify({ name: 'acme', private: true, scripts: { test: 'vitest' } }));
+  repo.escribir('pnpm-lock.yaml', '');
+  repo.escribir('pnpm-workspace.yaml', 'packages:\n  - packages/*\n  - "!packages/borrador"\n');
+  repo.escribir('packages/ui/package.json', JSON.stringify({ name: '@acme/ui', version: '1.2.0' }));
+  repo.escribir('packages/tokens/package.json', JSON.stringify({ name: '@acme/tokens', version: '0.3.0' }));
+  repo.escribir('packages/interno/package.json', JSON.stringify({ name: '@acme/interno', version: '0.0.1' }));
+  repo.escribir('packages/borrador/package.json', JSON.stringify({ name: '@acme/borrador' }));
+  repo.escribir('.changeset/config.json', JSON.stringify({ baseBranch: 'dev', ignore: ['@acme/interno'] }));
+  if (titulo) {
+    repo.escribir(
+      '.github/workflows/release.yml',
+      `on: push\njobs:\n  release:\n    runs-on: ubuntu-24.04\n    steps:\n      - uses: changesets/action@v1\n        with:\n          title: "${titulo}"\n`,
+    );
+  }
+  repo.commit('inicio');
+  if (tag) repo.git('tag', tag);
+}
+
+test('con Changesets, init instala changeset-review en lugar de version-bump y la adapta sin preguntar: criterios 1 y 3', () =>
+  conRepo(async (repo) => {
+    monorepoConChangesets(repo, { tag: '@acme/ui@1.2.0', titulo: 'chore: versionar paquetes' });
+
+    const { items } = await iniciar({ raiz: repo.raiz, hoy: '2026-10-15' });
+
+    assert.ok(existsSync(join(repo.raiz, '.agents/skills/changeset-review')));
+    assert.ok(!existsSync(join(repo.raiz, '.agents/skills/version-bump')));
+    assert.equal(items.find((i) => i.ruta === '.agents/skills/changeset-review/SKILL.md')?.estado, 'escrito', 'sale del repo: no necesita entrevista');
+    const skill = skillMd(repo.raiz, 'changeset-review');
+    assert.match(skill, /`@acme\/tokens`, `@acme\/ui`\./, 'los del workspace, sin el ignorado ni el excluido');
+    assert.match(skill, /rama base:\*\* `dev`/);
+    assert.match(skill, /`@acme\/ui@1\.2\.0`/, 'la forma del tag, leída del repo');
+    assert.match(skill, /changeset-release\/dev`, con el título «chore: versionar paquetes»\./);
+    assert.ok(!items.some((i) => i.ruta.startsWith('.agents/skills/protocolo-features/SKILL.md')), 'lo que necesita respuestas sigue sin tocarse');
+  }));
+
+test('sin tags ni flujo, la adaptación dice la convención y el título por defecto', () =>
+  conRepo(async (repo) => {
+    monorepoConChangesets(repo);
+    await iniciar({ raiz: repo.raiz, skills: ['changeset-review'] });
+    const skill = skillMd(repo.raiz, 'changeset-review');
+    assert.match(skill, /todavía no hay ninguno\. La convención de Changesets en un monorepo es `<paquete>@<versión>`/);
+    assert.match(skill, /«Version Packages», el que pone `changesets\/action` por defecto/);
+  }));
+
+test('con Changesets, la entrevista no pregunta el manifiesto y marca changeset-review; cierre lo nombra: criterios 2 y 4', () =>
+  conRepo(async (repo) => {
+    monorepoConChangesets(repo);
+    const preguntadas: string[] = [];
+    let marcadas = '';
+    await iniciar({
+      raiz: repo.raiz,
+      hoy: '2026-10-15',
+      entrevistar: (escaneo, _documentado, alcance) =>
+        entrevistar(escaneo, async (p) => {
+          preguntadas.push(p.clave);
+          if (p.clave === 'skills') marcadas = p.porDefecto;
+          return p.clave === 'producto' ? 'api' : '';
+        }, alcance),
+    });
+
+    assert.ok(!preguntadas.includes('manifiesto'));
+    assert.ok(marcadas.split(',').includes('changeset-review') && !marcadas.split(',').includes('version-bump'), marcadas);
+    assert.ok(existsSync(join(repo.raiz, '.agents/skills/changeset-review')));
+    const cierre = skillMd(repo.raiz, 'protocolo-cierre');
+    assert.match(cierre, /versiona con Changesets/);
+    assert.match(cierre, /`changeset status`/);
+    assert.ok(!cierre.includes('Este proyecto no versiona'));
+  }));
+
+test('--skills manda sobre la detección, y sin .changeset/ nada cambia: criterio 5', () =>
+  conRepo(async (repo) => {
+    monorepoConChangesets(repo);
+    await iniciar({ raiz: repo.raiz, skills: ['version-bump'] });
+    assert.ok(existsSync(join(repo.raiz, '.agents/skills/version-bump')));
+    assert.ok(!existsSync(join(repo.raiz, '.agents/skills/changeset-review')));
+
+    const otro = crearRepo();
+    try {
+      otro.commit('inicio');
+      await iniciar({ raiz: otro.raiz });
+      assert.deepEqual(instaladas(otro.raiz), [...SKILLS_POR_DEFECTO].sort());
+    } finally {
+      otro.limpiar();
+    }
+  }));
+
+test('ai-first skill changeset-review la deja adaptada sin terminal: criterio 6', () =>
+  conRepo(async (repo) => {
+    monorepoConChangesets(repo, { tag: '@acme/tokens@0.3.0' });
+    const { items } = await instalarSkillsSueltas({ raiz: repo.raiz, nombres: ['changeset-review'] });
+    assert.equal(items.find((i) => i.ruta === '.agents/skills/changeset-review/SKILL.md')?.estado, 'escrito');
+    assert.match(skillMd(repo.raiz, 'changeset-review'), /`@acme\/tokens@0\.3\.0`/);
+  }));
