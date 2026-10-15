@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { bloqueDeSkill, ENCABEZADO_ADAPTACION } from '../src/adaptacion.js';
+import { bloqueDeSkill, clavesQueLeen, ENCABEZADO_ADAPTACION } from '../src/adaptacion.js';
 import {
   artefactosDelPerfil,
   cuantasPreguntas,
+  cuantasPreguntasPara,
   entrevistar,
+  entrevistarPara,
   esAfirmativo,
   formatearPregunta,
   interpretarOpcion,
@@ -255,4 +257,40 @@ test('lo que vino decidido por bandera no se pregunta', async () => {
   const sinAlcance: string[] = [];
   await entrevistar(escaneo(), async (p) => { sinAlcance.push(p.clave); return ''; });
   assert.ok(!sinAlcance.some((c) => ['skills', 'hook', 'ci'].includes(c)), 'sin alcance, la entrevista de antes');
+});
+
+test('una respuesta ausente se calla; sólo la vacía se escribe como «no hay»: CHG-026', () => {
+  const vacia = bloqueDeSkill('test-fix', { verificacion: 'pnpm test', typecheck: '', lint: '', agentes: 'no' }, escaneo());
+  assert.match(vacia ?? '', /no declara un comando de tipos/);
+
+  // Lo que reconstruye init de un AI-FIRST.md de la 0.6.x: sin typecheck, lint ni agentes.
+  const ausente = bloqueDeSkill('test-fix', { verificacion: 'pnpm test' }, escaneo());
+  assert.match(ausente ?? '', /pnpm test/);
+  assert.doesNotMatch(ausente ?? '', /no declara|Delegación/);
+
+  const cierre = bloqueDeSkill('protocolo-cierre', { verificacion: 'pnpm test' }, escaneo());
+  assert.doesNotMatch(cierre ?? '', /Este proyecto no versiona/, 'sin manifiesto guardado no se sabe si versiona');
+  assert.match(bloqueDeSkill('protocolo-cierre', { manifiesto: '' }, escaneo()) ?? '', /Este proyecto no versiona/);
+});
+
+test('sin perfil respondido, lo que depende del perfil no se adapta: no se inventa saas', () => {
+  assert.equal(bloqueDeSkill('protocolo-features', { verificacion: 'pnpm test' }, escaneo()), undefined);
+  assert.equal(bloqueDeSkill('protocolo-cambios', { verificacion: 'pnpm test' }, escaneo()), undefined);
+  assert.ok(bloqueDeSkill('test-fix', { verificacion: 'pnpm test' }, escaneo()), 'test-fix no lee el perfil');
+});
+
+test('la entrevista reducida pregunta sólo lo que leen las skills, y la secuencia arrastra al producto', async () => {
+  assert.deepEqual(clavesQueLeen(['version-bump', 'i18n']), ['manifiesto'], 'una skill sin adaptación no pide nada');
+  const claves = clavesQueLeen(['protocolo-features']);
+  assert.ok(claves.includes('secuencia') && !claves.includes('repositorio'));
+
+  const preguntadas: string[] = [];
+  const r = await entrevistarPara(escaneo({ verificacion: 'npm test' }), async (p) => {
+    preguntadas.push(p.clave);
+    return p.clave === 'producto' ? 'cli' : '';
+  }, ['secuencia', 'verificacion']);
+  assert.deepEqual(preguntadas, ['producto', 'verificacion', 'secuencia'], 'en el orden de la entrevista completa');
+  assert.deepEqual(r, { producto: 'cli', verificacion: 'npm test', secuencia: 'contrato-cli' });
+  assert.equal(cuantasPreguntasPara(escaneo(), ['secuencia', 'verificacion']), 3);
+  assert.equal(cuantasPreguntasPara(escaneo(), []), 0);
 });

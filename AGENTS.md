@@ -14,7 +14,7 @@ sin scope se descartó (ADR-011).
 ## Estructura
 
 ```
-src/cli.ts                 Entrada de `ai-first`. Dos comandos: init y audit.
+src/cli.ts                 Entrada de `ai-first`. Tres comandos: init, skill y audit.
 src/init.ts                Configura el repo: escanea, escribe, instala skills y las adapta.
 src/entrevista.ts          Las preguntas de init, como datos. El perfil decide qué se instala.
 src/adaptacion.ts          Qué respuesta va a qué skill, dentro de sus marcas.

@@ -193,6 +193,21 @@ actualizado: 2026-09-16
 # detector: audit mide documentación, no compila nada.
 verificacion: pnpm build && pnpm test
 
+# Qué clase de producto es y en qué forma de repositorio vive. Lo escribe la
+# entrevista de init; decide qué skills se sugieren y cómo se adaptan.
+perfil:
+  producto: saas                # saas | landing | api | cli | movil
+  repositorio: monorepo         # unico | monorepo | multiple
+
+# Lo que respondió la entrevista y no se deduce del repo. init lo usa para
+# adaptar las skills que se instalen después. audit no lo lee.
+adaptacion:
+  secuencia: "hexagonal"
+  agentes: "no"
+  typecheck: "pnpm typecheck"
+  lint: ""                      # vacío: este proyecto no tiene comando de lint
+  manifiesto: "package.json"
+
 zonas_prohibidas:
   - ruta: migrations/
     razon: esquema vivo en produccion
@@ -246,6 +261,11 @@ Notas de diseño:
   `audit --registrar` o desde el hook de cierre. Si cada `audit` tocara el archivo,
   el ruido en los diffs haría que el equipo lo ignore, que es como mueren los
   artefactos de estado.
+- **`perfil` y `adaptacion` son de `init`, no del detector.** Los dos son
+  opcionales. `adaptacion` guarda cadenas, todas entre comillas: una vacía es
+  una respuesta («no hay»), una clave ausente es una pregunta que nunca se hizo,
+  y la skill adaptada dice lo primero y calla lo segundo. Sin `perfil`, `init`
+  no adapta lo que instala después y lo reporta como sugerido (ADR-026).
 - **`formato: 1` permite migrar.** Un `AI-FIRST.md` de formato desconocido detiene
   al detector con un mensaje, no lo interpreta a medias.
 

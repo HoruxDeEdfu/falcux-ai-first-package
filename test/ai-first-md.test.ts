@@ -134,3 +134,16 @@ test('un perfil incompleto o con un valor desconocido es error de formato', () =
   assert.throws(() => interpretar(aiFirstMd('perfil:\n  producto: saas')), ErrorAiFirst);
   assert.throws(() => interpretar(aiFirstMd('perfil: saas')), ErrorAiFirst);
 });
+
+test('las respuestas guardadas en «adaptacion» se leen como cadenas, y son opcionales: CHG-026', () => {
+  const con = interpretar(aiFirstMd('adaptacion:\n  secuencia: "contrato-cli"\n  agentes: "no"\n  lint: ""'));
+  assert.deepEqual(con.adaptacion, { secuencia: 'contrato-cli', agentes: 'no', lint: '' }, 'la cadena vacía es respuesta');
+  assert.equal(interpretar(aiFirstMd()).adaptacion, undefined);
+});
+
+test('una respuesta guardada que no es cadena es error de formato', () => {
+  // `lint:` sin valor es null, y `agentes: false` un booleano: ninguno dice qué se respondió.
+  assert.throws(() => interpretar(aiFirstMd('adaptacion:\n  lint:')), ErrorAiFirst);
+  assert.throws(() => interpretar(aiFirstMd('adaptacion:\n  agentes: false')), ErrorAiFirst);
+  assert.throws(() => interpretar(aiFirstMd('adaptacion: contrato-cli')), ErrorAiFirst);
+});

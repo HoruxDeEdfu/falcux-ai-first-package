@@ -1309,19 +1309,23 @@ como cuando lo corre un agente, o con `--sin-entrevista`— queda sin
 `--skills` o se desmarca en la entrevista. El CHG pide un ítem `sugerido` con el
 comando para instalarla y una línea de cierre en el reporte. Está escrito, con
 las decisiones tomadas, en la carpeta de cambios pendientes. **Implementado
-el mismo día (sesión 20)** y cerrado en el CHANGE_LOG. La `0.6.2` lo lleva y
-está en `dev`, sin publicar: falta que Charlie avance `prod` y ponga el tag.
+el mismo día (sesión 20)** y cerrado en el CHANGE_LOG. Lo iba a llevar la
+`0.6.2`, que nunca salió: sale con la `0.7.0` (sesión 21), cuya entrada del
+CHANGELOG lo absorbe.
 
-### CHG-026 abierto: agregar una skill después de `init`, y skills sueltas (2026-10-15, ADR-026)
+### CHG-026 cerrado: agregar una skill después de `init`, y skills sueltas (2026-10-15, ADR-026 y ADR-027)
 
 `init --skills X` en un repo ya configurado instala la skill sin adaptar,
 porque la adaptación sólo corre con entrevista y las respuestas no se guardan.
 Tampoco hay forma de instalar una skill sin toda la metodología. CHG-026 guarda
 las respuestas en un mapa `adaptacion` del frontmatter de `AI-FIRST.md`, adapta
-sin entrevista lo que la corrida escribe y agrega `--solo-skills`. Las
-decisiones están tomadas en el CHG. **Falta implementarlo**: empieza por el
-análisis de impacto. Cambia el formato de `AI-FIRST.md` y la CLI, así que se
-avisa al sitio con la versión que lo publique.
+sin entrevista lo que la corrida escribe y agrega el subcomando
+`ai-first skill <nombres>` (ADR-027; ADR-026 lo había abierto como la bandera
+`--solo-skills`). **Implementado y cerrado en la sesión 21**, con resumen en
+el CHANGE_LOG, y versionado como `0.7.0`. **Falta publicarla**: Charlie avanza
+`prod` y el flujo publica. Después hay que avisar al sitio, porque cambia el
+formato de `AI-FIRST.md`, con las claves `perfil` y `adaptacion` en §5 de la
+spec, y la CLI gana el comando `skill`.
 
 ### Pendiente: `changeset-review`, para monorepos con Changesets (2026-10-15)
 

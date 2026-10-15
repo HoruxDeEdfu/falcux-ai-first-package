@@ -12,10 +12,22 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
-## [0.6.2] — 2026-10-15
+## [0.7.0] — 2026-10-15
 
 ### Añadido
 
+- **Una skill que agregas después sale adaptada.** `init --skills i18n` en un
+  repo ya configurado instala sólo la que falta y la adapta con lo que
+  respondiste en la entrevista, sin volver a preguntar. Para eso, la entrevista
+  guarda ahora sus respuestas en un mapa `adaptacion` del frontmatter de
+  `AI-FIRST.md`. Las skills que ya tenías no se tocan. Si tu `AI-FIRST.md` no
+  tiene `perfil`, el reporte lo dice; `init --entrevista` lo resuelve, y si el
+  archivo ya existía te sugiere qué pegar en él.
+- **`ai-first skill <nombres>` instala skills sueltas, sin la metodología.**
+  Escribe sólo `.agents/skills/<nombre>` y el enlace `.claude/skills`: ni
+  `AI-FIRST.md`, ni `docs/`, ni `AGENTS.md`, ni el punto de control, y no
+  necesita git. Con terminal pregunta sólo lo que esas skills necesitan para
+  adaptarse, y no lo guarda; sin terminal las deja sin adaptar y lo dice.
 - **`init` avisa cuando un proyecto sin documentación se queda sin
   `protocolo-arranque`**, la skill que define el producto: PRD, arquitectura y
   specs. Antes sólo se instalaba con la entrevista y, por cualquier otro camino,

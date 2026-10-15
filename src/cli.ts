@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Punto de entrada de `npx @falcux/ai-first`.
 //
-// Dos comandos hoy: `init` y `audit`. Los otros tres del mapa v1
+// Tres comandos hoy: `init`, `skill` y `audit`. Los otros tres del mapa v1
 // —sync, adr, handoff— están mapeados en docs/HANDOFF.md y no escritos: se anuncian
 // como tales en vez de fingir que corren.
 //
@@ -18,8 +18,19 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ErrorAiFirst } from './ai-first-md.js';
 import { auditar } from './audit.js';
-import { CARPETA_SKILLS, iniciar, type Escaneo, type ItemInstalado } from './init.js';
-import { cuantasPreguntas, entrevistar, esAfirmativo, formatearPregunta, SKILL_ARRANQUE, type AlcanceEntrevista, type Respuestas } from './entrevista.js';
+import { CARPETA_SKILLS, iniciar, instalarSkillsSueltas, type Escaneo, type ItemInstalado } from './init.js';
+import {
+  cuantasPreguntas,
+  cuantasPreguntasPara,
+  entrevistar,
+  entrevistarPara,
+  esAfirmativo,
+  formatearPregunta,
+  SKILL_ARRANQUE,
+  type AlcanceEntrevista,
+  type Lector,
+  type Respuestas,
+} from './entrevista.js';
 import { reporteHumano, reporteJson } from './reporte.js';
 
 const AYUDA = `ai-first — gobierno del contexto para proyectos AI-First
@@ -32,6 +43,8 @@ Uso:
   ai-first init  [--raiz <dir>] [--enlazar] [--skills <lista>|todas]
                  [--entrevista | --sin-entrevista]
                  [--sin-hook] [--hook-local] [--sin-ci]
+  ai-first skill <nombres> [--raiz <dir>] [--enlazar]
+                 [--entrevista | --sin-entrevista]
   ai-first audit [opciones]
 
 init configura el repo para la metodología y nunca sobreescribe: lo que ya
@@ -60,6 +73,15 @@ recibe la oferta y por defecto se salta. Sin terminal interactiva no se
 entrevista nunca. Para definir el producto —PRD, arquitectura, specs— el
 paquete instala la skill protocolo-arranque, que corre tu agente.
 
+En un repo ya configurado, init --skills <nombre> agrega una skill y la adapta
+con lo que la entrevista guardó en AI-FIRST.md, sin volver a preguntar.
+
+skill instala skills sueltas, sin la metodología: sólo .agents/skills/<nombre>
+y el enlace .claude/skills, separadas por comas. No corre git init ni escribe
+AI-FIRST.md, docs/, AGENTS.md ni el punto de control. Las adapta con lo que
+guarda AI-FIRST.md si existe, o preguntando sólo lo que ellas leen; eso no se
+guarda en ningún lado.
+
 Opciones de init:
   --enlazar        Instala las skills como enlaces simbólicos relativos a la
                    carpeta skills/ del paquete, en vez de copiarlas. Para el
@@ -77,6 +99,12 @@ Opciones de init:
                    .githooks/, que sí viaja y se revisa en un PR.
   --sin-ci         No escribe el flujo de integración continua.
   --raiz <dir>     Raíz del repositorio. Por defecto, el directorio actual.
+
+Opciones de skill:
+  --enlazar, --raiz        Como en init.
+  --entrevista             Pregunta aunque AI-FIRST.md tenga respuestas guardadas.
+  --sin-entrevista         No pregunta: sin respuestas guardadas, la skill queda
+                           sin adaptar y el reporte lo dice.
 
 Opciones de audit:
   --base <ref>     Compara el rango <ref>...HEAD (CI). Sin ella, compara el árbol
@@ -124,18 +152,9 @@ function hayTerminal(): boolean {
  *     se ofrece, con saltar como valor por defecto.
  */
 async function entrevistaEnTerminal(escaneo: Escaneo, documentado: string[], alcance: AlcanceEntrevista): Promise<Respuestas | undefined> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  // Ctrl+C, Ctrl+D o una entrada que se acaba a media entrevista: readline
-  // lanza un AbortError, y sin esto el adoptante vería un stack trace de Node
-  // en vez de saber qué pasó y qué quedó escrito.
-  const preguntar = async (texto: string): Promise<string> => {
-    try {
-      return await rl.question(texto);
-    } catch {
-      throw new ErrorAiFirst('entrevista cancelada. No se escribió nada más; el repositorio quedó inicializado si no lo estaba. Vuelve a correr `ai-first init` cuando quieras, o usa --sin-entrevista.');
-    }
-  };
-  try {
+  const cancelada =
+    'entrevista cancelada. No se escribió nada más; el repositorio quedó inicializado si no lo estaba. Vuelve a correr `ai-first init` cuando quieras, o usa --sin-entrevista.';
+  return conTerminal(cancelada, async (preguntar, leer) => {
     if (documentado.length > 0) {
       process.stdout.write(
         `\nEste proyecto ya trae documentación: ${documentado.join(', ')}.\n` +
@@ -152,12 +171,46 @@ async function entrevistaEnTerminal(escaneo: Escaneo, documentado: string[], alc
       `\n${cuantasPreguntas(escaneo, alcance)} preguntas, todas con un valor por defecto entre corchetes: Enter lo acepta.\n` +
         'Se escriben en AI-FIRST.md y en la sección «Adaptación a tu proyecto» de cada skill.\n\n',
     );
-    return await entrevistar(escaneo, async (p) => {
-      process.stdout.write(`${formatearPregunta(p)}\n`);
-      const respuesta = await preguntar('> ');
-      process.stdout.write('\n');
-      return respuesta;
-    }, alcance);
+    return await entrevistar(escaneo, leer, alcance);
+  });
+}
+
+/** La entrevista de `ai-first skill`: sólo lo que leen las skills elegidas, y no se guarda. */
+async function entrevistaReducidaEnTerminal(escaneo: Escaneo, claves: string[]): Promise<Respuestas> {
+  const cancelada = 'entrevista cancelada. No se escribió nada. Vuelve a correr `ai-first skill` cuando quieras, o usa --sin-entrevista.';
+  return conTerminal(cancelada, async (_preguntar, leer) => {
+    process.stdout.write(
+      `\n${cuantasPreguntasPara(escaneo, claves)} preguntas, todas con un valor por defecto entre corchetes: Enter lo acepta.\n` +
+        'Se escriben sólo en la sección «Adaptación a tu proyecto» de cada skill.\n\n',
+    );
+    return await entrevistarPara(escaneo, leer, claves);
+  });
+}
+
+/**
+ * Abre la terminal, le pasa a `fn` cómo preguntar una línea y cómo leer una
+ * pregunta de la entrevista, y la cierra pase lo que pase.
+ */
+async function conTerminal<T>(cancelada: string, fn: (preguntar: (texto: string) => Promise<string>, leer: Lector) => Promise<T>): Promise<T> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  // Ctrl+C, Ctrl+D o una entrada que se acaba a media entrevista: readline
+  // lanza un AbortError, y sin esto el adoptante vería un stack trace de Node
+  // en vez de saber qué pasó y qué quedó escrito.
+  const preguntar = async (texto: string): Promise<string> => {
+    try {
+      return await rl.question(texto);
+    } catch {
+      throw new ErrorAiFirst(cancelada);
+    }
+  };
+  const leer: Lector = async (p) => {
+    process.stdout.write(`${formatearPregunta(p)}\n`);
+    const respuesta = await preguntar('> ');
+    process.stdout.write('\n');
+    return respuesta;
+  };
+  try {
+    return await fn(preguntar, leer);
   } finally {
     rl.close();
   }
@@ -238,7 +291,7 @@ async function main(argv: string[]): Promise<number> {
 
   const raiz = resolve(values.raiz ?? process.cwd());
 
-  if (comando === 'init') {
+  if (comando === 'init' || comando === 'skill') {
     if (values.entrevista && values['sin-entrevista']) {
       process.stderr.write('--entrevista y --sin-entrevista se contradicen: elige una.\n');
       return 2;
@@ -247,6 +300,45 @@ async function main(argv: string[]): Promise<number> {
       process.stderr.write('--entrevista necesita una terminal interactiva, y acá no la hay.\n');
       return 2;
     }
+  }
+
+  if (comando === 'skill') {
+    // Las opciones se leen juntas para todos los comandos, así que las que
+    // no son de `skill` se rechazan acá: hablan de piezas que no escribe.
+    const ajenas = ['skills', 'sin-hook', 'hook-local', 'sin-ci', 'base', 'estricto', 'registrar', 'json'] as const;
+    const ajena = ajenas.find((o) => values[o] !== undefined && values[o] !== false);
+    if (ajena) {
+      process.stderr.write(`«--${ajena}» no es de «skill», que acepta --raiz, --enlazar, --entrevista y --sin-entrevista.\n`);
+      return 2;
+    }
+    const nombres = positionals.slice(1).flatMap((p) => p.split(',')).filter(Boolean);
+    if (nombres.length === 0) {
+      process.stderr.write('Dime qué skills instalar: «ai-first skill test-fix», o varias separadas por comas.\n');
+      return 2;
+    }
+
+    const opcionesSkill: Parameters<typeof instalarSkillsSueltas>[0] = {
+      raiz,
+      nombres,
+      enlazar: values.enlazar,
+      entrevistaForzada: values.entrevista,
+    };
+    if (!values['sin-entrevista'] && hayTerminal()) opcionesSkill.entrevistar = entrevistaReducidaEnTerminal;
+
+    const { escaneo, items } = await instalarSkillsSueltas(opcionesSkill);
+    const salida = [
+      `ai-first skill — ${escaneo.proyecto}`,
+      '',
+      ...items.map(lineaDeItem),
+      '',
+      '  Sólo skills: ni AI-FIRST.md, ni docs/, ni AGENTS.md, ni punto de control. Para la metodología, `ai-first init`.',
+      '',
+    ];
+    process.stdout.write(salida.join('\n'));
+    return 0;
+  }
+
+  if (comando === 'init') {
 
     if (values['sin-hook'] && values['hook-local']) {
       process.stderr.write('--sin-hook y --hook-local se contradicen: elige una.\n');

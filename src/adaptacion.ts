@@ -9,6 +9,9 @@
 //
 // Lo que no sabe la entrevista no se inventa: si una respuesta falta, la línea
 // correspondiente no se escribe. Un hueco visible es mejor que un dato falso.
+// Y faltar no es lo mismo que estar vacía: «¿comando de lint?» contestado con
+// Enter dice que no hay; una clave que nunca se preguntó —un AI-FIRST.md de la
+// 0.6.x, que no guardaba las respuestas— no dice nada, y se calla (ADR-026).
 
 import type { Escaneo } from './init.js';
 import { artefactosDelPerfil, perfilDe, secuenciaPorValor, tieneInterfaz, type Respuestas } from './entrevista.js';
@@ -27,17 +30,33 @@ function comandos(c: Contexto): string[] {
   const l: string[] = [];
   const { verificacion, typecheck, lint } = c.respuestas;
   if (verificacion) l.push(`- **Suite y verificación:** \`${verificacion}\``);
-  l.push(typecheck ? `- **Tipos:** \`${typecheck}\`` : '- **Tipos:** este proyecto no declara un comando de tipos.');
-  l.push(lint ? `- **Lint:** \`${lint}\`` : '- **Lint:** este proyecto no declara un comando de lint.');
+  if (typecheck !== undefined) l.push(typecheck ? `- **Tipos:** \`${typecheck}\`` : '- **Tipos:** este proyecto no declara un comando de tipos.');
+  if (lint !== undefined) l.push(lint ? `- **Lint:** \`${lint}\`` : '- **Lint:** este proyecto no declara un comando de lint.');
   return l;
 }
 
+/** La verificación declarada, o el texto de reemplazo si no la hay. */
+function verificacionO(c: Contexto, reemplazo: string): string {
+  return c.respuestas['verificacion'] || reemplazo;
+}
+
 /**
- * Una función por skill. Devuelve las líneas del bloque, o `undefined` si la
- * entrevista no aporta nada que esa skill necesite: entonces no se toca.
+ * Una adaptación por skill: qué respuestas lee y cómo escribe su bloque. La
+ * lista de claves no es documentación: la entrevista reducida de
+ * `ai-first skill` pregunta exactamente eso y nada más, y las de perfil
+ * —`producto`, `repositorio`— deciden si se puede adaptar sin perfil.
  */
-const ADAPTACIONES: Record<string, (c: Contexto) => string[] | undefined> = {
-  'protocolo-arranque': (c) => {
+interface Adaptacion {
+  lee: string[];
+  /** Las líneas del bloque, o `undefined` si la entrevista no aporta nada: entonces no se toca. */
+  escribir: (c: Contexto) => string[] | undefined;
+}
+
+/** Las claves que salen del perfil. Sin ellas `perfilDe` inventaría `saas`/`unico`. */
+const CLAVES_DE_PERFIL = ['producto', 'repositorio'];
+
+const ADAPTACIONES: Record<string, Adaptacion> = {
+  'protocolo-arranque': { lee: ['producto', 'repositorio', 'verificacion'], escribir: (c) => {
     const l = [
       `**Este proyecto es** ${nombreProducto(c.perfil)}, en ${nombreRepositorio(c.perfil)}.`,
       '',
@@ -49,11 +68,11 @@ const ADAPTACIONES: Record<string, (c: Contexto) => string[] | undefined> = {
     for (const a of artefactosDelPerfil(c.perfil)) {
       l.push(`| \`${a.destino}\` | \`${a.template}\` | ${a.razon} |`);
     }
-    l.push('', `**El comando que decide que está sano:** \`${c.respuestas['verificacion'] ?? 'todavía sin definir'}\`.`);
+    l.push('', `**El comando que decide que está sano:** \`${verificacionO(c, 'todavía sin definir')}\`.`);
     return l;
-  },
+  } },
 
-  'protocolo-features': (c) => {
+  'protocolo-features': { lee: ['producto', 'secuencia', 'verificacion', 'typecheck', 'lint', 'agentes'], escribir: (c) => {
     const secuencia = secuenciaPorValor(c.respuestas['secuencia'] ?? '');
     const l: string[] = [];
     if (secuencia) {
@@ -61,29 +80,38 @@ const ADAPTACIONES: Record<string, (c: Contexto) => string[] | undefined> = {
       secuencia.pasos.forEach((paso, i) => l.push(`${i + 1}. ${paso}`));
       l.push('', 'No se avanza al paso siguiente si el actual falla.', '');
     }
-    l.push('**Los comandos de verificación:**', '', ...comandos(c), '');
-    l.push(
-      c.respuestas['agentes'] === 'si'
-        ? '**Agentes en paralelo:** sí. La división por scope de la sección «División por agentes» aplica tal cual.'
-        : '**Agentes en paralelo:** no se usan. Ignora esa sección; el protocolo funciona igual en secuencial.',
-    );
+    const cmds = comandos(c);
+    if (cmds.length > 0) l.push('**Los comandos de verificación:**', '', ...cmds, '');
+    const agentes = c.respuestas['agentes'];
+    if (agentes !== undefined) {
+      l.push(
+        agentes === 'si'
+          ? '**Agentes en paralelo:** sí. La división por scope de la sección «División por agentes» aplica tal cual.'
+          : '**Agentes en paralelo:** no se usan. Ignora esa sección; el protocolo funciona igual en secuencial.',
+      );
+    }
     if (!tieneInterfaz(c.perfil.producto)) {
       l.push('', '**Sin interfaz:** los pasos 3, 4 y 6 y los checklists de UX no aplican a este proyecto.');
     }
     return l;
-  },
+  } },
 
-  'test-fix': (c) => {
-    const l = ['**Los comandos de este proyecto:**', '', ...comandos(c), ''];
-    l.push(
-      c.respuestas['agentes'] === 'si'
-        ? '**Delegación:** hay agentes en paralelo, así que la corrida por subagente del paso 2 aplica.'
-        : '**Delegación:** sin subagentes. Corre el comando con el reporter más escueto y filtra la salida antes de leerla; al contexto principal llegan las fallas y nada más.',
-    );
+  'test-fix': { lee: ['verificacion', 'typecheck', 'lint', 'agentes'], escribir: (c) => {
+    const l: string[] = [];
+    const cmds = comandos(c);
+    if (cmds.length > 0) l.push('**Los comandos de este proyecto:**', '', ...cmds, '');
+    const agentes = c.respuestas['agentes'];
+    if (agentes !== undefined) {
+      l.push(
+        agentes === 'si'
+          ? '**Delegación:** hay agentes en paralelo, así que la corrida por subagente del paso 2 aplica.'
+          : '**Delegación:** sin subagentes. Corre el comando con el reporter más escueto y filtra la salida antes de leerla; al contexto principal llegan las fallas y nada más.',
+      );
+    }
     return l;
-  },
+  } },
 
-  'version-bump': (c) => {
+  'version-bump': { lee: ['manifiesto'], escribir: (c) => {
     const manifiesto = c.respuestas['manifiesto'];
     if (!manifiesto) return undefined;
     return [
@@ -91,14 +119,14 @@ const ADAPTACIONES: Record<string, (c: Contexto) => string[] | undefined> = {
       '',
       '**La versión no se repite en prosa.** En el README va como badge, no como número a mano; el detalle de cada versión va al registro de cambios.',
     ];
-  },
+  } },
 
-  'protocolo-cambios': (c) => {
+  'protocolo-cambios': { lee: ['repositorio', 'verificacion'], escribir: (c) => {
     const l = [
       '**Dónde vive el cambio en curso:** `docs/changes/pending/`, un archivo `CHG-XXX` por cambio abierto.',
       'Al cerrarlo, su resumen pasa a `docs/changes/CHANGE_LOG.md` y el documento se retira.',
       '',
-      `**La verificación tras aplicar el cambio:** \`${c.respuestas['verificacion'] ?? 'la suite del proyecto'}\`.`,
+      `**La verificación tras aplicar el cambio:** \`${verificacionO(c, 'la suite del proyecto')}\`.`,
     ];
     if (c.perfil.repositorio !== 'unico') {
       l.push(
@@ -109,9 +137,9 @@ const ADAPTACIONES: Record<string, (c: Contexto) => string[] | undefined> = {
       );
     }
     return l;
-  },
+  } },
 
-  'protocolo-cierre': (c) => {
+  'protocolo-cierre': { lee: ['verificacion', 'manifiesto'], escribir: (c) => {
     const l = ['**Los documentos de este proyecto:**', '', '| El manual dice | Acá es |', '|---|---|'];
     l.push('| Registro de sesión | `docs/SESSION_LOG.md` |');
     l.push(`| Registro de decisiones | \`${c.escaneo.rutaAdr}\` |`);
@@ -123,12 +151,12 @@ const ADAPTACIONES: Record<string, (c: Contexto) => string[] | undefined> = {
     if (notas) l.push(`| Notas técnicas | \`${notas}\` |`);
     const guia = c.escaneo.artefactos['guia_diseno'];
     if (guia) l.push(`| Guía de diseño | \`${guia}\` |`);
-    l.push('', `**La verificación previa al cierre:** \`${c.respuestas['verificacion'] ?? 'la suite del proyecto'}\`.`);
-    if (!c.respuestas['manifiesto']) l.push('', '**Este proyecto no versiona:** el Paso 6 no aplica.');
+    l.push('', `**La verificación previa al cierre:** \`${verificacionO(c, 'la suite del proyecto')}\`.`);
+    if (c.respuestas['manifiesto'] === '') l.push('', '**Este proyecto no versiona:** el Paso 6 no aplica.');
     return l;
-  },
+  } },
 
-  'protocolo-ux': (c) => {
+  'protocolo-ux': { lee: ['producto'], escribir: (c) => {
     if (!tieneInterfaz(c.perfil.producto)) return undefined;
     const guia = c.escaneo.artefactos['guia_diseno'];
     const inventario = c.escaneo.artefactos['inventario_componentes'];
@@ -140,22 +168,22 @@ const ADAPTACIONES: Record<string, (c: Contexto) => string[] | undefined> = {
         ? `**Inventario de componentes:** \`${inventario}\`.`
         : '**Inventario de componentes:** todavía no existe. Sin él, el check 5 del detector se omite.',
     ];
-  },
+  } },
 
-  'ux-writer': (c) => {
+  'ux-writer': { lee: ['producto'], escribir: (c) => {
     if (!tieneInterfaz(c.perfil.producto)) return undefined;
     return [`**Este proyecto es** ${nombreProducto(c.perfil)}. Todo texto visible pasa por acá antes de escribirse, incluidos los de error y los estados vacíos.`];
-  },
+  } },
 
-  'ux-audit': (c) => {
+  'ux-audit': { lee: ['producto', 'verificacion'], escribir: (c) => {
     if (!tieneInterfaz(c.perfil.producto)) return undefined;
-    return [`**La verificación antes de mergear:** \`${c.respuestas['verificacion'] ?? 'la suite del proyecto'}\`, y esta auditoría encima.`];
-  },
+    return [`**La verificación antes de mergear:** \`${verificacionO(c, 'la suite del proyecto')}\`, y esta auditoría encima.`];
+  } },
 
-  'information-architecture': (c) => {
+  'information-architecture': { lee: ['producto', 'repositorio'], escribir: (c) => {
     if (!tieneInterfaz(c.perfil.producto)) return undefined;
     return [`**Este proyecto es** ${nombreProducto(c.perfil)}, en ${nombreRepositorio(c.perfil)}.`];
-  },
+  } },
 };
 
 function nombreProducto(p: Perfil): string {
@@ -186,7 +214,10 @@ function nombreRepositorio(p: Perfil): string {
 export function bloqueDeSkill(nombre: string, respuestas: Respuestas, escaneo: Escaneo): string | undefined {
   const adaptar = ADAPTACIONES[nombre];
   if (!adaptar) return undefined;
-  const lineas = adaptar({ respuestas, escaneo, perfil: perfilDe(respuestas) });
+  // Sin perfil respondido no se adapta lo que depende de él: `perfilDe`
+  // devolvería `saas`/`unico`, y eso sería escribir un perfil inventado.
+  if (adaptar.lee.some((k) => CLAVES_DE_PERFIL.includes(k)) && !respuestas['producto']) return undefined;
+  const lineas = adaptar.escribir({ respuestas, escaneo, perfil: perfilDe(respuestas) });
   if (!lineas || lineas.length === 0) return undefined;
   return [
     '> Esto lo escribió `ai-first init` con las respuestas de la entrevista. Cada',
@@ -205,3 +236,18 @@ export function bloqueDeSkill(nombre: string, respuestas: Respuestas, escaneo: E
 export function skillsAdaptables(): string[] {
   return Object.keys(ADAPTACIONES);
 }
+
+/**
+ * Las respuestas que leen estas skills, sin repetir. Es lo que pregunta la
+ * entrevista reducida de `ai-first skill`. Una skill sin adaptación no lee nada.
+ */
+export function clavesQueLeen(nombres: string[]): string[] {
+  return [...new Set(nombres.flatMap((n) => ADAPTACIONES[n]?.lee ?? []))];
+}
+
+/**
+ * Las respuestas que se guardan en `adaptacion` de AI-FIRST.md, en este orden:
+ * las que leen las skills y no viven ya en otra clave del frontmatter
+ * —`perfil`, `verificacion`, `fase`— (ADR-026).
+ */
+export const CLAVES_GUARDADAS = ['secuencia', 'agentes', 'typecheck', 'lint', 'manifiesto'];

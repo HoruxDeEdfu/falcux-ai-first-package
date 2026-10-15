@@ -108,6 +108,8 @@ ai-first init --entrevista          # entrevista aunque el proyecto ya esté doc
 ai-first init --sin-entrevista      # no pregunta nunca
 ai-first init --skills todas        # las once, sin preguntar cuáles
 ai-first init --enlazar             # enlaces simbólicos en vez de copias
+ai-first init --skills i18n         # agrega una skill a un repo ya configurado, adaptada
+ai-first skill test-fix             # sólo la skill, sin la metodología ni git
 ```
 
 Qué cambió en cada versión: [`CHANGELOG.md`](CHANGELOG.md).

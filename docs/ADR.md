@@ -1206,3 +1206,37 @@ skill suelta en la vía manual del README*: Charlie la quiso en el comando.
 `docs/SPEC-PAQUETE.md` §5, y la CLI una bandera: hay que avisar al sitio con la
 versión que lo publique. Ninguna skill ya instalada se re-adapta sin
 entrevista.
+
+## ADR-027 — La skill suelta es un subcomando, `ai-first skill`, no una bandera de `init`
+
+- **Fecha:** 2026-10-15
+- **Estado:** aceptada. Supera el punto 3 de ADR-026; los puntos 1 y 2 siguen
+  en pie. Implementación en CHG-026.
+
+**Contexto.** ADR-026 abrió la skill suelta como `init --solo-skills --skills
+X`. Antes de implementarlo, el análisis de impacto de CHG-026 mostró que ese
+modo es un `init` que se salta casi todo lo suyo: `git init`, `AI-FIRST.md`,
+`docs/`, el bloque de `AGENTS.md`, el hook, el CI y el aviso de
+`protocolo-arranque` de CHG-025. Cada salto es una condición dentro de
+`iniciar`, y cada bandera de `init` que no aplica pedía su propia validación.
+
+**Decisión.** La skill suelta se instala con `ai-first skill <nombres>`, una
+lista separada por comas. Escribe lo mismo que decidió ADR-026 —las skills en
+`.agents/skills/` y el enlace `.claude/skills`, sin git—, y entrevista con
+terminal sólo lo que las skills elegidas leen, sin guardarlo. Acepta
+`--raiz`, `--enlazar`, `--entrevista` y `--sin-entrevista`; cualquier otra
+bandera de `init` es error de uso, con 2. La skill olvidada en un repo ya
+configurado sigue siendo `init --skills X`.
+
+**Alternativas.** *`--solo-skills`*: dos banderas para un caso, y una función
+llena de excepciones. *`--skill X`*, en singular: a una letra de `--skills`,
+que configura la metodología entera; un error de tipeo escribe lo que no se
+quería. *`--sin-metodologia`*: más claro que `--solo-skills`, pero sigue
+obligando a `--skills` aparte. *`ai-first agregar X` para todo*: descartado
+por Charlie en ADR-026 para la skill olvidada, y lo sigue estando; el
+subcomando nuevo cubre sólo la suelta.
+
+**Consecuencias.** La CLI gana un comando, no una bandera: la ayuda, el README
+y el aviso al sitio lo nombran así. `iniciar` no cambia de forma; la
+instalación y la adaptación de una skill se sacan a funciones que comparten
+los dos comandos.

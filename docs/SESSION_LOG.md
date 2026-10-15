@@ -10,6 +10,73 @@
 
 ---
 
+## 2026-10-15 (sesión 21) — CHG-026: una skill agregada después sale adaptada, y `ai-first skill` instala skills sueltas
+
+### Resumen
+Análisis de impacto e implementación completa de CHG-026, en la misma sesión
+por pedido de Charlie. A mitad de camino, la bandera `--solo-skills` pasó a ser
+el subcomando `ai-first skill` (ADR-027).
+
+### Análisis de impacto
+- Sin git, `escanear` se quedaba sin lista y los valores por defecto se
+  degradaban sin avisar. Se resolvió pasándole la lista: en una carpeta sin git
+  recibe los archivos de la raíz, que es donde están los que deciden esos
+  valores.
+- Se sumó `src/entrevista.ts` a los archivos afectados, y `src/adaptacion.ts`
+  pasó de opcional a obligatorio: trataba igual una clave ausente y una vacía.
+- La validación con `i18n` no podía pasar, porque `i18n` no tiene adaptación.
+  Se cambió por `test-fix`.
+- Charlie decidió que la skill suelta instala y adapta también los protocolos,
+  con un aviso de que asumen `docs/`, y que las banderas de `init` que no
+  aplican salgan con 2.
+- A `--solo-skills` le pesaba el nombre. `--skill`, en singular, quedaba a una
+  letra de `--skills`. Se eligió un subcomando. ADR-027 supera el punto 3 de
+  ADR-026.
+
+### CHG-026
+- `src/ai-first-md.ts` lee el mapa `adaptacion`, que sólo admite cadenas.
+- `src/adaptacion.ts`: cada skill declara qué respuestas lee, con
+  `clavesQueLeen` y `CLAVES_GUARDADAS`. Una clave ausente ya no se escribe como
+  «no hay», y sin `producto` no se adapta lo que depende del perfil.
+- `src/entrevista.ts` gana `entrevistarPara` y `cuantasPreguntasPara`, que
+  preguntan sólo esas claves. La interpretación de cada respuesta es una sola
+  función, compartida con la entrevista completa.
+- En `src/init.ts`:
+  - `generarAiFirst` escribe `adaptacion`.
+  - Sin entrevista y con un `AI-FIRST.md` previo, `iniciar` adapta sólo lo que
+    escribe, con `respuestasGuardadas`. Sin perfil, lo dice en un solo
+    sugerido.
+  - Con entrevista sobre un `AI-FIRST.md` previo, sugiere el YAML para pegar.
+  - `instalarSkills` y `enlazarParaClaude` salieron de `iniciar` para servir
+    también a `instalarSkillsSueltas`.
+- `src/cli.ts`: el comando `skill`, su entrevista en terminal y la ayuda. La
+  lectura de la terminal ahora es una sola, compartida por los dos comandos.
+- Documentación: `docs/SPEC-PAQUETE.md` §5, que ahora documenta también
+  `perfil`, `docs/specs/init-completo.md`, `skills/README.md`, `README.md` y el
+  `AI-FIRST.md` de este repo, que declara `perfil` y `adaptacion`.
+
+### Validación
+- typecheck → PASS (`tsc` dentro de `pnpm test`)
+- lint      → no aplica
+- tests     → PASS, 149 / 149 por exit code (eran 135). Una ronda de
+  arreglos: el sugerido de «sin perfil» pasó de uno por skill a uno solo, y
+  una aserción buscaba «no versiona» dentro de «Si no versionas»
+- `audit:self` → 0 / 100
+- Versión: `0.6.2` → `0.7.0` (MINOR, por el comando nuevo). La `0.6.2` nunca
+  salió ni tuvo tag, así que su entrada del CHANGELOG pasó a la `0.7.0`
+- A mano, con el binario sobre una carpeta sin git: `skill
+  test-fix,protocolo-cierre` deja sólo `.agents/` y `.claude/`, con los tres
+  sugeridos. `--hook-local` sale con 2
+
+### Pendiente para la siguiente sesión
+- [ ] Avisar al sitio con el publish de esta versión: cambia el formato de
+      `AI-FIRST.md` (las claves `perfil` y `adaptacion`) y la CLI gana
+      `ai-first skill`.
+- [ ] `changeset-review`, con `protocolo-features`. El detalle está en
+      `docs/HANDOFF.md`.
+
+---
+
 ## 2026-10-15 (sesión 20) — CHG-025: `init` avisa cuando falta `protocolo-arranque`, y la `0.6.2` en `dev`
 
 ### Resumen

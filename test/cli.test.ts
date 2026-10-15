@@ -121,3 +121,19 @@ test('una opción sin su valor, o con un valor que no lleva, también: CHG-014',
   assert.match(conValor.stderr, /«--estricto» no lleva valor/);
   assert.doesNotMatch(`${sinValor.stderr}${conValor.stderr}`, /at |TypeError/);
 });
+
+test('skill sin nombres, o con una opción de init, sale con 2 y dice qué acepta: CHG-026', () => {
+  const sinNombres = correr('skill');
+  assert.equal(sinNombres.status, 2);
+  assert.match(sinNombres.stderr, /qué skills instalar/);
+
+  const conAjena = correr('skill', 'test-fix', '--sin-hook');
+  assert.equal(conAjena.status, 2);
+  assert.match(conAjena.stderr, /«--sin-hook» no es de «skill»/);
+});
+
+test('--help documenta el comando skill', () => {
+  const r = correr('--help');
+  assert.match(r.stdout, /ai-first skill <nombres>/);
+  assert.match(r.stdout, /Opciones de skill:/);
+});

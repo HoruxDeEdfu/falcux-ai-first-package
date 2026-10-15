@@ -710,3 +710,37 @@ relajarse. Suite en 135.
 **Lección.** Las señales hay que medirlas antes de escribir. Medidas al final
 de `iniciar`, contarían el `AGENTS.md` que esa misma corrida escribió, y el
 aviso no saldría nunca.
+
+## CHG-026 — Una skill agregada después de `init` sale adaptada, y `ai-first skill` instala skills sueltas
+
+- **Fecha:** abierto el 2026-10-15 (sesión 19), cerrado el 2026-10-15 (sesión 21)
+- **Tipo:** cambio de requerimiento, flujo completo
+- **Decisión:** ADR-026, y ADR-027, que supera su punto 3: la skill suelta es un subcomando, no la bandera `--solo-skills`
+- **Archivos:** `src/ai-first-md.ts`, `src/adaptacion.ts`, `src/entrevista.ts`, `src/init.ts`, `src/cli.ts`, `test/ai-first-md.test.ts`, `test/entrevista.test.ts`, `test/init.test.ts`, `test/cli.test.ts`, `docs/SPEC-PAQUETE.md`, `docs/specs/init-completo.md`, `skills/README.md`, `README.md`, `AI-FIRST.md`
+
+**Resumen.** Antes, `init --skills X` en un repo ya configurado instalaba la
+skill sin adaptarla: la adaptación sólo corría con entrevista, y las respuestas
+no se guardaban. Ahora la entrevista las guarda en un mapa `adaptacion` del
+frontmatter. Una corrida sin entrevista adapta con ellas sólo las skills que
+escribe; las que ya estaban no se tocan. Sin perfil, lo dice en un sugerido.
+`ai-first skill <nombres>` instala skills sin la metodología y sin git. Las
+adapta con lo guardado si existe, o con una entrevista que pregunta sólo lo que
+leen esas skills y no guarda nada.
+
+**Pruebas.** Catorce nuevas:
+- el lector de `adaptacion`, con valores válidos e inválidos;
+- clave ausente contra vacía, y la protección del perfil;
+- la entrevista reducida;
+- el mapa al escribir, la skill agregada después con la vieja intacta, el
+  repo de la 0.6.x y el sugerido para pegar;
+- `skill` sin git, sin respuestas y sobre un repo configurado;
+- el binario sin nombres, con una bandera ajena, y su ayuda.
+
+Dos existentes se ajustaron al sugerido nuevo de «sin perfil». Suite en 149.
+
+**Lección.** Faltar no es lo mismo que estar vacío. Mientras la entrevista
+respondía siempre todas las claves, tratarlas igual no hacía daño. En cuanto
+las respuestas empezaron a reconstruirse desde un archivo que puede no tenerlas,
+la misma línea pasó a afirmar cosas falsas. El análisis de impacto lo vio antes
+del código porque leyó qué hace cada adaptación cuando falta un dato, y no sólo
+qué datos lee.

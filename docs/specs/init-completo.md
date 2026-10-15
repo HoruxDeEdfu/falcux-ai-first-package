@@ -172,6 +172,15 @@ archivo: dicen qué escribió la herramienta y qué escribió el humano.
   lleva, por skill instalada, una línea de cuándo se invoca, porque era la
   información de la sección a mano de este repo que el bloque no podía perder.
 
+- La segunda corrida y la skill suelta (2026-10-15, CHG-026, ADR-026 y
+  ADR-027). Al entrevistar, `AI-FIRST.md` guarda en `adaptacion` las respuestas
+  que no se deducen del repo. Sin entrevista, `init` adapta con ellas **sólo**
+  las skills que escribe en esa corrida; sin `perfil`, lo reporta como sugerido
+  en una línea. Con entrevista sobre un `AI-FIRST.md` que ya existía, sugiere el
+  YAML para pegar. `ai-first skill <nombres>` escribe sólo las skills y
+  `.claude/skills`, sin git; en una carpeta sin git `escanear` lee la raíz, que
+  es donde están `package.json`, los lockfiles y los manifiestos.
+
 ### Pendiente
 - Nada de esta spec. La entrevista y la reescritura de skills (hueco 2) es
   otra spec, cuando exista el manifiesto.
@@ -226,3 +235,5 @@ archivo: dicen qué escribió la herramienta y qué escribió el humano.
 - 2026-09-18 — Implementada (ADR-018). Pregunta abierta 1 decidida: el ADR va a
   `docs/`, que `init` crea; el criterio 2 se ajusta. Estado de implementación
   al día. Sesión delegada, con la spec como contrato.
+- 2026-10-15 — CHG-026: la segunda corrida adapta con lo guardado, y la skill
+  suelta sale como subcomando, `ai-first skill` (ADR-027).

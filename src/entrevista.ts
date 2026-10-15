@@ -394,6 +394,14 @@ export function interpretarSeleccion(pregunta: Pregunta, respuesta: string): str
   return opciones.filter((o) => elegidas.has(o.valor)).map((o) => o.valor).join(',');
 }
 
+/** Lo que queda de una respuesta cruda, según el tipo de pregunta. */
+function interpretarRespuesta(p: Pregunta, cruda: string): string {
+  if (p.tipo === 'opcion') return interpretarOpcion(p, cruda);
+  if (p.tipo === 'seleccion') return interpretarSeleccion(p, cruda);
+  if (p.tipo === 'confirmacion') return cruda.trim() === '' ? p.porDefecto : esAfirmativo(cruda) ? 'si' : 'no';
+  return cruda.trim() === '' ? p.porDefecto : cruda.trim();
+}
+
 export function perfilDe(respuestas: Respuestas): Perfil {
   return {
     producto: (respuestas['producto'] ?? 'saas') as Producto,
@@ -430,11 +438,7 @@ export async function entrevistar(escaneo: Escaneo, leer: Lector, alcance?: Alca
   const respuestas: Respuestas = {};
 
   const responder = async (p: Pregunta) => {
-    const cruda = await leer(p);
-    if (p.tipo === 'opcion') respuestas[p.clave] = interpretarOpcion(p, cruda);
-    else if (p.tipo === 'seleccion') respuestas[p.clave] = interpretarSeleccion(p, cruda);
-    else if (p.tipo === 'confirmacion') respuestas[p.clave] = cruda.trim() === '' ? p.porDefecto : esAfirmativo(cruda) ? 'si' : 'no';
-    else respuestas[p.clave] = cruda.trim() === '' ? p.porDefecto : cruda.trim();
+    respuestas[p.clave] = interpretarRespuesta(p, await leer(p));
   };
 
   for (const p of preguntasBase(escaneo)) await responder(p);
@@ -444,6 +448,35 @@ export async function entrevistar(escaneo: Escaneo, leer: Lector, alcance?: Alca
   for (const p of preguntasDeZonas(escaneo)) await responder(p);
 
   return respuestas;
+}
+
+/**
+ * Lo que pregunta `ai-first skill`: sólo las claves que leen las skills que se
+ * van a escribir, en el orden de la entrevista completa. `secuencia` arrastra a
+ * `producto`, porque sus opciones dependen de él. El nombre y la fase no los lee
+ * ninguna skill, así que nunca entran.
+ */
+function clavesReducidas(claves: string[]): Set<string> {
+  const salida = new Set(claves);
+  if (salida.has('secuencia')) salida.add('producto');
+  return salida;
+}
+
+export async function entrevistarPara(escaneo: Escaneo, leer: Lector, claves: string[]): Promise<Respuestas> {
+  const respuestas: Respuestas = {};
+  const pedidas = clavesReducidas(claves);
+  const responder = async (p: Pregunta) => {
+    respuestas[p.clave] = interpretarRespuesta(p, await leer(p));
+  };
+  for (const p of preguntasBase(escaneo).filter((p) => pedidas.has(p.clave))) await responder(p);
+  if (pedidas.has('secuencia')) await responder(preguntaDeSecuencia(perfilDe(respuestas).producto));
+  return respuestas;
+}
+
+/** Cuántas preguntas hace `entrevistarPara`, para anunciarlo antes de empezar. */
+export function cuantasPreguntasPara(escaneo: Escaneo, claves: string[]): number {
+  const pedidas = clavesReducidas(claves);
+  return preguntasBase(escaneo).filter((p) => pedidas.has(p.clave)).length + (pedidas.has('secuencia') ? 1 : 0);
 }
 
 // ---------------------------------------------------------------------------

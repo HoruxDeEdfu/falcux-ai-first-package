@@ -69,6 +69,13 @@ export interface AiFirst {
   actualizado?: string;
   verificacion?: string;
   perfil?: Perfil;
+  /**
+   * Lo que respondió la entrevista y no se deduce del repo —`secuencia`,
+   * `agentes`, `typecheck`, `lint`, `manifiesto`—, para adaptar las skills que
+   * se instalen después (ADR-026). Una cadena vacía es respuesta: «no hay».
+   * `audit` no lo lee.
+   */
+  adaptacion?: Record<string, string>;
   zonas_prohibidas: ZonaProhibida[];
   superficies_de_decision: string[];
   alcance: Alcance;
@@ -153,6 +160,22 @@ function perfil(v: unknown): Perfil | undefined {
   return { producto: producto as Producto, repositorio: repositorio as Repositorio };
 }
 
+/**
+ * El mapa de respuestas guardadas, o `undefined` si no está. Un valor que no es
+ * cadena es error de formato, igual que en `perfil`: se escribe en una skill, y
+ * `agentes: false` leído como «no» por accidente sería un dato inventado.
+ */
+function adaptacion(v: unknown): Record<string, string> | undefined {
+  if (v === undefined || v === null) return undefined;
+  if (!esObjeto(v)) throw new ErrorAiFirst('«adaptacion» debe ser un mapa de clave → respuesta.');
+  const salida: Record<string, string> = {};
+  for (const [k, val] of Object.entries(v)) {
+    if (typeof val !== 'string') throw new ErrorAiFirst(`«adaptacion.${k}» debe ser una cadena; entre comillas si es «no» o está vacía.`);
+    salida[k] = val;
+  }
+  return salida;
+}
+
 function auditoria(v: unknown): Auditoria | undefined {
   if (!esObjeto(v)) return undefined;
   const h = esObjeto(v['hallazgos']) ? v['hallazgos'] : {};
@@ -189,6 +212,8 @@ export function interpretar(texto: string): AiFirst {
   if (typeof datos['verificacion'] === 'string') salida.verificacion = datos['verificacion'];
   const perf = perfil(datos['perfil']);
   if (perf) salida.perfil = perf;
+  const adapt = adaptacion(datos['adaptacion']);
+  if (adapt) salida.adaptacion = adapt;
   const aud = auditoria(datos['auditoria']);
   if (aud) salida.auditoria = aud;
   return salida;

@@ -7,6 +7,19 @@ actualizado: 2026-09-18
 
 verificacion: pnpm test
 
+# Lo que respondería la entrevista. Este repo instala sus skills con
+# --enlazar, así que init no las adapta nunca (ADR-020); queda declarado para
+# que el contrato de este repo sea el que enseña el paquete.
+perfil:
+  producto: cli
+  repositorio: unico
+adaptacion:
+  secuencia: "contrato-cli"
+  agentes: "si"
+  typecheck: ""
+  lint: ""
+  manifiesto: "package.json"
+
 # Sin zonas hoy. skills/ lo fue mientras el sitio la sobreescribía con rsync
 # (hasta el 2026-09-17, ADR-006); ahora se edita acá. El check 1 se reporta
 # omitido, que es lo honesto: no hay zona que inventar.

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, lstatSync, mkdtempSync, readFileSync, readlinkSync, realpathSync, rmSync } from 'node:fs';
+import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { test } from 'node:test';
@@ -12,12 +12,13 @@ import {
   SKILLS_POR_DEFECTO,
   carpetaSkillsDelPaquete,
   iniciar,
+  instalarSkillsSueltas,
   proyectoDocumentado,
   skillsDelPaquete,
   type Escaneo,
 } from '../src/init.js';
-import { entrevistar, SKILLS_FIJAS, type AlcanceEntrevista } from '../src/entrevista.js';
-import { crearRepo, type Repo } from './ayuda.js';
+import { entrevistar, entrevistarPara, SKILLS_FIJAS, type AlcanceEntrevista } from '../src/entrevista.js';
+import { aiFirstMd, crearRepo, type Repo } from './ayuda.js';
 
 /** Lo que init deja además de AI-FIRST.md y el ADR, en el orden en que lo escribe. */
 const ESTRUCTURA = ['docs/SESSION_LOG.md', 'docs/changes/CHANGE_LOG.md', 'docs/changes/pending/.gitkeep'];
@@ -167,8 +168,10 @@ test('init nunca sobreescribe AI-FIRST.md: lo salta, lo reporta y sigue', () =>
     assert.ok(escritos.includes('docs/ADR.md'), 'saltar no detiene: el ADR que falta sí se escribe');
     assert.equal(readFileSync(join(repo.raiz, 'AI-FIRST.md'), 'utf8'), original, 'ni un byte distinto');
     assert.ok(existsSync(join(repo.raiz, 'docs/ADR.md')));
-    assert.deepEqual(sugeridos, ['AI-FIRST.md (alcance.spec)'], 'lo que no puede escribir ahí, lo sugiere');
+    assert.deepEqual(sugeridos, ['AI-FIRST.md (alcance.spec)', 'AI-FIRST.md (perfil)'], 'lo que no puede escribir ahí, lo sugiere');
     assert.match(items.find((i) => i.estado === 'sugerido')?.razon ?? '', /spec: docs\/changes\/pending\//);
+    // Sin perfil no hay con qué adaptar lo que acaba de instalar, y lo dice (CHG-026).
+    assert.match(items.find((i) => i.ruta === 'AI-FIRST.md (perfil)')?.razon ?? '', /sin adaptar: protocolo-features/);
   }));
 
 test('init con AI-FIRST.md y ADR ya presentes no escribe nada y no es error', () =>
@@ -374,7 +377,7 @@ test('init no sugiere alcance.spec cuando el AI-FIRST.md existente ya lo declara
     repo.escribir('AI-FIRST.md', '---\nformato: 1\nproyecto: mio\nalcance:\n  spec: docs/changes/pending/\n---\n');
     repo.commit('inicio');
     const { sugeridos, items } = await iniciar({ raiz: repo.raiz });
-    assert.deepEqual(sugeridos, []);
+    assert.ok(!sugeridos.includes('AI-FIRST.md (alcance.spec)'));
     assert.equal(items.find((i) => i.ruta === 'AI-FIRST.md (alcance.spec)')?.razon, 'ya declarado');
   }));
 
@@ -683,4 +686,148 @@ test('el aviso sale una sola vez: la segunda corrida ya encuentra el AGENTS.md d
     const segunda = await iniciar({ raiz: repo.raiz });
     assert.equal(avisoDeArranque(segunda.items), undefined);
     assert.ok(!segunda.sugeridos.includes(RUTA_ARRANQUE));
+  }));
+
+// ---------------------------------------------------------------------------
+// Agregar una skill después, y skills sueltas (CHG-026, ADR-026, ADR-027)
+// ---------------------------------------------------------------------------
+
+const skillMd = (raiz: string, nombre: string) => readFileSync(join(raiz, '.agents/skills', nombre, 'SKILL.md'), 'utf8');
+
+test('al entrevistar, AI-FIRST.md guarda lo que no se deduce, entre comillas, y audit lo lee', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    await iniciar({
+      raiz: repo.raiz,
+      hoy: '2026-10-15',
+      entrevistar: respondiendo({ producto: 'cli', secuencia: 'contrato-cli', typecheck: 'tsc --noEmit', manifiesto: 'package.json' }),
+    });
+
+    const texto = readFileSync(join(repo.raiz, 'AI-FIRST.md'), 'utf8');
+    assert.match(texto, /^adaptacion:\n {2}secuencia: "contrato-cli"\n {2}agentes: "no"\n {2}typecheck: "tsc --noEmit"\n {2}lint: ""\n {2}manifiesto: "package.json"$/m);
+    assert.deepEqual(interpretar(texto).adaptacion, { secuencia: 'contrato-cli', agentes: 'no', typecheck: 'tsc --noEmit', lint: '', manifiesto: 'package.json' });
+    const informe = await auditar({ raiz: repo.raiz });
+    assert.equal(informe.entropia, 0, JSON.stringify(informe.resultados, null, 2));
+  }));
+
+test('una skill agregada después se adapta con lo guardado, sin preguntar, y las que estaban no se tocan', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    await iniciar({
+      raiz: repo.raiz,
+      hoy: '2026-10-15',
+      skills: ['protocolo-features'],
+      entrevistar: respondiendo({ producto: 'api', secuencia: 'vertical', verificacion: 'make test', typecheck: 'mypy .', agentes: 'si' }),
+    });
+    repo.commit('init');
+    // Lo que el humano escribió dentro de las marcas de una skill ya instalada.
+    const rutaFeatures = join(repo.raiz, '.agents/skills/protocolo-features/SKILL.md');
+    const features = skillMd(repo.raiz, 'protocolo-features').replace('make test', 'make test-rapido');
+    repo.escribir('.agents/skills/protocolo-features/SKILL.md', features);
+
+    const { items } = await iniciar({ raiz: repo.raiz, hoy: '2026-10-15', skills: ['protocolo-features', 'test-fix'] });
+
+    assert.equal(items.find((i) => i.ruta === '.agents/skills/test-fix/SKILL.md')?.estado, 'escrito');
+    const testFix = skillMd(repo.raiz, 'test-fix');
+    assert.ok(testFix.includes(MARCA_INICIO));
+    assert.match(testFix, /`make test`/);
+    assert.match(testFix, /`mypy \.`/);
+    assert.match(testFix, /no declara un comando de lint/, 'el lint vacío es respuesta guardada');
+    assert.match(testFix, /hay agentes en paralelo/);
+    assert.equal(readFileSync(rutaFeatures, 'utf8'), features, 'la que ya estaba, ni un byte distinto');
+    assert.ok(!items.some((i) => i.ruta === '.agents/skills/protocolo-features/SKILL.md'));
+  }));
+
+test('un AI-FIRST.md de la 0.6.x, con perfil y sin «adaptacion», adapta con lo que hay y calla lo que falta', () =>
+  conRepo(async (repo) => {
+    repo.escribir('AI-FIRST.md', aiFirstMd('verificacion: "cargo test"\nperfil:\n  producto: api\n  repositorio: unico'));
+    repo.commit('inicio');
+
+    await iniciar({ raiz: repo.raiz, skills: ['test-fix', 'protocolo-cierre'] });
+
+    const testFix = skillMd(repo.raiz, 'test-fix');
+    assert.match(testFix, /`cargo test`/);
+    assert.ok(!testFix.includes('no declara'), 'lo que nunca se preguntó no se escribe como «no hay»');
+    assert.ok(!testFix.includes('Delegación'));
+    assert.ok(!skillMd(repo.raiz, 'protocolo-cierre').includes('Este proyecto no versiona'));
+  }));
+
+test('con entrevista sobre un AI-FIRST.md sin perfil, se sugiere el perfil y las respuestas para pegar', () =>
+  conRepo(async (repo) => {
+    const original = aiFirstMd();
+    repo.escribir('AI-FIRST.md', original);
+    repo.commit('inicio');
+
+    const { items } = await iniciar({ raiz: repo.raiz, skills: ['test-fix'], entrevistar: respondiendo({ producto: 'cli', lint: 'biome check' }) });
+
+    const item = items.find((i) => i.ruta === 'AI-FIRST.md (adaptacion)');
+    assert.equal(item?.estado, 'sugerido');
+    assert.match(item?.razon ?? '', /perfil: \{ producto: cli, repositorio: unico \}/);
+    assert.match(item?.razon ?? '', /lint: "biome check"/);
+    assert.equal(readFileSync(join(repo.raiz, 'AI-FIRST.md'), 'utf8'), original, 'sugerir no es escribir');
+  }));
+
+/** Una carpeta que no es repositorio git. */
+function carpetaSinGit(): { raiz: string; limpiar(): void } {
+  const raiz = mkdtempSync(join(tmpdir(), 'ai-first-suelta-'));
+  return { raiz, limpiar: () => rmSync(raiz, { recursive: true, force: true }) };
+}
+
+test('ai-first skill en una carpeta sin git: sólo la skill y el enlace, y los valores por defecto salen de la raíz', async () => {
+  const c = carpetaSinGit();
+  try {
+    writeFileSync(join(c.raiz, 'package.json'), JSON.stringify({ name: 'suelta', scripts: { test: 'jest' } }));
+    writeFileSync(join(c.raiz, 'yarn.lock'), '');
+    let preguntadas: string[] = [];
+
+    const { escritos } = await instalarSkillsSueltas({
+      raiz: c.raiz,
+      nombres: ['test-fix'],
+      entrevistar: (escaneo, claves) =>
+        entrevistarPara(escaneo, async (p) => {
+          preguntadas.push(p.clave);
+          return '';
+        }, claves),
+    });
+
+    assert.deepEqual(escritos, ['.agents/skills/test-fix', '.agents/skills/test-fix/SKILL.md', '.claude/skills']);
+    assert.deepEqual(readdirSync(c.raiz).sort(), ['.agents', '.claude', 'package.json', 'yarn.lock'], 'ni .git, ni AI-FIRST.md, ni docs/');
+    assert.deepEqual(preguntadas, ['verificacion', 'typecheck', 'lint', 'agentes'], 'sólo lo que test-fix lee');
+    assert.match(skillMd(c.raiz, 'test-fix'), /`yarn run test`/, 'el gestor, deducido sin git');
+  } finally {
+    c.limpiar();
+  }
+});
+
+test('ai-first skill sin respuestas deja la skill sin adaptar y lo dice; los protocolos avisan que asumen docs/', async () => {
+  const c = carpetaSinGit();
+  try {
+    const { items } = await instalarSkillsSueltas({ raiz: c.raiz, nombres: ['test-fix', 'protocolo-cierre', 'i18n'] });
+
+    const testFix = items.find((i) => i.ruta === '.agents/skills/test-fix/SKILL.md');
+    assert.equal(testFix?.estado, 'sugerido');
+    assert.match(testFix?.razon ?? '', /sin respuestas con qué adaptarla/);
+    assert.ok(!skillMd(c.raiz, 'test-fix').includes(MARCA_INICIO));
+    assert.match(items.find((i) => i.ruta === '.agents/skills/protocolo-cierre' && i.estado === 'sugerido')?.razon ?? '', /asume docs\//);
+    assert.ok(!items.some((i) => i.ruta.startsWith('.agents/skills/i18n/')), 'i18n no tiene adaptación: nada que sugerir');
+    await assert.rejects(instalarSkillsSueltas({ raiz: c.raiz, nombres: [] }), /qué skills instalar/);
+  } finally {
+    c.limpiar();
+  }
+});
+
+test('ai-first skill en un repo configurado adapta con lo guardado y no escribe nada más', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    await iniciar({ raiz: repo.raiz, skills: ['protocolo-cambios'], entrevistar: respondiendo({ producto: 'cli', manifiesto: 'Cargo.toml' }) });
+    repo.commit('init');
+    const antes = foto(repo.raiz);
+
+    let entrevisto = false;
+    await instalarSkillsSueltas({ raiz: repo.raiz, nombres: ['version-bump'], entrevistar: async () => ((entrevisto = true), undefined) });
+
+    assert.ok(!entrevisto, 'con respuestas guardadas no se pregunta');
+    assert.match(skillMd(repo.raiz, 'version-bump'), /`Cargo.toml`/);
+    const despues = foto(repo.raiz);
+    for (const ruta of Object.keys(antes)) assert.equal(despues[ruta], antes[ruta], ruta);
   }));

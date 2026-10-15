@@ -11,6 +11,10 @@
 // hacen de manifiesto donde hace falta —dentro escribe la herramienta; fuera,
 // nadie— y por eso no hizo falta el `.ai-first/manifest.json` de ADR-003.
 //
+// Desde la 0.7.0 guarda las respuestas en AI-FIRST.md y adapta con ellas lo
+// que instala una corrida sin entrevista, y `instalarSkillsSueltas` —el comando
+// `ai-first skill`— instala skills sin la metodología (ADR-026, ADR-027).
+//
 // Regla de oro: nunca sobreescribe. Ni archivos, ni carpetas, ni enlaces. Lo
 // que ya existe se salta y se reporta como tal; saltar no es error (ADR-017).
 // Una skill que existe se salta ENTERA, no se fusiona (ADR-014). Correrlo dos
@@ -19,10 +23,10 @@
 import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { NOMBRE_ARCHIVO, interpretar, ErrorAiFirst, type Perfil } from './ai-first-md.js';
+import { NOMBRE_ARCHIVO, interpretar, ErrorAiFirst, type AiFirst, type Perfil } from './ai-first-md.js';
 import { esRepoGit, fijarHooksPath, hooksPathConfigurado, inicializarRepo, listarArchivos } from './git.js';
 import { coincide } from './glob.js';
-import { bloqueDeSkill, ENCABEZADO_ADAPTACION } from './adaptacion.js';
+import { bloqueDeSkill, clavesQueLeen, CLAVES_GUARDADAS, ENCABEZADO_ADAPTACION, skillsAdaptables } from './adaptacion.js';
 import { perfilDe, skillsDelPerfil, SKILL_ARRANQUE, SKILLS_FIJAS, type AlcanceEntrevista, type Respuestas } from './entrevista.js';
 
 export interface Sugerencia {
@@ -93,8 +97,15 @@ function gestorDePaquetes(archivos: Set<string>): string {
   return 'npm';
 }
 
-export function escanear(raiz: string): Escaneo {
-  const lista = listarArchivos(raiz);
+/**
+ * Lo que se deduce del repo. La lista de archivos viene de git por defecto;
+ * `ai-first skill` en una carpeta sin git le pasa lo que hay en la raíz, y
+ * alcanza para lo que esa entrevista pregunta: el nombre, los comandos y el
+ * manifiesto salen de `package.json`, los lockfiles y los manifiestos, todos en
+ * la raíz. Lo que necesita recorrer —zonas, superficies, componentes— sólo
+ * sirve para escribir AI-FIRST.md, y ese comando no lo escribe.
+ */
+export function escanear(raiz: string, lista: string[] = listarArchivos(raiz)): Escaneo {
   const archivos = new Set(lista);
   const existeDir = (d: string) => lista.some((a) => a.startsWith(d));
 
@@ -172,6 +183,8 @@ export interface ExtraAiFirst {
   fase?: string;
   /** El perfil, si se entrevistó. Ausente, la clave no se escribe. */
   perfil?: Perfil;
+  /** Las respuestas que se guardan para adaptar después (ADR-026). Ausente o vacío, no se escribe. */
+  adaptacion?: Record<string, string>;
 }
 
 export function generarAiFirst(e: Escaneo, hoy: string, extra: ExtraAiFirst = {}): string {
@@ -192,6 +205,13 @@ export function generarAiFirst(e: Escaneo, hoy: string, extra: ExtraAiFirst = {}
     l.push('perfil:');
     l.push(`  producto: ${extra.perfil.producto}`);
     l.push(`  repositorio: ${extra.perfil.repositorio}`);
+    l.push('');
+  }
+  if (extra.adaptacion && Object.keys(extra.adaptacion).length > 0) {
+    l.push('# Lo que respondió la entrevista y no se puede deducir del repo. init lo usa');
+    l.push('# para adaptar las skills que se instalen después. audit no lo lee.');
+    l.push('adaptacion:');
+    for (const [k, v] of Object.entries(extra.adaptacion)) l.push(`  ${k}: ${q(v)}`);
     l.push('');
   }
   l.push('# El comando que decide si el proyecto está sano. Lo corre el humano, no el');
@@ -585,6 +605,50 @@ export function aplicarRespuestas(e: Escaneo, r: Respuestas): Escaneo {
   return salida;
 }
 
+/** Las respuestas que van a `adaptacion` de AI-FIRST.md: las de `CLAVES_GUARDADAS` que se respondieron. */
+export function respuestasParaGuardar(r: Respuestas): Record<string, string> {
+  const salida: Record<string, string> = {};
+  for (const k of CLAVES_GUARDADAS) if (r[k] !== undefined) salida[k] = r[k];
+  return salida;
+}
+
+/**
+ * Las respuestas de una entrevista pasada, reconstruidas desde AI-FIRST.md:
+ * el perfil, la verificación, la fase y el mapa `adaptacion`. Sin perfil no hay
+ * con qué adaptar y devuelve `undefined`. Sin `adaptacion` —un repo iniciado
+ * con la 0.6.x— devuelve lo que haya, y lo que falta queda fuera del bloque.
+ */
+export function respuestasGuardadas(contrato: AiFirst): Respuestas | undefined {
+  if (!contrato.perfil) return undefined;
+  const r: Respuestas = { producto: contrato.perfil.producto, repositorio: contrato.perfil.repositorio };
+  if (contrato.verificacion) r['verificacion'] = contrato.verificacion;
+  if (contrato.fase) r['fase'] = contrato.fase;
+  for (const [k, v] of Object.entries(contrato.adaptacion ?? {})) r[k] = v;
+  return r;
+}
+
+/**
+ * El escaneo con los artefactos que declara el contrato encima: para adaptar
+ * con lo guardado, dónde vive el ADR lo dice AI-FIRST.md, no un escaneo nuevo.
+ */
+function escaneoDelContrato(e: Escaneo, contrato: AiFirst): Escaneo {
+  const artefactos = { ...e.artefactos };
+  for (const [k, v] of Object.entries(contrato.artefactos)) if (v !== undefined) artefactos[k] = v;
+  return { ...e, artefactos, rutaAdr: contrato.artefactos.adr ?? e.rutaAdr };
+}
+
+/** El contrato, o `undefined` si no existe o audit no podría leerlo. */
+function leerContrato(raiz: string): { texto: string; contrato?: AiFirst } | undefined {
+  const ruta = join(raiz, NOMBRE_ARCHIVO);
+  if (!existsSync(ruta)) return undefined;
+  const texto = readFileSync(ruta, 'utf8');
+  try {
+    return { texto, contrato: interpretar(texto) };
+  } catch {
+    return { texto };
+  }
+}
+
 export interface OpcionesInit {
   raiz: string;
   hoy?: string;
@@ -695,15 +759,17 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
     return true;
   };
 
-  // 1. AI-FIRST.md, y el alcance sugerido si ya existía.
-  const rutaAiFirst = join(raiz, NOMBRE_ARCHIVO);
-  if (existsSync(rutaAiFirst)) {
+  // 1. AI-FIRST.md, y lo que le falte sugerido si ya existía.
+  const previo = leerContrato(raiz);
+  if (previo) {
     items.push({ ruta: NOMBRE_ARCHIVO, estado: 'saltado' });
-    items.push(sugerirAlcance(readFileSync(rutaAiFirst, 'utf8')));
+    items.push(sugerirAlcance(previo.texto));
+    if (respuestas && perfil) items.push(sugerirRespuestas(previo.contrato, perfil, respuestasParaGuardar(respuestas)));
   } else {
     const extra: ExtraAiFirst = {};
     if (respuestas?.['fase']) extra.fase = respuestas['fase'];
     if (perfil) extra.perfil = perfil;
+    if (respuestas) extra.adaptacion = respuestasParaGuardar(respuestas);
     const aiFirst = generarAiFirst(escaneo, hoy, extra);
     interpretar(aiFirst); // Lo que init escribe tiene que poder leerlo audit. Si no, es un bug de init.
     escribirSiFalta(NOMBRE_ARCHIVO, aiFirst);
@@ -720,32 +786,33 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
 
   // 4. Las skills: salta entera la que exista, dice cuál (ADR-014).
   const carpetaSkills = join(raiz, CARPETA_SKILLS);
-  for (const nombre of elegidas) {
-    const ruta = `${CARPETA_SKILLS}/${nombre}`;
-    const destino = join(carpetaSkills, nombre);
-    if (existeAlgo(destino)) {
-      items.push({ ruta, estado: 'saltado' });
-      continue;
-    }
-    mkdirSync(carpetaSkills, { recursive: true });
-    const fuente = join(origenSkills, nombre);
-    if (enlazar) {
-      // Relativo, nunca absoluto: viaja en git. Entre rutas reales, porque el
-      // kernel resuelve cada `..` sobre el camino real: si la raíz vive bajo
-      // un enlace —`/var` → `/private/var` en macOS— la cuenta textual de
-      // `..` sale corrida y el enlace nace roto.
-      symlinkSync(relative(realpathSync(dirname(destino)), realpathSync(fuente)), destino, 'dir');
-    } else {
-      cpSync(fuente, destino, { recursive: true, filter: (src) => basename(src) !== '.DS_Store' });
-    }
-    items.push({ ruta, estado: 'escrito' });
-  }
+  const escritas = instalarSkills(carpetaSkills, elegidas, origenSkills, enlazar, items);
 
   // 4b. La adaptación: lo que la entrevista respondió, dentro de las marcas de
-  // cada skill instalada. Sin entrevista no se toca ninguna.
+  // cada skill instalada. Sin entrevista, sólo las que esta corrida escribió y
+  // con lo que guardó una entrevista anterior en AI-FIRST.md (ADR-026): una que
+  // ya estaba puede tener la mano del humano dentro de las marcas, y esta
+  // corrida no tiene nada nuevo que decirle. Sin AI-FIRST.md previo no hay
+  // entrevista anterior que reconstruir, y nada se toca, como siempre.
   if (respuestas) {
     for (const nombre of elegidas) {
       items.push(adaptarSkill(carpetaSkills, nombre, respuestas, escaneo));
+    }
+  } else if (previo) {
+    const adaptables = escritas.filter((n) => skillsAdaptables().includes(n));
+    const guardadas = previo.contrato && respuestasGuardadas(previo.contrato);
+    if (guardadas && previo.contrato) {
+      const delContrato = escaneoDelContrato(escaneo, previo.contrato);
+      for (const nombre of adaptables) items.push(adaptarSkill(carpetaSkills, nombre, guardadas, delContrato));
+    } else if (adaptables.length > 0) {
+      // Una línea para todas: cinco sugeridos con la misma razón no dicen más.
+      items.push({
+        ruta: `${NOMBRE_ARCHIVO} (perfil)`,
+        estado: 'sugerido',
+        razon:
+          `${previo.contrato ? 'no declara perfil' : 'audit no puede leerlo'}, así que quedaron sin adaptar: ${adaptables.join(', ')}. ` +
+          'Corre init --entrevista para adaptarlas y guardar las respuestas',
+      });
     }
   }
 
@@ -765,20 +832,7 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
   }
 
   // 5. El enlace para Claude Code, sólo si no hay nada en su sitio (ADR-008).
-  const rutaEnlaceClaude = join(raiz, ENLACE_CLAUDE);
-  if (existeAlgo(rutaEnlaceClaude)) {
-    // Un directorio real ahí es de quien lo puso: `ln -s` habría dejado un
-    // `.claude/skills/skills` que no lee nadie.
-    items.push(
-      esEnlace(rutaEnlaceClaude)
-        ? { ruta: ENLACE_CLAUDE, estado: 'saltado' }
-        : { ruta: ENLACE_CLAUDE, estado: 'saltado', razon: 'es un directorio real, no un enlace; se deja como está' },
-    );
-  } else {
-    mkdirSync(dirname(rutaEnlaceClaude), { recursive: true });
-    symlinkSync(relative(dirname(rutaEnlaceClaude), carpetaSkills), rutaEnlaceClaude, 'dir');
-    items.push({ ruta: ENLACE_CLAUDE, estado: 'escrito' });
-  }
+  items.push(enlazarParaClaude(raiz, carpetaSkills));
 
   // 6. El punto de control: el mismo detector en dos sitios con tolerancias
   // distintas —el hook avisa y sólo un P0 frena; el flujo de integración
@@ -830,6 +884,10 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
     items.push({ ruta: 'AGENTS.md', estado: 'escrito' });
   }
 
+  return resultado(escaneo, items);
+}
+
+function resultado(escaneo: Escaneo, items: ItemInstalado[]): ResultadoInit {
   return {
     escaneo,
     items,
@@ -837,6 +895,133 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
     saltados: items.filter((i) => i.estado === 'saltado').map((i) => i.ruta),
     sugeridos: items.filter((i) => i.estado === 'sugerido').map((i) => i.ruta),
   };
+}
+
+/**
+ * Copia o enlaza cada skill elegida en `.agents/skills/`. La que ya existe se
+ * salta entera (ADR-014). Devuelve las que escribió.
+ */
+function instalarSkills(carpetaSkills: string, elegidas: string[], origenSkills: string, enlazar: boolean, items: ItemInstalado[]): string[] {
+  const escritas: string[] = [];
+  for (const nombre of elegidas) {
+    const ruta = `${CARPETA_SKILLS}/${nombre}`;
+    const destino = join(carpetaSkills, nombre);
+    if (existeAlgo(destino)) {
+      items.push({ ruta, estado: 'saltado' });
+      continue;
+    }
+    mkdirSync(carpetaSkills, { recursive: true });
+    const fuente = join(origenSkills, nombre);
+    if (enlazar) {
+      // Relativo, nunca absoluto: viaja en git. Entre rutas reales, porque el
+      // kernel resuelve cada `..` sobre el camino real: si la raíz vive bajo
+      // un enlace —`/var` → `/private/var` en macOS— la cuenta textual de
+      // `..` sale corrida y el enlace nace roto.
+      symlinkSync(relative(realpathSync(dirname(destino)), realpathSync(fuente)), destino, 'dir');
+    } else {
+      cpSync(fuente, destino, { recursive: true, filter: (src) => basename(src) !== '.DS_Store' });
+    }
+    items.push({ ruta, estado: 'escrito' });
+    escritas.push(nombre);
+  }
+  return escritas;
+}
+
+/** El enlace `.claude/skills`, sólo si no hay nada en su sitio (ADR-008). */
+function enlazarParaClaude(raiz: string, carpetaSkills: string): ItemInstalado {
+  const rutaEnlaceClaude = join(raiz, ENLACE_CLAUDE);
+  if (existeAlgo(rutaEnlaceClaude)) {
+    // Un directorio real ahí es de quien lo puso: `ln -s` habría dejado un
+    // `.claude/skills/skills` que no lee nadie.
+    return esEnlace(rutaEnlaceClaude)
+      ? { ruta: ENLACE_CLAUDE, estado: 'saltado' }
+      : { ruta: ENLACE_CLAUDE, estado: 'saltado', razon: 'es un directorio real, no un enlace; se deja como está' };
+  }
+  mkdirSync(dirname(rutaEnlaceClaude), { recursive: true });
+  symlinkSync(relative(dirname(rutaEnlaceClaude), carpetaSkills), rutaEnlaceClaude, 'dir');
+  return { ruta: ENLACE_CLAUDE, estado: 'escrito' };
+}
+
+/** Las skills cuyo cuerpo asume la estructura de `docs/` que sólo escribe `init`. */
+const SKILLS_DE_METODOLOGIA = ['protocolo-arranque', 'protocolo-cambios', 'protocolo-cierre'];
+
+export interface OpcionesSkill {
+  raiz: string;
+  /** Las skills a instalar. Obligatorias: no hay «las de por defecto» sin metodología. */
+  nombres: string[];
+  enlazar?: boolean;
+  origenSkills?: string;
+  /**
+   * La entrevista reducida: recibe las claves que leen las skills que se van a
+   * escribir y devuelve las respuestas, que no se guardan en ningún lado. Se
+   * llama sólo si no hay AI-FIRST.md con perfil, o si `entrevistaForzada`.
+   */
+  entrevistar?: (escaneo: Escaneo, claves: string[]) => Promise<Respuestas | undefined>;
+  /** `--entrevista`: preguntar aunque AI-FIRST.md tenga respuestas guardadas. */
+  entrevistaForzada?: boolean;
+}
+
+/**
+ * `ai-first skill`: instala skills sueltas, sin la metodología (ADR-027).
+ * Escribe sólo `.agents/skills/<x>` y `.claude/skills`. No corre git init, no
+ * escribe AI-FIRST.md, ni docs/, ni el bloque de AGENTS.md, ni el punto de
+ * control. Adapta lo que escribe con lo guardado en AI-FIRST.md, si lo hay, o
+ * con una entrevista que pregunta sólo lo que esas skills leen.
+ */
+export async function instalarSkillsSueltas(opciones: OpcionesSkill): Promise<ResultadoInit> {
+  const { raiz, enlazar = false } = opciones;
+  if (!existsSync(raiz)) throw new ErrorAiFirst(`${raiz} no existe.`);
+  if (opciones.nombres.length === 0) throw new ErrorAiFirst('dime qué skills instalar: «ai-first skill test-fix», o varias separadas por comas.');
+
+  const origenSkills = opciones.origenSkills ?? carpetaSkillsDelPaquete();
+  const elegidas = elegirSkills(opciones.nombres, skillsDelPaquete(origenSkills));
+  const carpetaSkills = join(raiz, CARPETA_SKILLS);
+  const previo = leerContrato(raiz);
+  const escaneoCrudo = escanear(raiz, esRepoGit(raiz) ? listarArchivos(raiz) : archivosDeLaRaiz(raiz));
+  const escaneo = previo?.contrato ? escaneoDelContrato(escaneoCrudo, previo.contrato) : escaneoCrudo;
+
+  // Se pregunta antes de escribir nada, y sólo por las que se van a escribir:
+  // cancelar a media entrevista no deja una skill a medio adaptar.
+  const adaptables = elegidas.filter((n) => !existeAlgo(join(carpetaSkills, n)) && skillsAdaptables().includes(n));
+  const claves = clavesQueLeen(adaptables);
+  const guardadas = previo?.contrato && respuestasGuardadas(previo.contrato);
+  const entrevistadas =
+    claves.length > 0 && opciones.entrevistar && (!guardadas || opciones.entrevistaForzada)
+      ? await opciones.entrevistar(escaneoCrudo, claves)
+      : undefined;
+  const respuestas = entrevistadas ?? guardadas;
+
+  const items: ItemInstalado[] = [];
+  const escritas = instalarSkills(carpetaSkills, elegidas, origenSkills, enlazar, items);
+  for (const nombre of escritas) {
+    if (adaptables.includes(nombre)) {
+      items.push(
+        respuestas
+          ? adaptarSkill(carpetaSkills, nombre, respuestas, entrevistadas ? escaneoCrudo : escaneo)
+          : {
+              ruta: `${CARPETA_SKILLS}/${nombre}/SKILL.md`,
+              estado: 'sugerido',
+              razon: `sin respuestas con qué adaptarla: no hay ${NOMBRE_ARCHIVO} con perfil ni terminal para entrevistar. Completa a mano su «Adaptación a tu proyecto»`,
+            },
+      );
+    }
+    if (!previo && SKILLS_DE_METODOLOGIA.includes(nombre)) {
+      items.push({
+        ruta: `${CARPETA_SKILLS}/${nombre}`,
+        estado: 'sugerido',
+        razon: 'asume docs/, docs/changes/ y el ADR, que este comando no crea. Para la estructura, corre «ai-first init»',
+      });
+    }
+  }
+  items.push(enlazarParaClaude(raiz, carpetaSkills));
+  return resultado(escaneo, items);
+}
+
+/** Los archivos de la raíz, sin bajar: lo que ve `escanear` en una carpeta sin git. */
+function archivosDeLaRaiz(raiz: string): string[] {
+  return readdirSync(raiz, { withFileTypes: true })
+    .filter((d) => d.isFile())
+    .map((d) => d.name);
 }
 
 /** ¿La repartió un workspace? Ver CHG-018 y `adaptarSkill`. */
@@ -905,6 +1090,28 @@ function sugerirAlcance(texto: string): ItemInstalado {
         estado: 'sugerido',
         razon: `añade al frontmatter «alcance:» con «spec: ${CARPETA_PENDING}» para que el check 3 lea el cambio en curso`,
       };
+}
+
+/**
+ * Con entrevista sobre un AI-FIRST.md que ya existía, lo respondido no se
+ * escribe: se sugiere el YAML para pegar, en flujo para que quepa en una
+ * línea. Lleva el perfil si faltaba, porque sin él la corrida siguiente
+ * tampoco podría adaptar. Si ya está todo, se dice y no se sugiere nada.
+ */
+function sugerirRespuestas(contrato: AiFirst | undefined, perfil: Perfil, guardar: Record<string, string>): ItemInstalado {
+  const ruta = `${NOMBRE_ARCHIVO} (adaptacion)`;
+  if (contrato?.perfil && contrato.adaptacion) return { ruta, estado: 'saltado', razon: 'ya declarado' };
+  const partes: string[] = [];
+  if (!contrato?.perfil) partes.push(`«perfil: { producto: ${perfil.producto}, repositorio: ${perfil.repositorio} }»`);
+  if (!contrato?.adaptacion) {
+    const pares = Object.entries(guardar).map(([k, v]) => `${k}: ${q(v)}`);
+    partes.push(`«adaptacion: { ${pares.join(', ')} }»`);
+  }
+  return {
+    ruta,
+    estado: 'sugerido',
+    razon: `añade al frontmatter ${partes.join(' y ')} para que init adapte las skills que agregues después`,
+  };
 }
 
 /**

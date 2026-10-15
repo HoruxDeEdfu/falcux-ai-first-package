@@ -24,6 +24,17 @@ cambios, más un bloque en `AGENTS.md` que dice dónde escribe cada skill. Con
 `--enlazar` deja enlaces simbólicos relativos en vez de copias, para quien
 vendoriza las skills en un monorepo.
 
+**¿Se te olvidó una?** `init --skills i18n` en un repo ya configurado instala
+sólo la que falta, y la adapta con lo que respondiste en la entrevista, que
+quedó guardado en `AI-FIRST.md`. No vuelve a preguntar, y las que ya tenías no
+se tocan.
+
+**¿Quieres una sola, sin la metodología?** `npx @falcux/ai-first@latest skill
+test-fix` escribe la skill en `.agents/skills/` y el enlace `.claude/skills`, y
+nada más: ni `AI-FIRST.md`, ni `docs/`, ni `AGENTS.md`, ni git. Con terminal
+pregunta sólo lo que esa skill necesita para adaptarse; sin terminal la deja
+sin adaptar y te lo dice. Varias van separadas por comas.
+
 **Nada de esto sobreescribe.** Una skill cuya carpeta ya existe se salta
 **entera** y el reporte lo dice; no se fusiona nada dentro: un `cp -r skills/*
 .agents/skills/` habría pisado tu `SKILL.md` y dejado nuestras `references/`
