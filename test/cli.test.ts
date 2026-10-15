@@ -80,6 +80,32 @@ test('--sin-entrevista no menciona la entrevista: se pidió no tenerla', () => {
   }
 });
 
+test('sin terminal sobre un repo vacío, el reporte trae el aviso de protocolo-arranque y su línea de cierre: CHG-025', () => {
+  const repo = crearRepo();
+  try {
+    repo.commit('inicio');
+    const r = correr('init', '--raiz', repo.raiz);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /\n  sugerido \.agents\/skills\/protocolo-arranque — el proyecto no tiene documentación[^\n]*--skills protocolo-arranque/);
+    assert.match(r.stdout, /Sin entrevista: no hay terminal interactiva\.\n\n  Proyecto sin documentación y sin protocolo-arranque: ver «sugerido» arriba\.\n/);
+  } finally {
+    repo.limpiar();
+  }
+});
+
+test('sobre un repo documentado, ni el ítem ni la línea de cierre', () => {
+  const repo = crearRepo();
+  try {
+    repo.escribir('AGENTS.md', '# Reglas');
+    repo.commit('inicio');
+    const r = correr('init', '--raiz', repo.raiz, '--sin-entrevista');
+    assert.equal(r.status, 0, r.stderr);
+    assert.ok(!r.stdout.includes('protocolo-arranque'));
+  } finally {
+    repo.limpiar();
+  }
+});
+
 test('una opción desconocida lo dice en español, sin traza, y sale con 2: CHG-014', () => {
   const r = correr('audit', '--nada');
   assert.equal(r.status, 2);

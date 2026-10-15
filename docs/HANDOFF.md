@@ -1308,8 +1308,9 @@ como cuando lo corre un agente, o con `--sin-entrevista`— queda sin
 `protocolo-arranque`, y la salida no lo dice. Pasa lo mismo si se deja fuera con
 `--skills` o se desmarca en la entrevista. El CHG pide un ítem `sugerido` con el
 comando para instalarla y una línea de cierre en el reporte. Está escrito, con
-las decisiones tomadas, en la carpeta de cambios pendientes. **Falta
-implementarlo**, en un PATCH.
+las decisiones tomadas, en la carpeta de cambios pendientes. **Implementado
+el mismo día (sesión 20)** y cerrado en el CHANGE_LOG. La `0.6.2` lo lleva y
+está en `dev`, sin publicar: falta que Charlie avance `prod` y ponga el tag.
 
 ### CHG-026 abierto: agregar una skill después de `init`, y skills sueltas (2026-10-15, ADR-026)
 

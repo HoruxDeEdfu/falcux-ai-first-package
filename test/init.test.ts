@@ -22,6 +22,7 @@ import { crearRepo, type Repo } from './ayuda.js';
 /** Lo que init deja además de AI-FIRST.md y el ADR, en el orden en que lo escribe. */
 const ESTRUCTURA = ['docs/SESSION_LOG.md', 'docs/changes/CHANGE_LOG.md', 'docs/changes/pending/.gitkeep'];
 const SKILLS_DEFECTO_RUTAS = SKILLS_POR_DEFECTO.map((s) => `.agents/skills/${s}`);
+const RUTA_ARRANQUE = '.agents/skills/protocolo-arranque';
 /** El punto de control, en el orden en que init lo escribe: docs/specs/punto-de-control.md. */
 const PUNTO_DE_CONTROL = ['.githooks/pre-push', 'core.hooksPath', '.github/workflows/ai-first.yml'];
 
@@ -109,7 +110,9 @@ test('init en un repo vacío deja el repo configurado entero: criterio 2 de la s
     const { escritos, saltados, sugeridos } = await iniciar({ raiz: repo.raiz, hoy: '2026-09-17' });
     assert.deepEqual(escritos, ['AI-FIRST.md', 'docs/ADR.md', ...ESTRUCTURA, ...SKILLS_DEFECTO_RUTAS, '.claude/skills', ...PUNTO_DE_CONTROL, 'AGENTS.md']);
     assert.deepEqual(saltados, []);
-    assert.deepEqual(sugeridos, [], 'en un AI-FIRST.md propio no hay nada que sugerir: alcance.spec sale declarado');
+    // En un AI-FIRST.md propio no hay alcance.spec que sugerir: sale declarado.
+    // Lo único sugerido es la skill que define un proyecto sin documentación (CHG-025).
+    assert.deepEqual(sugeridos, [RUTA_ARRANQUE]);
 
     const texto = readFileSync(join(repo.raiz, 'AI-FIRST.md'), 'utf8');
     const a = interpretar(texto);
@@ -318,7 +321,7 @@ test('init --skills elige: todas, una lista, y una inventada es error de uso ant
     repo.commit('inicio');
     const { items } = await iniciar({ raiz: repo.raiz, skills: ['i18n', 'ux-writer'] });
     assert.deepEqual(
-      items.filter((i) => i.ruta.startsWith('.agents/skills/')).map((i) => i.ruta),
+      items.filter((i) => i.ruta.startsWith('.agents/skills/') && i.estado === 'escrito').map((i) => i.ruta),
       ['.agents/skills/i18n', '.agents/skills/ux-writer'],
     );
     assert.ok(existsSync(join(repo.raiz, '.agents/skills/ux-writer/references')));
@@ -597,4 +600,87 @@ test('lo que una bandera ya decidió no llega a la entrevista', () =>
     assert.deepEqual(instaladas(repo.raiz), ['test-fix'], '--skills gana a la respuesta');
     assert.ok(existsSync(join(repo.raiz, '.git/hooks/pre-push')), '--hook-local sigue valiendo');
     assert.ok(!existsSync(join(repo.raiz, '.github/workflows/ai-first.yml')), 'el «no» al CI sí cuenta');
+  }));
+
+// ---------------------------------------------------------------------------
+// Un proyecto sin documentación que se queda sin protocolo-arranque (CHG-025)
+// ---------------------------------------------------------------------------
+
+const avisoDeArranque = (items: { ruta: string; estado: string; razon?: string }[]) =>
+  items.find((i) => i.ruta === RUTA_ARRANQUE && i.estado === 'sugerido');
+
+test('un repo sin documentación y sin entrevista avisa que falta protocolo-arranque, con el comando', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    const { items, sugeridos } = await iniciar({ raiz: repo.raiz });
+    const aviso = avisoDeArranque(items);
+    assert.ok(aviso, 'el repo recién creado recibe el aviso');
+    assert.match(aviso.razon ?? '', /no tiene documentación/, 'nombra la causa');
+    assert.match(aviso.razon ?? '', /npx @falcux\/ai-first@latest init --skills protocolo-arranque/, 'y el comando');
+    assert.deepEqual(sugeridos, [RUTA_ARRANQUE]);
+    assert.ok(!existsSync(join(repo.raiz, RUTA_ARRANQUE)), 'avisa, no instala');
+  }));
+
+test('una carpeta sin .git y un repo con código sin docs también avisan', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'ai-first-vacia-'));
+  try {
+    assert.ok(avisoDeArranque((await iniciar({ raiz: carpeta })).items));
+  } finally {
+    rmSync(carpeta, { recursive: true, force: true });
+  }
+
+  await conRepo(async (repo) => {
+    repo.escribir('package.json', JSON.stringify({ name: 'api', scripts: { test: 'node --test' } }));
+    repo.escribir('src/index.ts', 'export {};');
+    repo.escribir('README.md', '# Api');
+    repo.commit('inicio');
+    assert.ok(avisoDeArranque((await iniciar({ raiz: repo.raiz })).items));
+  });
+});
+
+test('con entrevista que deja protocolo-arranque marcada no hay aviso; si la quita, sí', async () => {
+  await conRepo(async (repo) => {
+    repo.commit('inicio');
+    const { items } = await iniciar({ raiz: repo.raiz, hoy: '2026-10-15', entrevistar: respondiendo({ producto: 'api' }) });
+    assert.ok(existsSync(join(repo.raiz, RUTA_ARRANQUE)));
+    assert.equal(avisoDeArranque(items), undefined);
+  });
+
+  await conRepo(async (repo) => {
+    repo.commit('inicio');
+    const { items } = await iniciar({ raiz: repo.raiz, hoy: '2026-10-15', entrevistar: respondiendoConAlcance({ skills: 'ninguna' }) });
+    assert.ok(avisoDeArranque(items), 'desmarcada en la entrevista');
+  });
+
+  await conRepo(async (repo) => {
+    repo.commit('inicio');
+    const { items } = await iniciar({ raiz: repo.raiz, skills: ['test-fix'] });
+    assert.ok(avisoDeArranque(items), 'con --skills sin ella');
+  });
+});
+
+test('un proyecto documentado o que ya tiene la skill no recibe el aviso', async () => {
+  await conRepo(async (repo) => {
+    repo.escribir('docs/PRD.md', '# Producto');
+    repo.commit('inicio');
+    assert.equal(avisoDeArranque((await iniciar({ raiz: repo.raiz })).items), undefined, 'un .md bajo docs/ basta');
+  });
+
+  await conRepo(async (repo) => {
+    // Instalada por una corrida anterior y sin nada escrito todavía.
+    repo.escribir(`${RUTA_ARRANQUE}/SKILL.md`, '# Arranque');
+    repo.commit('inicio');
+    const { items } = await iniciar({ raiz: repo.raiz });
+    assert.equal(avisoDeArranque(items), undefined);
+    assert.ok(!items.some((i) => i.ruta === RUTA_ARRANQUE), 'ni sugerida ni tocada');
+  });
+});
+
+test('el aviso sale una sola vez: la segunda corrida ya encuentra el AGENTS.md de la primera', () =>
+  conRepo(async (repo) => {
+    repo.commit('inicio');
+    assert.ok(avisoDeArranque((await iniciar({ raiz: repo.raiz })).items));
+    const segunda = await iniciar({ raiz: repo.raiz });
+    assert.equal(avisoDeArranque(segunda.items), undefined);
+    assert.ok(!segunda.sugeridos.includes(RUTA_ARRANQUE));
   }));

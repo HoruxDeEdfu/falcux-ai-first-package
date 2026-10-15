@@ -683,3 +683,30 @@ segundos, y la prueba fija los 60 intentos.
 **Lección.** CHG-021 calibró la espera con una sola muestra, la de la `0.6.0`.
 La siguiente casi la agotó. Un tope que depende de un servicio ajeno necesita
 margen sobre lo peor que se ha visto, no sobre lo que se vio una vez.
+
+## CHG-025 — `init` avisa cuando un proyecto sin documentación queda sin `protocolo-arranque`
+
+- **Fecha:** abierto el 2026-10-15 (sesión 18), cerrado el 2026-10-15 (sesión 20)
+- **Tipo:** ajuste de diseño, flujo completo, sin decisión de ADR
+- **Archivos:** `src/init.ts`, `src/cli.ts`, `test/init.test.ts`, `test/cli.test.ts`, `docs/specs/arranque-de-proyecto.md`
+
+**Resumen.** `init` sólo instalaba `protocolo-arranque` al entrevistar. Un
+proyecto sin documentación que llegaba por otro camino quedaba sin ella, y la
+salida no lo decía. Los caminos eran cuatro: sin terminal, con
+`--sin-entrevista`, con `--skills` sin ella o desmarcada en la entrevista.
+Ahora `iniciar` mide las señales de documentación una vez, antes de escribir.
+Si no hay ninguna y la skill no está, agrega un ítem `sugerido` con la causa y
+el comando para instalarla. El CLI cierra el bloque de avisos con una línea que
+remite a ese ítem. Avisa, no instala: lo que se reparte por defecto no cambia.
+El aviso sale una sola vez, porque la segunda corrida encuentra el `AGENTS.md`
+de la primera. Charlie decidió que así bastaba.
+
+**Pruebas.** Siete nuevas, una por caso de §10: repo pelado, carpeta sin
+`.git`, código sin `docs/`, entrevista que la deja o la quita, `--skills`,
+proyecto documentado, skill ya instalada, segunda corrida, y el binario con y
+sin documentación. Dos existentes se ajustaron a la promesa nueva sin
+relajarse. Suite en 135.
+
+**Lección.** Las señales hay que medirlas antes de escribir. Medidas al final
+de `iniciar`, contarían el `AGENTS.md` que esa misma corrida escribió, y el
+aviso no saldría nunca.

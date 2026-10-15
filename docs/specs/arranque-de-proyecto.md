@@ -305,7 +305,13 @@ desechables (70 → 91 pruebas), y el primero además a mano sobre este repo, do
 ## Preguntas abiertas resueltas
 
 1. **¿`protocolo-arranque` entra por defecto?** Sí, pero sólo cuando la
-   entrevista corre. En un repo ya documentado no se instala.
+   entrevista corre. En un repo ya documentado no se instala. Desde CHG-025,
+   un proyecto sin documentación que termina sin ella —sin terminal, con
+   `--sin-entrevista`, con `--skills` o desmarcándola— lo oye: un ítem
+   `sugerido` con el comando para instalarla y una línea al cierre del reporte
+   que remite a él. Avisa, no instala. Las señales de documentación se miden
+   una vez, antes de escribir, así que el aviso sale una sola vez: la segunda
+   corrida ya encuentra el `AGENTS.md` de la primera.
 2. **¿El perfil `multiple` necesita algo distinto?** No en el comando. Cambia lo
    que la skill escribe, y eso está en su tabla de artefactos por perfil.
 
@@ -314,6 +320,8 @@ desechables (70 → 91 pruebas), y el primero además a mano sobre este repo, do
 - 2026-09-21 — Borrador inicial, Paso 1 de `protocolo-features`.
 - 2026-09-21 — Implementada entera. Estado de implementación al día y las dos
   preguntas abiertas, resueltas.
+- 2026-10-15 — CHG-025: el aviso cuando un proyecto sin documentación queda sin
+  `protocolo-arranque`, en la pregunta 1 resuelta.
 
 ## Notas de implementación [CRECE]
 

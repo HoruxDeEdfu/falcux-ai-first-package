@@ -18,8 +18,8 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ErrorAiFirst } from './ai-first-md.js';
 import { auditar } from './audit.js';
-import { iniciar, type Escaneo, type ItemInstalado } from './init.js';
-import { cuantasPreguntas, entrevistar, esAfirmativo, formatearPregunta, type AlcanceEntrevista, type Respuestas } from './entrevista.js';
+import { CARPETA_SKILLS, iniciar, type Escaneo, type ItemInstalado } from './init.js';
+import { cuantasPreguntas, entrevistar, esAfirmativo, formatearPregunta, SKILL_ARRANQUE, type AlcanceEntrevista, type Respuestas } from './entrevista.js';
 import { reporteHumano, reporteJson } from './reporte.js';
 
 const AYUDA = `ai-first — gobierno del contexto para proyectos AI-First
@@ -270,13 +270,19 @@ async function main(argv: string[]): Promise<number> {
         : entrevistaEnTerminal;
     }
 
-    const { escaneo, items } = await iniciar(opcionesInit);
+    const { escaneo, items, sugeridos } = await iniciar(opcionesInit);
+    // La lista lleva el detalle y el comando; esta línea, lo que se lee al
+    // final de un reporte largo (CHG-025).
+    const sinArranque = sugeridos.includes(`${CARPETA_SKILLS}/${SKILL_ARRANQUE}`)
+      ? [`  Proyecto sin documentación y sin ${SKILL_ARRANQUE}: ver «sugerido» arriba.`, '']
+      : [];
     const salida = [
       `ai-first init — ${escaneo.proyecto}`,
       '',
       ...items.map(lineaDeItem),
       '',
       ...(values['sin-entrevista'] || hayTerminal() ? [] : ['  Sin entrevista: no hay terminal interactiva.', '']),
+      ...sinArranque,
       `  ${escaneo.zonas.length} Zona${escaneo.zonas.length === 1 ? '' : 's'} Prohibida${escaneo.zonas.length === 1 ? '' : 's'} sugerida${escaneo.zonas.length === 1 ? '' : 's'}: ${escaneo.zonas.map((z) => z.ruta).join(', ')}`,
       `  ${escaneo.superficies.length} superficie${escaneo.superficies.length === 1 ? '' : 's'} de decisión: ${escaneo.superficies.join(', ') || '—'}`,
       `  ${Object.keys(escaneo.artefactos).length} artefactos declarados`,

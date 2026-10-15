@@ -12,6 +12,19 @@ que es el último momento en que el texto alcanza a viajar en el tarball. Si el
 publish se retrasa a otro día, la fecha se corrige al publicar. Una versión
 etiquetada que nunca llegó al registro se marca «sin publicar».
 
+## [0.6.2] — 2026-10-15
+
+### Añadido
+
+- **`init` avisa cuando un proyecto sin documentación se queda sin
+  `protocolo-arranque`**, la skill que define el producto: PRD, arquitectura y
+  specs. Antes sólo se instalaba con la entrevista y, por cualquier otro camino,
+  quedaba fuera sin aviso. Esos caminos son: sin terminal (por ejemplo, cuando
+  lo corre un agente), con `--sin-entrevista`, con `--skills` sin ella o
+  desmarcada en la entrevista. Ahora el reporte la marca como `sugerido`, con
+  el comando para instalarla, y cierra con una línea que remite a ella. No se
+  instala sola: lo que `init` reparte por defecto no cambia.
+
 ## [0.6.1] — 2026-10-07
 
 ### Cambiado

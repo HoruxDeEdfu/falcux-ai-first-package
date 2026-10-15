@@ -10,6 +10,53 @@
 
 ---
 
+## 2026-10-15 (sesión 20) — CHG-025: `init` avisa cuando falta `protocolo-arranque`, y la `0.6.2` en `dev`
+
+### Resumen
+Se implementó CHG-025, delegado por la sesión que lo abrió. Un proyecto sin
+documentación que termina `init` sin `protocolo-arranque` lo oye en dos
+sitios del reporte. El bump a `0.6.2` queda en `dev`, sin publicar.
+
+### CHG-025
+- `iniciar` mide `proyectoDocumentado` una sola vez, antes de escribir nada, y
+  le pasa ese resultado al entrevistador.
+- Después de instalar las skills, si no hay señales de documentación, el
+  paquete trae la skill y no hay nada en `.agents/skills/protocolo-arranque`,
+  agrega un ítem `sugerido` con la causa y el comando
+  `npx @falcux/ai-first@latest init --skills protocolo-arranque`.
+- El CLI agrega una línea de cierre después de «Sin entrevista» cuando
+  `sugeridos` trae esa ruta. No calcula nada por su cuenta.
+- `docs/specs/arranque-de-proyecto.md` lo anota en la pregunta 1 resuelta.
+- Siete pruebas nuevas, cinco de `iniciar` y dos del binario. Cubren los diez
+  casos de §10 del CHG. Dos pruebas existentes se ajustaron, sin relajarse:
+  la del repo vacío ahora espera el ítem en `sugeridos`, y la de `--skills`
+  filtra por `escrito`, porque mira qué se instaló.
+- No se cargó `ux-writer` para el texto del aviso: este repo no la tiene
+  instalada (es un CLI). El texto sigue el del CHG.
+
+### Validación
+- typecheck → PASS (`tsc` dentro de `pnpm test`)
+- lint      → no aplica
+- tests     → PASS, 135 / 135 por exit code; una ronda de `test-fix`
+- `audit:self` → P1 por `src/cli.ts`, superficie de decisión. El CHG decide en
+  §6 que no es decisión: el commit lleva `<!-- ai-first: sin-decision -->`
+- A mano: `init` sobre una carpeta vacía y sin terminal imprime el ítem y la
+  línea de cierre, y sale con 0
+- Con `--base HEAD~1` después del commit, el check 3 da P1 por `CHANGELOG.md`,
+  `package.json` y la spec de arranque. Lee las specs que hay **hoy** en
+  `pending/`, y al borrar CHG-025 sólo queda CHG-026, que no las lista. Es un
+  falso positivo de cerrar un CHG con otro abierto. El `pre-push` sólo frena
+  con P0, así que no bloquea
+
+### Pendiente para la siguiente sesión
+- [ ] CHG-026, en sesión limpia, empezando por el análisis de impacto de §7.
+      Después, `changeset-review` con `protocolo-features`. El detalle de los
+      dos está en `docs/HANDOFF.md`.
+- [ ] Publicar la `0.6.2` cuando Charlie avance `prod` y ponga el tag. Hay que
+      avisar al sitio con ese publish.
+
+---
+
 ## 2026-10-15 (sesión 19) — CHG-026 abierto: agregar una skill después de `init`, y skills sueltas
 
 ### Resumen

@@ -653,8 +653,11 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
   const alcance: AlcanceEntrevista = { hook: !opciones.sinHook && !opciones.hookLocal, ci: !opciones.sinCi };
   if (opciones.skills === undefined) alcance.skills = disponibles;
 
+  // Las señales se miden una vez, antes de escribir nada: medidas al final
+  // contarían el AGENTS.md que esta misma corrida acaba de escribir.
+  const documentado = proyectoDocumentado(raiz);
   const escaneoCrudo = escanear(raiz);
-  const respuestas = opciones.entrevistar ? await opciones.entrevistar(escaneoCrudo, proyectoDocumentado(raiz), alcance) : undefined;
+  const respuestas = opciones.entrevistar ? await opciones.entrevistar(escaneoCrudo, documentado, alcance) : undefined;
   const escaneo = respuestas ? aplicarRespuestas(escaneoCrudo, respuestas) : escaneoCrudo;
 
   // Con entrevista, los tres protocolos más lo que el adoptante eligió, con las
@@ -744,6 +747,21 @@ export async function iniciar(opciones: OpcionesInit): Promise<ResultadoInit> {
     for (const nombre of elegidas) {
       items.push(adaptarSkill(carpetaSkills, nombre, respuestas, escaneo));
     }
+  }
+
+  // 4c. Un proyecto sin nada definido que se queda sin la skill que lo define
+  // lo oye aquí, por cualquier camino que haya llegado: sin terminal, con
+  // --sin-entrevista, con --skills o desmarcándola. Avisa, no instala: qué
+  // reparte init por defecto no cambia (CHG-025).
+  const rutaArranque = `${CARPETA_SKILLS}/${SKILL_ARRANQUE}`;
+  if (documentado.length === 0 && disponibles.includes(SKILL_ARRANQUE) && !existeAlgo(join(carpetaSkills, SKILL_ARRANQUE))) {
+    items.push({
+      ruta: rutaArranque,
+      estado: 'sugerido',
+      razon:
+        'el proyecto no tiene documentación todavía y esta skill no se instaló: es la que define el producto (PRD, arquitectura, specs). ' +
+        `Instálala con «npx @falcux/ai-first@latest init --skills ${SKILL_ARRANQUE}».`,
+    });
   }
 
   // 5. El enlace para Claude Code, sólo si no hay nada en su sitio (ADR-008).
